@@ -13,6 +13,7 @@ import { LazyVideo } from '@/components/media/lazy-video';
 import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Section, type StyleId, type PlanItem } from '@/lib/prompt-composer';
 import { THEMES, getTheme } from '@/lib/themes';
 import siteConfig from '@/data/site.json';
+import mediaData from '@/data/media.json';
 import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette, ArrowUp, ArrowDown, X, Plus, Eye, RotateCcw, LayoutList } from 'lucide-react';
 
 const BLOCK_LABELS: Record<string, string> = {
@@ -179,6 +180,21 @@ export default function StudioPage() {
       return next;
     });
   };
+  const dragIndex = useRef<number | null>(null);
+  const onDragStart = (i: number) => () => {
+    dragIndex.current = i;
+  };
+  const onDropAt = (i: number) => () => {
+    const from = dragIndex.current;
+    dragIndex.current = null;
+    if (from === null || from === i) return;
+    setBuilderLayout((l) => {
+      const next = [...l];
+      const [moved] = next.splice(from, 1);
+      next.splice(i, 0, moved);
+      return next;
+    });
+  };
   const removeBlock = (i: number) => setBuilderLayout((l) => l.filter((_, idx) => idx !== i));
   const appendBlock = () => setBuilderLayout((l) => [...l, addBlock]);
   const loadFromTheme = () => setBuilderLayout(getTheme(siteTheme).layout);
@@ -204,6 +220,70 @@ export default function StudioPage() {
       setBuilderMsg('Ошибка сохранения');
     } finally {
       setBuilderBusy(false);
+    }
+  };
+
+  // Content editor — editable text of existing media entries
+  type ContentRow = { id: string; section: string; title: string; subtitle: string; ctaLabel: string; ctaHref: string };
+  const [content, setContent] = useState<ContentRow[]>(() =>
+    (mediaData as Array<Record<string, string>>).map((m) => ({
+      id: m.id,
+      section: m.section,
+      title: m.title ?? '',
+      subtitle: m.subtitle ?? '',
+      ctaLabel: m.ctaLabel ?? '',
+      ctaHref: m.ctaHref ?? '',
+    })),
+  );
+  const [contentBusy, setContentBusy] = useState(false);
+  const [contentMsg, setContentMsg] = useState('');
+  const setField = (id: string, field: keyof ContentRow, val: string) =>
+    setContent((c) => c.map((e) => (e.id === id ? { ...e, [field]: val } : e)));
+
+  const saveContent = async () => {
+    setContentBusy(true);
+    setContentMsg('');
+    try {
+      const res = await fetch('/api/set-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: content }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setContentMsg(`Сохранено секций: ${data.changed}`);
+        setPreviewKey((k) => k + 1);
+      } else {
+        setContentMsg(data.error || 'Ошибка');
+      }
+    } catch {
+      setContentMsg('Ошибка сохранения');
+    } finally {
+      setContentBusy(false);
+    }
+  };
+
+  // Export / import full site config
+  const cfgFileRef = useRef<HTMLInputElement>(null);
+  const [cfgMsg, setCfgMsg] = useState('');
+  const importConfig = async (file: File) => {
+    setCfgMsg('');
+    try {
+      const bundle = JSON.parse(await file.text());
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bundle),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCfgMsg(`Импортировано: ${data.imported.join(', ')} — перезагрузка…`);
+        setTimeout(() => window.location.reload(), 900);
+      } else {
+        setCfgMsg(data.error || 'Ошибка');
+      }
+    } catch {
+      setCfgMsg('Некорректный JSON-файл');
     }
   };
 
@@ -440,6 +520,41 @@ export default function StudioPage() {
           </Card>
         </motion.section>
 
+        {/* Content editor */}
+        {content.length > 0 && (
+          <motion.section {...fade} transition={{ ...fade.transition, delay: 0.085 }} className="mb-6">
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <Wand2 className="h-4 w-4 text-primary" /> Контент секций
+            </label>
+            <Card className="space-y-3 p-3">
+              {content.map((row) => (
+                <div key={row.id} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{row.section}</span>
+                    <span className="truncate text-xs text-muted-foreground">{row.id}</span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Input value={row.title} onChange={(e) => setField(row.id, 'title', e.target.value)} placeholder="Заголовок" />
+                    <Input value={row.subtitle} onChange={(e) => setField(row.id, 'subtitle', e.target.value)} placeholder="Подзаголовок" />
+                    {row.section === 'hero' && (
+                      <>
+                        <Input value={row.ctaLabel} onChange={(e) => setField(row.id, 'ctaLabel', e.target.value)} placeholder="Текст кнопки (CTA)" />
+                        <Input value={row.ctaHref} onChange={(e) => setField(row.id, 'ctaHref', e.target.value)} placeholder="Ссылка кнопки (/...)" />
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={saveContent} disabled={contentBusy} className="gap-1.5">
+                  {contentBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Сохранить контент
+                </Button>
+                {contentMsg && <span className="text-xs text-muted-foreground">{contentMsg}</span>}
+              </div>
+            </Card>
+          </motion.section>
+        )}
+
         {/* Page builder */}
         <motion.section {...fade} transition={{ ...fade.transition, delay: 0.09 }} className="mb-6">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
@@ -448,7 +563,15 @@ export default function StudioPage() {
           <Card className="p-3">
             <div className="space-y-2">
               {builderLayout.map((block, i) => (
-                <div key={`${block}-${i}`} className="flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 p-2.5">
+                <div
+                  key={`${block}-${i}`}
+                  draggable
+                  onDragStart={onDragStart(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={onDropAt(i)}
+                  className="flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 p-2.5"
+                >
+                  <span className="cursor-grab text-muted-foreground/60 active:cursor-grabbing" aria-hidden>⋮⋮</span>
                   <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">{i + 1}</span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{BLOCK_LABELS[block] ?? block}</span>
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveBlock(i, -1)} disabled={i === 0} aria-label="Вверх"><ArrowUp className="h-4 w-4" /></Button>
@@ -493,6 +616,23 @@ export default function StudioPage() {
           </label>
           <Card className="overflow-hidden p-0">
             <iframe key={previewKey} src="/" title="Предпросмотр сайта" className="h-[70vh] w-full border-0 bg-background" />
+          </Card>
+        </motion.section>
+
+        {/* Site config export / import */}
+        <motion.section {...fade} transition={{ ...fade.transition, delay: 0.11 }} className="mb-6">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <Upload className="h-4 w-4 text-primary" /> Конфигурация сайта
+          </label>
+          <Card className="flex flex-wrap items-center gap-2 p-3">
+            <a href="/api/export">
+              <Button size="sm" variant="outline" className="gap-1.5"><ArrowDown className="h-4 w-4" /> Экспорт JSON</Button>
+            </a>
+            <Button size="sm" variant="outline" onClick={() => cfgFileRef.current?.click()} className="gap-1.5">
+              <Upload className="h-4 w-4" /> Импорт JSON
+            </Button>
+            <input ref={cfgFileRef} type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && importConfig(e.target.files[0])} />
+            {cfgMsg && <span className="text-xs text-muted-foreground">{cfgMsg}</span>}
           </Card>
         </motion.section>
 
