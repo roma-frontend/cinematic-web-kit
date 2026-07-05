@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isSuperadmin } from '@/lib/auth';
 import { createSite, listSitesForUser } from '@/lib/sites';
 
 export const runtime = 'nodejs';
@@ -35,7 +35,14 @@ export async function POST(request: Request) {
   if (!name) return NextResponse.json({ error: 'Укажите название сайта.' }, { status: 400 });
   if (name.length > 80) return NextResponse.json({ error: 'Название слишком длинное.' }, { status: 400 });
 
-  if (listSitesForUser(user.id).length >= MAX_SITES_PER_USER) {
+  const owned = listSitesForUser(user.id).length;
+  // Access gate: a user without an organization can't create sites directly —
+  // a superadmin must approve their create/join request first. Approval itself
+  // provisions the first site server-side (bypassing this endpoint).
+  if (owned === 0 && !isSuperadmin(user)) {
+    return NextResponse.json({ error: 'Создание организации должен одобрить суперадмин. Отправьте заявку в разделе «Организация».' }, { status: 403 });
+  }
+  if (owned >= MAX_SITES_PER_USER) {
     return NextResponse.json({ error: `Достигнут лимит ${MAX_SITES_PER_USER} сайтов.` }, { status: 400 });
   }
 
