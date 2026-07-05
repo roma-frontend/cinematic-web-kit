@@ -1,5 +1,11 @@
 # Бесплатный деплой Cinematic Web Kit
 
+> **Рекомендация: Oracle Cloud Always Free VM + Cloudflare + Caddy.** Реально
+> бесплатно навсегда, постоянный диск (данные/загрузки не теряются), и идеально
+> для кастомных доменов тенантов (Caddy выдаёт TLS на лету). Автоустановка одной
+> командой — `deploy/setup-oracle.sh` (см. Вариант B). Fly.io (Вариант A) —
+> запасной путь «быстро для теста».
+
 Стек требует **постоянного Node-сервера с диском**: `better-sqlite3` (файл БД),
 запись картинок в `public/uploads`, `ffmpeg-static`. Поэтому serverless/edge
 (Cloudflare Pages/Workers, Vercel edge) без переписывания не подходят. Ниже —
@@ -39,6 +45,17 @@ fly deploy
 ## Вариант B — Oracle Cloud Always Free VM + Cloudflare (максимально бесплатно)
 
 Реально бесплатный навсегда VM (ARM Ampere), полный контроль, постоянный диск.
+
+### Автоустановка (одна команда)
+На свежей Ubuntu 22.04 VM:
+```bash
+export APP_DOMAIN=ваш-домен.com
+export ACME_EMAIL=you@example.com
+curl -fsSL https://raw.githubusercontent.com/roma-frontend/cinematic-web-kit/main/deploy/setup-oracle.sh | bash
+```
+Скрипт ставит Node 20, собирает приложение, поднимает systemd-службу `cwk`
+(данные в `/var/cwk`, загрузки симлинком) и Caddy с автоматическим HTTPS +
+on-demand TLS для доменов тенантов. Ниже — те же шаги вручную.
 
 ### 1. Создать VM
 - Oracle Cloud → Always Free → Compute Instance, образ **Ubuntu 22.04**,
