@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import {
   User, Shield, FileText, Settings, LogOut, Loader2, Check, Mail, Phone, Lock,
   Eye, EyeOff, Monitor, Smartphone, Trash2, Save, CalendarDays, ShieldCheck, X,
-  Store, Menu, ExternalLink,
+  Store, Menu, ExternalLink, Library, Clock, Ban, LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ import { SiteThemeToggle } from '@/components/builder/site-theme-toggle';
 
 type Me = {
   id: string; email: string; name: string; phone: string; avatarColor: string;
-  emailNotify: boolean; marketing: boolean; locale: string;
+  emailNotify: boolean; marketing: boolean; locale: string; status: string; rejectionReason?: string;
   createdAt: string | number | Date; lastLoginAt: string | number | Date | null;
 };
 type SessionRow = { id: string; userAgent: string; ip: string; createdAt: string | number | Date; lastActiveAt: string | number | Date | null; current: boolean };
@@ -92,6 +92,7 @@ function Toggle({ checked, onChange, label, desc }: { checked: boolean; onChange
 
 const TABS = [
   { id: 'profile', label: 'Профиль', icon: User },
+  { id: 'materials', label: 'Материалы', icon: Library },
   { id: 'security', label: 'Безопасность', icon: Shield },
   { id: 'activity', label: 'Обращения', icon: FileText },
   { id: 'settings', label: 'Настройки', icon: Settings },
@@ -128,6 +129,11 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
         </div>
       </main>
     );
+  }
+
+  // Org-isolation gate: non-approved members can't see member content at all.
+  if (me.status && me.status !== 'approved') {
+    return <MembershipGate me={me} base={base} brand={brand} onLogout={logout} loggingOut={loggingOut} />;
   }
 
   const color = me.avatarColor || AVATAR_COLORS[0];
@@ -226,6 +232,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
           <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
             <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
               {tab === 'profile' && <ProfileTab siteId={siteId} me={me} onSaved={setMe} />}
+              {tab === 'materials' && <MaterialsTab siteId={siteId} />}
               {tab === 'security' && <SecurityTab siteId={siteId} />}
               {tab === 'activity' && <ActivityTab siteId={siteId} />}
               {tab === 'settings' && <SettingsTab siteId={siteId} base={base} me={me} onSaved={setMe} router={router} />}
@@ -233,6 +240,81 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function MembershipGate({ me, base, brand, onLogout, loggingOut }: { me: Me; base: string; brand: string; onLogout: () => void; loggingOut: boolean }) {
+  const rejected = me.status === 'rejected';
+  const suspended = me.status === 'suspended';
+  const Icon = rejected || suspended ? Ban : Clock;
+  const title = rejected ? 'Заявка отклонена' : suspended ? 'Доступ приостановлен' : 'Заявка на рассмотрении';
+  const text = rejected
+    ? 'Администратор отклонил вашу заявку на вступление.'
+    : suspended
+      ? 'Ваш доступ к материалам временно приостановлен администратором.'
+      : 'Ваша регистрация ожидает одобрения администратора. Как только заявку одобрят, здесь появятся материалы.';
+  const tone = rejected || suspended ? 'text-red-500' : 'text-amber-500';
+  return (
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-background/80 p-8 text-center shadow-2xl backdrop-blur-md">
+        <span className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted ${tone}`}>
+          <Icon className="h-7 w-7" />
+        </span>
+        <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+        <p className="mt-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">{brand}</p>
+        <p className="mt-4 text-sm text-muted-foreground">{text}</p>
+        {(rejected || suspended) && me.rejectionReason && (
+          <p className="mt-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm"><span className="text-muted-foreground">Причина: </span>{me.rejectionReason}</p>
+        )}
+        <div className="mt-6 flex justify-center gap-3">
+          <Link href={base || '/'}><Button variant="outline">На сайт</Button></Link>
+          <Button variant="ghost" onClick={onLogout} disabled={loggingOut} className="gap-2">
+            {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} Выйти
+          </Button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+type Material = { id: string; title: string; body: string; url: string; createdAt: string | number | Date };
+
+function MaterialsTab({ siteId }: { siteId: string }) {
+  const [items, setItems] = useState<Material[] | null>(null);
+  useEffect(() => {
+    fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=materials`)
+      .then((r) => r.json()).then((d) => setItems(d.materials ?? [])).catch(() => setItems([]));
+  }, [siteId]);
+
+  return (
+    <div>
+      <SectionTitle title="Материалы" desc="Материалы, доступные участникам организации." />
+      {!items ? (
+        <div className="py-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : items.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border py-10 text-center">
+          <Library className="mx-auto h-8 w-8 text-muted-foreground/50" />
+          <p className="mt-2 text-sm text-muted-foreground">Материалов пока нет.</p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {items.map((m) => (
+            <li key={m.id} className="rounded-xl border border-border bg-background/60 p-4">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <h3 className="font-semibold">{m.title || 'Без названия'}</h3>
+                <span className="flex-none text-xs text-muted-foreground">{fmtDay(m.createdAt)}</span>
+              </div>
+              {m.body && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.body}</p>}
+              {m.url && (
+                <a href={m.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                  <LinkIcon className="h-3.5 w-3.5" /> Открыть
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

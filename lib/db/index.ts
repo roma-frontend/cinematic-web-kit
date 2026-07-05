@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS sites (
   slug TEXT NOT NULL,
   draft_doc TEXT NOT NULL,
   published_doc TEXT,
+  member_approval INTEGER NOT NULL DEFAULT 1,
   published_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -85,6 +86,10 @@ CREATE TABLE IF NOT EXISTS site_users (
   email TEXT NOT NULL,
   name TEXT NOT NULL DEFAULT '',
   password_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  approved_by TEXT,
+  approved_at INTEGER,
+  rejection_reason TEXT NOT NULL DEFAULT '',
   phone TEXT NOT NULL DEFAULT '',
   avatar_color TEXT NOT NULL DEFAULT '',
   email_notify INTEGER NOT NULL DEFAULT 1,
@@ -109,6 +114,19 @@ CREATE TABLE IF NOT EXISTS site_sessions (
 );
 CREATE INDEX IF NOT EXISTS site_sessions_user_idx ON site_sessions (site_user_id);
 CREATE INDEX IF NOT EXISTS site_sessions_site_idx ON site_sessions (site_id);
+
+CREATE TABLE IF NOT EXISTS site_materials (
+  id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '',
+  published INTEGER NOT NULL DEFAULT 1,
+  created_by TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS site_materials_site_idx ON site_materials (site_id);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;
@@ -145,6 +163,12 @@ function createDb(): DB {
   addColumn('site_sessions', 'user_agent', `user_agent TEXT NOT NULL DEFAULT ''`);
   addColumn('site_sessions', 'ip', `ip TEXT NOT NULL DEFAULT ''`);
   addColumn('submissions', 'site_user_id', `site_user_id TEXT`);
+  // Org-isolation (variant A): membership approval + admin materials.
+  addColumn('sites', 'member_approval', `member_approval INTEGER NOT NULL DEFAULT 1`);
+  addColumn('site_users', 'status', `status TEXT NOT NULL DEFAULT 'approved'`);
+  addColumn('site_users', 'approved_by', `approved_by TEXT`);
+  addColumn('site_users', 'approved_at', `approved_at INTEGER`);
+  addColumn('site_users', 'rejection_reason', `rejection_reason TEXT NOT NULL DEFAULT ''`);
   return drizzle(sqlite, { schema });
 }
 

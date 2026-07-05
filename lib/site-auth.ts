@@ -52,8 +52,16 @@ export function getSiteUserById(siteId: string, id: string): SiteUser | null {
 }
 
 /** Create an end-user for a site. Throws 'EMAIL_TAKEN' if the email already
- *  exists ON THIS SITE (the same email is fine on a different site). */
-export function createSiteUser(siteId: string, email: string, password: string, name = ''): SiteUser {
+ *  exists ON THIS SITE (the same email is fine on a different site). The initial
+ *  membership `status` is decided by the caller (based on the site's approval
+ *  policy): 'approved' grants immediate access, 'pending' awaits admin review. */
+export function createSiteUser(
+  siteId: string,
+  email: string,
+  password: string,
+  name = '',
+  status: 'approved' | 'pending' = 'approved',
+): SiteUser {
   const normalized = normEmail(email);
   if (getSiteUserByEmail(siteId, normalized)) throw new Error('EMAIL_TAKEN');
   const now = new Date();
@@ -63,6 +71,10 @@ export function createSiteUser(siteId: string, email: string, password: string, 
     email: normalized,
     name: name.trim(),
     passwordHash: hashPassword(password),
+    status,
+    approvedBy: null,
+    approvedAt: status === 'approved' ? now : null,
+    rejectionReason: '',
     phone: '',
     avatarColor: '',
     emailNotify: true,
@@ -263,13 +275,14 @@ export interface SiteUserRow {
   id: string;
   email: string;
   name: string;
+  status: string;
   createdAt: Date;
 }
 
 /** All end-users registered on a site, newest first (for the owner's dashboard). */
 export function listSiteUsers(siteId: string, limit = 500): SiteUserRow[] {
   return getDb()
-    .select({ id: siteUsers.id, email: siteUsers.email, name: siteUsers.name, createdAt: siteUsers.createdAt })
+    .select({ id: siteUsers.id, email: siteUsers.email, name: siteUsers.name, status: siteUsers.status, createdAt: siteUsers.createdAt })
     .from(siteUsers)
     .where(eq(siteUsers.siteId, siteId))
     .orderBy(desc(siteUsers.createdAt))

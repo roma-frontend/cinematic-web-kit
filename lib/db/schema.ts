@@ -54,6 +54,9 @@ export const sites = sqliteTable(
     draftDoc: text('draft_doc').notNull(),
     /** BuilderDoc JSON visitors see; null until first publish. */
     publishedDoc: text('published_doc'),
+    /** Membership policy: when true, new end-user registrations start 'pending'
+     *  and require admin approval before they can access member-only content. */
+    memberApproval: integer('member_approval', { mode: 'boolean' }).notNull().default(true),
     publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
@@ -94,6 +97,13 @@ export const siteUsers = sqliteTable(
     email: text('email').notNull(),
     name: text('name').notNull().default(''),
     passwordHash: text('password_hash').notNull(),
+    /** Membership state (org-isolation): a member only gains access once an
+     *  admin (site owner) approves. 'pending' | 'approved' | 'rejected' | 'suspended'. */
+    status: text('status').notNull().default('approved'),
+    /** Platform user id (site owner/admin) who reviewed the membership. */
+    approvedBy: text('approved_by'),
+    approvedAt: integer('approved_at', { mode: 'timestamp_ms' }),
+    rejectionReason: text('rejection_reason').notNull().default(''),
     /** Optional contact phone the customer can add in their account. */
     phone: text('phone').notNull().default(''),
     /** Avatar accent color (hex/oklch string); initials are derived from the name. */
@@ -135,6 +145,31 @@ export const siteSessions = sqliteTable(
 );
 export type SiteUser = typeof siteUsers.$inferSelect;
 export type SiteSession = typeof siteSessions.$inferSelect;
+
+// Admin-managed content that only APPROVED members of a site (organization) can
+// see. Fully scoped by siteId — one site's members can never read another's.
+export const siteMaterials = sqliteTable(
+  'site_materials',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    title: text('title').notNull().default(''),
+    /** Rich text / markdown body. */
+    body: text('body').notNull().default(''),
+    /** Optional external link (e.g. a file/download URL). */
+    url: text('url').notNull().default(''),
+    /** Draft materials are hidden from members until published. */
+    published: integer('published', { mode: 'boolean' }).notNull().default(true),
+    /** Platform user id (site owner) who created it. */
+    createdBy: text('created_by').notNull().default(''),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }),
+  },
+  (t) => [index('site_materials_site_idx').on(t.siteId)],
+);
+export type SiteMaterial = typeof siteMaterials.$inferSelect;
 
 export const submissions = sqliteTable(
   'submissions',

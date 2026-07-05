@@ -16,6 +16,7 @@ import {
   deleteSiteUser,
   listSiteUserSubmissions,
 } from '@/lib/site-auth';
+import { listPublishedMaterials } from '@/lib/site-membership';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +24,7 @@ export const runtime = 'nodejs';
 // to a concrete site id and, for account actions, to the authenticated user of
 // THAT site. Completely separate from the platform auth in /api/auth.
 
-const siteExists = (siteId: string) => Boolean(getDb().select({ id: sites.id }).from(sites).where(eq(sites.id, siteId)).get());
+const getSite = (siteId: string) => getDb().select().from(sites).where(eq(sites.id, siteId)).get() ?? null;
 const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 /** Public projection of a site user — never leaks the password hash. */
@@ -31,6 +32,8 @@ const pub = (u: SiteUser) => ({
   id: u.id,
   email: u.email,
   name: u.name,
+  status: u.status,
+  rejectionReason: u.rejectionReason,
   phone: u.phone,
   avatarColor: u.avatarColor,
   emailNotify: u.emailNotify,
@@ -50,6 +53,11 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
   if (resource === 'sessions') return NextResponse.json({ sessions: await listSiteSessions(siteId, user.id) });
   if (resource === 'submissions') return NextResponse.json({ submissions: listSiteUserSubmissions(siteId, user.id, user.email) });
+  if (resource === 'materials') {
+    // Org-isolation: only APPROVED members of THIS site can read its materials.
+    if (user.status !== 'approved') return NextResponse.json({ error: 'Доступ только для участников' }, { status: 403 });
+    return NextResponse.json({ materials: listPublishedMaterials(siteId) });
+  }
   return NextResponse.json({ error: 'Неизвестный ресурс' }, { status: 400 });
 }
 
@@ -70,7 +78,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (!siteId || !siteExists(siteId)) return NextResponse.json({ error: 'Сайт не найден' }, { status: 404 });
+  if (!siteId) return NextResponse.json({ error: 'Сайт не найден' }, { status: 404 });
+  const site = getSite(siteId);
+  if (!site) return NextResponse.json({ error: 'Сайт не найден' }, { status: 404 });
 
   // ── Unauthenticated actions ───────────────────────────────────────────
   if (action === 'register') {
@@ -79,7 +89,9 @@ export async function POST(request: Request) {
     if (!emailOk(email)) return NextResponse.json({ error: 'Введите корректный email' }, { status: 400 });
     if (password.length < 6) return NextResponse.json({ error: 'Пароль должен быть не короче 6 символов' }, { status: 400 });
     try {
-      const user = createSiteUser(siteId, email, password, str('name'));
+      // Org-isolation: if the site requires approval, new members start 'pending'.
+      const status = site.memberApproval ? 'pending' : 'approved';
+      const user = createSiteUser(siteId, email, password, str('name'), status);
       await createSiteSession(user.id, siteId, siteRequestMeta(request));
       return NextResponse.json({ ok: true, user: pub(user) });
     } catch (e) {

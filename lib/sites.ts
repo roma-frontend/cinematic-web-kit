@@ -62,6 +62,7 @@ export function createSite(userId: string, name: string): Site {
     slug: uniqueSlug(slugify(trimmed)),
     draftDoc: JSON.stringify(doc),
     publishedDoc: null,
+    memberApproval: true,
     publishedAt: null,
     createdAt: now,
     updatedAt: now,
