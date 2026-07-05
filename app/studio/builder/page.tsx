@@ -91,9 +91,6 @@ const FIELDS: Record<NodeType, Field[]> = {
   image: [
     { k: 'src', label: 'URL картинки' },
     { k: 'alt', label: 'Alt-текст' },
-    { k: 'imgMode', label: 'Режим (моб.)', opts: ['inline', 'cover', 'background', 'glow', 'overlay', 'duotone', 'framed'] },
-    { k: 'imgModeTablet', label: 'Режим (планшет)', opts: ['—', 'inline', 'cover', 'background', 'glow', 'overlay', 'duotone', 'framed'] },
-    { k: 'imgModeDesktop', label: 'Режим (десктоп)', opts: ['—', 'inline', 'cover', 'background', 'glow', 'overlay', 'duotone', 'framed'] },
     { k: 'rounded', label: 'Скругление', opts: ['none', 'lg', 'full'] },
     { k: 'ratio', label: 'Пропорции (напр. 16/9)' },
   ],
@@ -202,6 +199,18 @@ const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
   },
 ];
 const DEVICE = { full: '100%', tablet: '768px', mobile: '390px' } as const;
+// Image display-mode editing is bound to the selected device. Each device edits
+// its own breakpoint prop; tablet/desktop inherit the smaller size when unset.
+const IMG_MODE_OPTS = ['inline', 'cover', 'background', 'glow', 'overlay', 'duotone', 'framed'] as const;
+const IMG_MODE_KEY = { mobile: 'imgMode', tablet: 'imgModeTablet', full: 'imgModeDesktop' } as const;
+const IMG_DEVICE_LABEL = { mobile: 'моб.', tablet: 'планшет', full: 'десктоп' } as const;
+// The mode actually in effect for a device, applying inheritance.
+function effectiveImgMode(props: Record<string, string>, dev: keyof typeof DEVICE): string {
+  const base = props.imgMode || 'inline';
+  const tablet = props.imgModeTablet && props.imgModeTablet !== '—' ? props.imgModeTablet : base;
+  const desktop = props.imgModeDesktop && props.imgModeDesktop !== '—' ? props.imgModeDesktop : tablet;
+  return dev === 'mobile' ? base : dev === 'tablet' ? tablet : desktop;
+}
 
 // useSearchParams requires a Suspense boundary at the page level.
 export default function BuilderEditorPage() {
@@ -917,6 +926,24 @@ function BuilderEditor() {
                     )}
                   </div>
                 ))}
+                {selected.type === 'image' && (
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className="text-xs font-medium text-muted-foreground">Режим отображения</label>
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">{IMG_DEVICE_LABEL[device]}</span>
+                    </div>
+                    <Select
+                      value={effectiveImgMode(selected.props, device)}
+                      onValueChange={(v) => patch(selected.id, { [IMG_MODE_KEY[device]]: v })}
+                    >
+                      <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>{IMG_MODE_OPTS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+                      Переключай устройство сверху (моб./планшет/десктоп), чтобы задать свой режим для каждого экрана. «background» = фон на всю секцию, текст поверх.
+                    </p>
+                  </div>
+                )}
                 {selected.type === 'image' && (
                   <div className="border-t border-border/60 pt-2">
                     <Button size="sm" variant="outline" className="w-full gap-1.5" disabled={uploadBusy} onClick={() => uploadRef.current?.click()}>
