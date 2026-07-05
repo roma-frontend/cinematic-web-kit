@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import mediaData from '@/data/media.json';
+import siteConfig from '@/data/site.json';
 import type { MediaEntry } from '@/lib/media';
+import type { LayoutBlock } from '@/lib/themes';
 import { ThemeStyle } from '@/components/theme-style';
 import { THEMES } from '@/lib/themes';
 import { activeSiteTheme } from '@/lib/site-theme';
 import { ThemeFX } from '@/components/theme-fx';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { PageComposer } from '@/components/page-composer';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,6 +50,11 @@ export default function Home() {
   const media = mediaData as MediaEntry[];
   const theme = activeSiteTheme();
   const examples = media.slice(0, 6);
+  const layout = (siteConfig as { layout?: LayoutBlock[] | null }).layout ?? undefined;
+  // When the site has content built in the Studio, the landing renders that
+  // composed page (theme + layout + media) inside the shared header/footer.
+  // Otherwise it falls back to the platform marketing page below.
+  const composed = media.length > 0;
 
   return (
     <main className="min-h-dvh">
@@ -54,6 +62,10 @@ export default function Home() {
       <ThemeFX />
       <SiteHeader />
 
+      {composed && <PageComposer theme={theme} media={media} layoutOverride={layout && layout.length ? layout : undefined} />}
+
+      {!composed && (
+      <>
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-[var(--container-max)] px-6 py-20 text-center sm:px-10 sm:py-24">
@@ -205,6 +217,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </>
+      )}
 
       {/* Footer */}
       <SiteFooter />
