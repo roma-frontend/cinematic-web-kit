@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { BuilderDoc } from '@/lib/builder/types';
+import { MobileNav } from './mobile-nav';
 
 // Shared header + footer (+ optional aside) for all builder pages, with several
 // professional variants selectable in the editor.
@@ -12,7 +13,7 @@ function Header({ doc }: { doc: BuilderDoc }) {
     </Link>
   );
   const nav = (
-    <nav className="flex flex-wrap items-center gap-1 sm:gap-2">
+    <nav className="hidden flex-wrap items-center gap-1 md:flex lg:gap-2">
       {doc.nav.map((l) => (
         <Link key={l.href + l.label} href={l.href} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
           {l.label}
@@ -21,52 +22,56 @@ function Header({ doc }: { doc: BuilderDoc }) {
     </nav>
   );
   const cta = (
-    <Link href="/site/contact" className="rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+    <Link href="/site/contact" className="hidden rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 md:inline-block">
       Связаться
     </Link>
   );
 
   const shell = 'sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md';
+  const wantsCta = variant === 'split' || variant === 'cta';
+
+  let desktop: React.ReactNode;
   if (variant === 'centered') {
-    return (
-      <header className={shell}>
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-6 py-3">
-          {brand}
-          {nav}
-        </div>
-      </header>
-    );
-  }
-  if (variant === 'split') {
-    return (
-      <header className={shell}>
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-3 items-center px-6 py-3">
-          <div className="justify-self-start">{nav}</div>
-          <div className="justify-self-center">{brand}</div>
-          <div className="justify-self-end">{cta}</div>
-        </div>
-      </header>
-    );
-  }
-  if (variant === 'cta') {
-    return (
-      <header className={shell}>
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-          {brand}
-          <div className="flex items-center gap-3">
-            {nav}
-            {cta}
-          </div>
-        </div>
-      </header>
-    );
-  }
-  // minimal (default)
-  return (
-    <header className={shell}>
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
+    desktop = (
+      <div className="mx-auto hidden w-full max-w-6xl flex-col items-center gap-2 px-6 py-3 md:flex">
         {brand}
         {nav}
+      </div>
+    );
+  } else if (variant === 'split') {
+    desktop = (
+      <div className="mx-auto hidden w-full max-w-6xl grid-cols-3 items-center px-6 py-3 md:grid">
+        <div className="justify-self-start">{nav}</div>
+        <div className="justify-self-center">{brand}</div>
+        <div className="justify-self-end">{cta}</div>
+      </div>
+    );
+  } else if (variant === 'cta') {
+    desktop = (
+      <div className="mx-auto hidden h-16 w-full max-w-6xl items-center justify-between px-6 md:flex">
+        {brand}
+        <div className="flex items-center gap-3">
+          {nav}
+          {cta}
+        </div>
+      </div>
+    );
+  } else {
+    desktop = (
+      <div className="mx-auto hidden h-16 w-full max-w-6xl items-center justify-between px-6 md:flex">
+        {brand}
+        {nav}
+      </div>
+    );
+  }
+
+  return (
+    <header className={`relative ${shell}`}>
+      {desktop}
+      {/* mobile / tablet bar */}
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6 md:hidden">
+        {brand}
+        <MobileNav links={doc.nav} cta={wantsCta} />
       </div>
     </header>
   );
@@ -148,6 +153,9 @@ function Aside({ doc }: { doc: BuilderDoc }) {
           </Link>
         ))}
       </nav>
+      <Link href="/site/contact" className="mt-4 block rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+        Связаться
+      </Link>
     </aside>
   );
 }
