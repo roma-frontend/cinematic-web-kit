@@ -11,8 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LazyVideo } from '@/components/media/lazy-video';
 import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Section, type StyleId, type PlanItem } from '@/lib/prompt-composer';
-import { THEMES } from '@/lib/themes';
-import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette } from 'lucide-react';
+import { THEMES, getTheme } from '@/lib/themes';
+import siteConfig from '@/data/site.json';
+import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette, ArrowUp, ArrowDown, X, Plus, Eye, RotateCcw, LayoutList } from 'lucide-react';
+
+const BLOCK_LABELS: Record<string, string> = {
+  hero: 'Герой',
+  split: 'Сплит (видео+текст)',
+  cards: 'Карточки',
+  mosaic: 'Мозаика',
+  sticky: 'Sticky-история',
+  background: 'Фон-секция',
+  beams: 'Beams-баннер',
+  marquee: 'Бегущая строка',
+};
+const ALL_BLOCKS = Object.keys(BLOCK_LABELS);
 
 type Status = 'idle' | 'running' | 'done' | 'error';
 type BatchItem = PlanItem & { state: 'pending' | 'running' | 'done' | 'error'; error?: string };
@@ -144,6 +157,53 @@ export default function StudioPage() {
       setThemeMsg('Ошибка сохранения');
     } finally {
       setThemeBusy(false);
+    }
+  };
+
+  // Page builder — ordered block composition
+  const savedLayout = (siteConfig as { layout?: string[] | null }).layout;
+  const [builderLayout, setBuilderLayout] = useState<string[]>(
+    savedLayout && savedLayout.length ? savedLayout : getTheme('auto').layout,
+  );
+  const [builderMsg, setBuilderMsg] = useState('');
+  const [builderBusy, setBuilderBusy] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
+  const [addBlock, setAddBlock] = useState<string>('cards');
+
+  const moveBlock = (i: number, dir: -1 | 1) => {
+    setBuilderLayout((l) => {
+      const j = i + dir;
+      if (j < 0 || j >= l.length) return l;
+      const next = [...l];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  };
+  const removeBlock = (i: number) => setBuilderLayout((l) => l.filter((_, idx) => idx !== i));
+  const appendBlock = () => setBuilderLayout((l) => [...l, addBlock]);
+  const loadFromTheme = () => setBuilderLayout(getTheme(siteTheme).layout);
+
+  const saveLayout = async (reset = false) => {
+    setBuilderBusy(true);
+    setBuilderMsg('');
+    try {
+      const res = await fetch('/api/set-layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ layout: reset ? null : builderLayout }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (reset) setBuilderLayout(getTheme(siteTheme).layout);
+        setBuilderMsg(reset ? 'Сброшено к теме' : 'Композиция сохранена');
+        setPreviewKey((k) => k + 1);
+      } else {
+        setBuilderMsg(data.error || 'Ошибка');
+      }
+    } catch {
+      setBuilderMsg('Ошибка сохранения');
+    } finally {
+      setBuilderBusy(false);
     }
   };
 
@@ -377,6 +437,62 @@ export default function StudioPage() {
               {themeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Применить к сайту
             </Button>
             {themeMsg && <span className="text-xs text-muted-foreground">{themeMsg}</span>}
+          </Card>
+        </motion.section>
+
+        {/* Page builder */}
+        <motion.section {...fade} transition={{ ...fade.transition, delay: 0.09 }} className="mb-6">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <LayoutList className="h-4 w-4 text-primary" /> Конструктор страницы
+          </label>
+          <Card className="p-3">
+            <div className="space-y-2">
+              {builderLayout.map((block, i) => (
+                <div key={`${block}-${i}`} className="flex items-center gap-2 rounded-xl border border-border/60 bg-background/40 p-2.5">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">{i + 1}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{BLOCK_LABELS[block] ?? block}</span>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveBlock(i, -1)} disabled={i === 0} aria-label="Вверх"><ArrowUp className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveBlock(i, 1)} disabled={i === builderLayout.length - 1} aria-label="Вниз"><ArrowDown className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => removeBlock(i)} aria-label="Удалить"><X className="h-4 w-4" /></Button>
+                </div>
+              ))}
+              {builderLayout.length === 0 && (
+                <p className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">Нет блоков — добавьте ниже.</p>
+              )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+              <Select value={addBlock} onValueChange={setAddBlock}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ALL_BLOCKS.map((b) => (
+                    <SelectItem key={b} value={b}>{BLOCK_LABELS[b]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" onClick={appendBlock} className="gap-1.5"><Plus className="h-4 w-4" /> Добавить</Button>
+              <Button size="sm" variant="outline" onClick={loadFromTheme} className="gap-1.5"><RotateCcw className="h-4 w-4" /> Из темы</Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={() => saveLayout(true)} disabled={builderBusy}>Сброс</Button>
+                <Button size="sm" onClick={() => saveLayout(false)} disabled={builderBusy} className="gap-1.5">
+                  {builderBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Сохранить
+                </Button>
+              </div>
+              {builderMsg && <span className="w-full text-xs text-muted-foreground">{builderMsg}</span>}
+            </div>
+          </Card>
+        </motion.section>
+
+        {/* Live preview */}
+        <motion.section {...fade} transition={{ ...fade.transition, delay: 0.1 }} className="mb-6">
+          <label className="mb-2 flex items-center justify-between text-sm font-semibold">
+            <span className="flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /> Предпросмотр</span>
+            <button onClick={() => setPreviewKey((k) => k + 1)} className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+              <RotateCcw className="h-3.5 w-3.5" /> Обновить
+            </button>
+          </label>
+          <Card className="overflow-hidden p-0">
+            <iframe key={previewKey} src="/" title="Предпросмотр сайта" className="h-[70vh] w-full border-0 bg-background" />
           </Card>
         </motion.section>
 

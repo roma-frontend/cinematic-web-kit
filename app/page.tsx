@@ -18,6 +18,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
   // Theme priority: ?theme= preview  →  saved site theme  →  auto from content.
   const brief = media.map((m) => `${m.title} ${m.subtitle ?? ''} ${m.prompt ?? ''}`).join(' ');
   const savedTheme = (siteConfig as { theme?: string }).theme ?? 'auto';
+  const savedLayout = (siteConfig as { layout?: string[] | null }).layout ?? undefined;
   const theme = sp.theme
     ? getTheme(sp.theme)
     : savedTheme && savedTheme !== 'auto'
@@ -31,7 +32,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ t
       <SiteHeader />
 
       {hasContent ? (
-        <PageComposer theme={theme} media={media} />
+        <PageComposer theme={theme} media={media} layoutOverride={savedLayout as never} />
       ) : (
         <section className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
           <Film className="h-12 w-12 text-primary" />

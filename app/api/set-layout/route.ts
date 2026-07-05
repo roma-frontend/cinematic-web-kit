@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { THEMES } from '@/lib/themes';
 
 export const runtime = 'nodejs';
 
-// Persists the site-wide theme into data/site.json (merging, so `layout` is
-// preserved). 'auto' means the page derives the theme from its content.
+// Persists the page composition (ordered block list) into data/site.json,
+// merging so `theme` is preserved. `layout: null` resets to the theme default.
 // LOCAL/dev use only.
-const VALID = new Set(['auto', ...THEMES.map((t) => t.id)]);
+const VALID_BLOCKS = new Set(['hero', 'split', 'cards', 'mosaic', 'sticky', 'background', 'beams', 'marquee']);
 
 export async function POST(request: Request) {
-  let theme = 'auto';
+  let layout: string[] | null = null;
   try {
     const body = await request.json();
-    theme = String(body?.theme ?? 'auto');
+    const raw = body?.layout;
+    if (raw === null) layout = null;
+    else if (Array.isArray(raw)) layout = raw.map(String).filter((b) => VALID_BLOCKS.has(b));
+    else return NextResponse.json({ error: 'layout must be an array or null' }, { status: 400 });
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
-  if (!VALID.has(theme)) {
-    return NextResponse.json({ error: `Unknown theme "${theme}"` }, { status: 400 });
-  }
+
   const file = path.join(process.cwd(), 'data', 'site.json');
   let current: Record<string, unknown> = {};
   try {
@@ -29,9 +29,9 @@ export async function POST(request: Request) {
     /* start fresh */
   }
   try {
-    await writeFile(file, `${JSON.stringify({ ...current, theme }, null, 2)}\n`, 'utf8');
+    await writeFile(file, `${JSON.stringify({ ...current, layout }, null, 2)}\n`, 'utf8');
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'write failed' }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, theme });
+  return NextResponse.json({ ok: true, layout });
 }

@@ -17,11 +17,12 @@ import { Film } from 'lucide-react';
  * theme's `layout`. The same media adapts to different compositions per theme
  * (sport → dense mosaic-led, luxury → big cinematic, tech → split-led).
  */
-export function PageComposer({ theme, media }: { theme: Theme; media: MediaEntry[] }) {
+export function PageComposer({ theme, media, layoutOverride }: { theme: Theme; media: MediaEntry[]; layoutOverride?: LayoutBlock[] }) {
   const hero = media.find((m) => m.section === 'hero') ?? media[0];
   const cards = media.filter((m) => m.section === 'card');
   const backgrounds = media.filter((m) => m.section === 'background');
   const pool = cards.length ? cards : media;
+  const layout = layoutOverride && layoutOverride.length ? layoutOverride : theme.layout;
 
   const renderBlock = (block: LayoutBlock, key: string) => {
     switch (block) {
@@ -134,5 +135,5 @@ export function PageComposer({ theme, media }: { theme: Theme; media: MediaEntry
     }
   };
 
-  return <>{theme.layout.map((block, i) => renderBlock(block, `${block}-${i}`))}</>;
+  return <>{layout.map((block, i) => renderBlock(block, `${block}-${i}`))}</>;
 }
