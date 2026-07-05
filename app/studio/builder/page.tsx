@@ -252,6 +252,9 @@ function BuilderEditor() {
   const [previewKey, setPreviewKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  // Mirror `dirty` into a ref so unmount/unload flush handlers see the latest.
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
   const [msg, setMsg] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newPath, setNewPath] = useState('');
@@ -633,12 +636,40 @@ function BuilderEditor() {
   useEffect(() => {
     if (!dirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Best-effort synchronous flush that survives the page unload.
+      if (siteId) {
+        try {
+          fetch(`/api/builder?site=${encodeURIComponent(siteId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stateRef.current.doc),
+            keepalive: true,
+          });
+        } catch { /* ignore */ }
+      }
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [dirty]);
+  }, [dirty, siteId]);
+
+  // Flush unsaved edits when leaving the builder via in-app navigation
+  // (SPA route change unmounts this component without firing beforeunload).
+  useEffect(() => {
+    return () => {
+      if (dirtyRef.current && siteId) {
+        try {
+          fetch(`/api/builder?site=${encodeURIComponent(siteId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stateRef.current.doc),
+            keepalive: true,
+          });
+        } catch { /* ignore */ }
+      }
+    };
+  }, [siteId]);
 
   const [pubBusy, setPubBusy] = useState(false);
   const publish = async () => {
