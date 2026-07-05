@@ -88,12 +88,14 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'name', label: 'Имя поля' },
     { k: 'label', label: 'Метка' },
     { k: 'placeholder', label: 'Подсказка' },
-    { k: 'type', label: 'Тип', opts: ['text', 'email', 'tel', 'number'] },
+    { k: 'type', label: 'Тип', opts: ['text', 'email', 'tel', 'number', 'password', 'url', 'search', 'date', 'time'] },
+    { k: 'required', label: 'Обязательное', opts: ['false', 'true'] },
   ],
   textarea: [
     { k: 'name', label: 'Имя поля' },
     { k: 'label', label: 'Метка' },
     { k: 'placeholder', label: 'Подсказка' },
+    { k: 'required', label: 'Обязательное', opts: ['false', 'true'] },
   ],
   form: [
     { k: 'formId', label: 'ID формы' },
@@ -129,17 +131,46 @@ const FIELDS: Record<NodeType, Field[]> = {
 
 const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer'];
 
-// Styling controls available for EVERY element (rendered under a divider).
-const COMMON: Field[] = [
-  { k: 'fontSize', label: 'Размер шрифта', opts: ['—', 'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl'] },
-  { k: 'fontWeight', label: 'Насыщенность', opts: ['—', 'normal', 'medium', 'semibold', 'bold'] },
-  { k: 'textColor', label: 'Цвет текста', opts: ['—', 'default', 'foreground', 'primary', 'muted', 'white'] },
-  { k: 'animate', label: 'Анимация появления', opts: ['—', 'none', 'fade', 'slide-up', 'zoom'] },
-  { k: 'hover', label: 'Эффект при наведении', opts: ['—', 'none', 'lift', 'grow', 'glow', 'bright'] },
-  { k: 'radius', label: 'Скругление', opts: ['—', 'none', 'sm', 'lg', 'xl', 'full'] },
-  { k: 'shadow', label: 'Тень', opts: ['—', 'none', 'sm', 'md', 'lg', 'xl'] },
-  { k: 'mt', label: 'Отступ сверху', opts: ['—', 'none', 'sm', 'md', 'lg'] },
-  { k: 'mb', label: 'Отступ снизу', opts: ['—', 'none', 'sm', 'md', 'lg'] },
+// Styling controls available for EVERY element, grouped for quick access.
+const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
+  {
+    title: 'Типографика',
+    fields: [
+      { k: 'fontSize', label: 'Размер шрифта', opts: ['—', 'xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl'] },
+      { k: 'fontWeight', label: 'Насыщенность', opts: ['—', 'normal', 'medium', 'semibold', 'bold'] },
+      { k: 'letterSpacing', label: 'Межбуквенный', opts: ['—', 'normal', 'wide', 'wider'] },
+      { k: 'lineHeight', label: 'Межстрочный', opts: ['—', 'tight', 'normal', 'relaxed', 'loose'] },
+      { k: 'textColor', label: 'Цвет текста', opts: ['—', 'primary', 'foreground', 'muted', 'white'] },
+    ],
+  },
+  {
+    title: 'Фон и границы',
+    fields: [
+      { k: 'bgColor', label: 'Фон', opts: ['—', 'transparent', 'primary', 'muted', 'card', 'foreground', 'white', 'black'] },
+      { k: 'borderWidth', label: 'Толщина рамки', opts: ['—', '0', '1', '2', '4'] },
+      { k: 'borderColor', label: 'Цвет рамки', opts: ['—', 'border', 'primary', 'muted', 'foreground', 'white'] },
+      { k: 'radius', label: 'Скругление', opts: ['—', 'none', 'sm', 'lg', 'xl', 'full'] },
+      { k: 'ring', label: 'Ring (фокус)', opts: ['—', 'none', 'primary', 'subtle', 'offset'] },
+      { k: 'shadow', label: 'Тень', opts: ['—', 'none', 'sm', 'md', 'lg', 'xl'] },
+      { k: 'opacity', label: 'Прозрачность', opts: ['—', '100', '90', '75', '50'] },
+    ],
+  },
+  {
+    title: 'Отступы',
+    fields: [
+      { k: 'mt', label: 'Отступ сверху', opts: ['—', 'none', 'sm', 'md', 'lg'] },
+      { k: 'mb', label: 'Отступ снизу', opts: ['—', 'none', 'sm', 'md', 'lg'] },
+    ],
+  },
+  {
+    title: 'Анимация и наведение',
+    fields: [
+      { k: 'animate', label: 'Анимация появления', opts: ['—', 'none', 'fade', 'slide-up', 'zoom'] },
+      { k: 'hover', label: 'Движение при наведении', opts: ['—', 'none', 'lift', 'grow', 'glow', 'bright'] },
+      { k: 'hoverBg', label: 'Фон при наведении', opts: ['—', 'none', 'primary', 'muted', 'foreground', 'dark'] },
+      { k: 'hoverText', label: 'Цвет текста при наведении', opts: ['—', 'none', 'primary', 'foreground', 'muted'] },
+    ],
+  },
 ];
 const DEVICE = { full: '100%', tablet: '768px', mobile: '390px' } as const;
 
@@ -611,20 +642,22 @@ export default function BuilderEditor() {
                 )}
 
                 {/* Styling for every element */}
-                <div className="border-t border-border/60 pt-2.5">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Оформление</p>
-                  <div className="space-y-2.5">
-                    {COMMON.map((f) => (
-                      <div key={f.k}>
-                        <label className="mb-1 block text-xs font-medium text-muted-foreground">{f.label}</label>
-                        <Select value={selected.props[f.k] || '—'} onValueChange={(v) => patch(selected.id, { [f.k]: v === '—' ? '' : v })}>
-                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                          <SelectContent>{f.opts!.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                    ))}
+                {STYLE_GROUPS.map((g) => (
+                  <div key={g.title} className="border-t border-border/60 pt-2.5">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.title}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {g.fields.map((f) => (
+                        <div key={f.k}>
+                          <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{f.label}</label>
+                          <Select value={selected.props[f.k] || '—'} onValueChange={(v) => patch(selected.id, { [f.k]: v === '—' ? '' : v })}>
+                            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>{f.opts!.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">Выберите элемент в структуре, чтобы редактировать.</p>

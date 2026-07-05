@@ -41,7 +41,8 @@ const HEADING_SIZE = { '1': 'text-4xl sm:text-6xl', '2': 'text-3xl sm:text-4xl',
 const TEXT_SIZE = { sm: 'text-sm', base: 'text-base', lg: 'text-lg sm:text-xl' } as const;
 const SPACE = { sm: 'h-6', md: 'h-12', lg: 'h-20' } as const;
 
-// ---- common styling applied to EVERY node (via cloneElement) ----
+// ---- styling system shared by all nodes ----
+// motionClass: entrance animation, hover motion, vertical spacing (root)
 const HOVER_FX: Record<string, string> = {
   none: '',
   lift: 'transition-transform duration-300 hover:-translate-y-1',
@@ -50,33 +51,66 @@ const HOVER_FX: Record<string, string> = {
   bright: 'transition-opacity duration-300 hover:opacity-80',
 };
 const ANIM_FX: Record<string, string> = { none: '', fade: 'b-anim-fade', 'slide-up': 'b-anim-slide', zoom: 'b-anim-zoom' };
-const RADIUS: Record<string, string> = { none: '', sm: 'rounded-md', lg: 'rounded-xl', xl: 'rounded-3xl', full: 'rounded-full' };
-const SHADOW: Record<string, string> = { none: '', sm: 'shadow-sm', md: 'shadow-md', lg: 'shadow-lg', xl: 'shadow-2xl' };
 const MT: Record<string, string> = { none: '', sm: 'mt-3', md: 'mt-6', lg: 'mt-12' };
 const MB: Record<string, string> = { none: '', sm: 'mb-3', md: 'mb-6', lg: 'mb-12' };
 
-function commonClasses(p: Record<string, string>): string {
-  return cn(
-    p.hover && HOVER_FX[p.hover],
-    p.animate && ANIM_FX[p.animate],
-    p.radius && RADIUS[p.radius],
-    p.shadow && SHADOW[p.shadow],
-    p.mt && MT[p.mt],
-    p.mb && MB[p.mb],
-  );
+function motionClass(p: Record<string, string>): string {
+  return cn(p.animate && ANIM_FX[p.animate], p.hover && HOVER_FX[p.hover], p.mt && MT[p.mt], p.mb && MB[p.mb]);
 }
 
-// Typography via INLINE styles so they always win over Tailwind classes
-// (e.g. a button's variant color, a heading's default bold) and update live.
+// surfaceClass: shadow, focus ring, hover background/text (need :hover/:focus)
+const SHADOW: Record<string, string> = { none: '', sm: 'shadow-sm', md: 'shadow-md', lg: 'shadow-lg', xl: 'shadow-2xl' };
+const HOVER_BG: Record<string, string> = {
+  none: '',
+  primary: 'transition-colors hover:bg-primary hover:text-primary-foreground',
+  muted: 'transition-colors hover:bg-muted',
+  foreground: 'transition-colors hover:bg-foreground hover:text-background',
+  dark: 'transition-colors hover:bg-black/80 hover:text-white',
+};
+const HOVER_TEXT: Record<string, string> = {
+  none: '',
+  primary: 'transition-colors hover:text-primary',
+  foreground: 'transition-colors hover:text-foreground',
+  muted: 'transition-colors hover:text-muted-foreground',
+};
+const RING: Record<string, string> = {
+  none: '',
+  primary: 'transition-shadow focus-within:ring-2 focus-within:ring-primary/60',
+  subtle: 'transition-shadow focus-within:ring-2 focus-within:ring-border',
+  offset: 'transition-shadow focus-within:ring-2 focus-within:ring-primary/60 focus-within:ring-offset-2 focus-within:ring-offset-background',
+};
+
+function surfaceClass(p: Record<string, string>): string {
+  return cn(p.shadow && SHADOW[p.shadow], p.ring && RING[p.ring], p.hoverBg && HOVER_BG[p.hoverBg], p.hoverText && HOVER_TEXT[p.hoverText]);
+}
+
+// surfaceStyle: inline styles (always win over classes, update live)
 const COLOR_VAR: Record<string, string> = { primary: 'var(--primary)', foreground: 'var(--foreground)', muted: 'var(--muted-foreground)', white: '#ffffff' };
 const WEIGHT_VAL: Record<string, number> = { normal: 400, medium: 500, semibold: 600, bold: 700 };
 const SIZE_VAL: Record<string, string> = { xs: '0.75rem', sm: '0.875rem', base: '1rem', lg: '1.125rem', xl: '1.25rem', '2xl': '1.5rem', '3xl': '1.875rem', '4xl': '2.25rem' };
+const LETTER: Record<string, string> = { normal: 'normal', wide: '0.03em', wider: '0.06em' };
+const LEADING: Record<string, string> = { tight: '1.2', normal: '1.5', relaxed: '1.75', loose: '2' };
+const OPACITY: Record<string, number> = { '100': 1, '90': 0.9, '75': 0.75, '50': 0.5 };
+const BG_VAR: Record<string, string> = { transparent: 'transparent', primary: 'var(--primary)', muted: 'var(--muted)', card: 'var(--card)', foreground: 'var(--foreground)', white: '#ffffff', black: '#000000' };
+const BORDER_W: Record<string, string> = { '0': '0', '1': '1px', '2': '2px', '4': '4px' };
+const BORDER_COLOR_VAR: Record<string, string> = { border: 'var(--border)', primary: 'var(--primary)', muted: 'var(--muted-foreground)', foreground: 'var(--foreground)', white: '#ffffff' };
+const RADIUS_VAL: Record<string, string> = { none: '0', sm: '0.375rem', lg: '0.75rem', xl: '1.5rem', full: '9999px' };
 
-function typoStyle(p: Record<string, string>): CSSProperties {
+function surfaceStyle(p: Record<string, string>): CSSProperties {
   const s: CSSProperties = {};
   if (p.textColor && COLOR_VAR[p.textColor]) s.color = COLOR_VAR[p.textColor];
   if (p.fontWeight && WEIGHT_VAL[p.fontWeight]) s.fontWeight = WEIGHT_VAL[p.fontWeight];
   if (p.fontSize && SIZE_VAL[p.fontSize]) s.fontSize = SIZE_VAL[p.fontSize];
+  if (p.letterSpacing && LETTER[p.letterSpacing]) s.letterSpacing = LETTER[p.letterSpacing];
+  if (p.lineHeight && LEADING[p.lineHeight]) s.lineHeight = LEADING[p.lineHeight];
+  if (p.opacity && OPACITY[p.opacity] != null) s.opacity = OPACITY[p.opacity];
+  if (p.bgColor && BG_VAR[p.bgColor]) s.background = BG_VAR[p.bgColor];
+  if (p.borderWidth && p.borderWidth !== '0' && BORDER_W[p.borderWidth]) {
+    s.borderStyle = 'solid';
+    s.borderWidth = BORDER_W[p.borderWidth];
+    s.borderColor = BORDER_COLOR_VAR[p.borderColor || 'border'] || 'var(--border)';
+  }
+  if (p.radius && RADIUS_VAL[p.radius] != null) s.borderRadius = RADIUS_VAL[p.radius];
   return s;
 }
 
@@ -85,42 +119,42 @@ const pick = <T extends Record<string, string>>(map: T, key: string | undefined,
 
 function Field({ node }: { node: BuilderNode }) {
   const p = node.props;
+  const base = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50';
+  const ctrlCls = cn(base, surfaceClass(p), node.type === 'textarea' && 'resize-y');
+  const ctrlStyle = surfaceStyle(p);
+  const required = p.required === 'true';
   const control =
     node.type === 'textarea' ? (
-      <textarea
-        name={p.name || 'field'}
-        placeholder={p.placeholder}
-        rows={4}
-        className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-      />
+      <textarea name={p.name || 'field'} placeholder={p.placeholder} rows={4} required={required} className={ctrlCls} style={ctrlStyle} />
     ) : (
-      <input
-        name={p.name || 'field'}
-        type={p.type || 'text'}
-        placeholder={p.placeholder}
-        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-      />
+      <input name={p.name || 'field'} type={p.type || 'text'} placeholder={p.placeholder} required={required} className={ctrlCls} style={ctrlStyle} />
     );
   return (
     <label className="flex w-full flex-col gap-1.5 text-sm font-medium">
-      {p.label ? <span>{p.label}</span> : null}
+      {p.label ? <span>{p.label}{required ? <span className="text-red-500"> *</span> : null}</span> : null}
       {control}
     </label>
   );
 }
 
+// Elements that apply surface styling to their own inner control instead of
+// the root wrapper (so borders/ring/hover land on the button/input itself).
+const SELF_STYLED = new Set<string>(['button', 'input', 'textarea']);
+
 export function RenderNode({ node }: { node: BuilderNode }) {
   const el = renderInner(node);
   if (!isValidElement(el)) return el;
   const p = node.props ?? {};
-  const extra = commonClasses(p);
-  const ts = typoStyle(p);
   const elProps = el.props as { className?: string; style?: CSSProperties };
+  const self = SELF_STYLED.has(node.type);
   const merged: { 'data-nid': string; className: string; style?: CSSProperties } = {
     'data-nid': node.id,
-    className: cn(elProps.className, extra),
+    className: cn(elProps.className, motionClass(p), self ? '' : surfaceClass(p)),
   };
-  if (Object.keys(ts).length) merged.style = { ...(elProps.style ?? {}), ...ts };
+  if (!self) {
+    const st = surfaceStyle(p);
+    if (Object.keys(st).length) merged.style = { ...(elProps.style ?? {}), ...st };
+  }
   return cloneElement(el as ReactElement<typeof merged>, merged);
 }
 
@@ -202,16 +236,16 @@ function renderInner(node: BuilderNode) {
 
     case 'button': {
       type Variant = 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
-      const cls = cn(buttonVariants({ variant: (p.variant as Variant) || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }));
+      const cls = cn(buttonVariants({ variant: (p.variant as Variant) || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }), surfaceClass(p));
       const wrap = pick(TEXT_ALIGN, p.align, 'left');
-      const ts = typoStyle(p);
+      const st = surfaceStyle(p);
       const inner =
         p.type === 'submit' || p.type === 'reset' ? (
-          <button type={p.type} className={cls} style={ts}>
+          <button type={p.type} className={cls} style={st}>
             {p.text}
           </button>
         ) : (
-          <Link href={p.href || '#'} className={cls} style={ts}>
+          <Link href={p.href || '#'} className={cls} style={st}>
             {p.text}
           </Link>
         );
