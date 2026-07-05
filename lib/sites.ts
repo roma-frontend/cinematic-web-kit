@@ -51,7 +51,7 @@ export function createSite(userId: string, name: string): Site {
   const doc: BuilderDoc = {
     ...structuredClone(DEFAULT_DOC),
     brand: trimmed,
-    nav: [{ label: 'Главная', href: '/site' }],
+    nav: [],
     footer: { text: `© ${new Date().getFullYear()} ${trimmed}. Все права защищены.`, links: [] },
     pages: [starterPage(trimmed)],
   };

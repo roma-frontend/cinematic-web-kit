@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { BuilderDoc } from '@/lib/builder/types';
 import { MobileNav } from './mobile-nav';
 import { ScrollHeader } from './scroll-header';
+import { SiteAuthButtons } from './site-auth-blocks';
 
 // Shared header + footer (+ optional aside) for all builder pages, with several
 // professional variants selectable in the editor.
@@ -17,6 +18,11 @@ function contactHref(doc: BuilderDoc): string {
   if (doc.base === undefined) return '/site/contact';
   return `${doc.base}/contact`;
 }
+// Base for the built-in auth pages (/login, /register, /account).
+function authBase(doc: BuilderDoc): string {
+  return doc.base === undefined ? '/site' : doc.base || '';
+}
+const showAuth = (doc: BuilderDoc) => doc.authButtons !== 'false' && Boolean(doc.siteId);
 
 export function Header({ doc }: { doc: BuilderDoc }) {
   const variant = doc.headerVariant || 'minimal';
@@ -36,14 +42,10 @@ export function Header({ doc }: { doc: BuilderDoc }) {
       ))}
     </nav>
   );
-  const cta = (
-    <Link href={contact} className="hidden rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 md:inline-block">
-      Связаться
-    </Link>
-  );
+  const auth = showAuth(doc) ? <SiteAuthButtons base={authBase(doc)} /> : null;
+  void contactHref;
 
   const shell = 'sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md';
-  const wantsCta = variant === 'split' || variant === 'cta';
   void shell;
 
   let desktop: React.ReactNode;
@@ -51,7 +53,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
     desktop = (
       <div className="mx-auto hidden w-full max-w-6xl flex-col items-center gap-2 px-6 py-3 md:flex">
         {brand}
-        {nav}
+        <div className="flex items-center gap-3">{nav}{auth}</div>
       </div>
     );
   } else if (variant === 'split') {
@@ -59,7 +61,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
       <div className="mx-auto hidden w-full max-w-6xl grid-cols-3 items-center px-6 py-3 md:grid">
         <div className="justify-self-start">{nav}</div>
         <div className="justify-self-center">{brand}</div>
-        <div className="justify-self-end">{cta}</div>
+        <div className="justify-self-end">{auth}</div>
       </div>
     );
   } else if (variant === 'cta') {
@@ -68,7 +70,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
         {brand}
         <div className="flex items-center gap-3">
           {nav}
-          {cta}
+          {auth}
         </div>
       </div>
     );
@@ -76,7 +78,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
     desktop = (
       <div className="mx-auto hidden h-16 w-full max-w-6xl items-center justify-between px-6 md:flex">
         {brand}
-        {nav}
+        <div className="flex items-center gap-3">{nav}{auth}</div>
       </div>
     );
   }
@@ -85,9 +87,12 @@ export function Header({ doc }: { doc: BuilderDoc }) {
     <ScrollHeader behavior={doc.headerBehavior || 'solid'}>
       {desktop}
       {/* mobile / tablet bar */}
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6 md:hidden">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-2 px-6 md:hidden">
         {brand}
-        <MobileNav links={doc.nav} cta={wantsCta} />
+        <div className="flex items-center gap-2">
+          {auth}
+          <MobileNav links={doc.nav} cta={false} />
+        </div>
       </div>
     </ScrollHeader>
   );
@@ -96,6 +101,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
 export function Footer({ doc }: { doc: BuilderDoc }) {
   const variant = doc.footerVariant || 'simple';
   const links = doc.footer.links;
+  const fauth = showAuth(doc) ? <div className="mt-1"><SiteAuthButtons base={authBase(doc)} /></div> : null;
   if (variant === 'centered') {
     return (
       <footer className="border-t border-border/60 bg-muted/30">
@@ -104,6 +110,7 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
           <nav className="flex flex-wrap justify-center gap-4">
             {links.map((l) => <Link key={l.href + l.label} href={l.href} className="text-sm text-muted-foreground hover:text-foreground">{l.label}</Link>)}
           </nav>
+          {fauth}
           <p className="text-xs text-muted-foreground">{doc.footer.text}</p>
         </div>
       </footer>
@@ -116,6 +123,7 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
           <div className="space-y-2">
             <Link href={homeHref(doc)} className="font-display text-lg font-black">{doc.brand}</Link>
             <p className="text-sm text-muted-foreground">{doc.footer.text}</p>
+            {fauth}
           </div>
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold">Навигация</p>
@@ -136,6 +144,7 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
           <div className="space-y-2">
             <Link href={homeHref(doc)} className="font-display text-lg font-black">{doc.brand}</Link>
             <p className="text-sm text-muted-foreground">{doc.footer.text}</p>
+            {fauth}
           </div>
           <form action="/api/form" method="post" className="flex w-full gap-2">
             <input type="email" name="email" placeholder="you@example.com" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
@@ -152,6 +161,7 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
         <p className="text-sm text-muted-foreground">{doc.footer.text}</p>
         <nav className="flex flex-wrap items-center gap-4">
           {links.map((l) => <Link key={l.href + l.label} href={l.href} className="text-sm text-muted-foreground hover:text-foreground">{l.label}</Link>)}
+          {fauth}
         </nav>
       </div>
     </footer>
@@ -187,10 +197,10 @@ function Aside({ doc }: { doc: BuilderDoc }) {
           </Link>
         ))}
       </nav>
-      {style !== 'compact' && (
-        <Link href={contactHref(doc)} className="mt-4 block rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-          Связаться
-        </Link>
+      {style !== 'compact' && showAuth(doc) && (
+        <div className="mt-4">
+          <SiteAuthButtons base={authBase(doc)} />
+        </div>
       )}
     </aside>
   );
