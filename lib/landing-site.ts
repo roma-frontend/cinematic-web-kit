@@ -65,12 +65,19 @@ function seedLandingDoc(): BuilderDoc {
           ]),
         )),
       ]),
-      // Themes teaser
+      // Themes teaser + live gallery
       mk('section', { padding: 'lg', bg: 'none', width: 'wide' }, [
         mk('heading', { text: L.themesTeaser.title, level: '2', align: 'center' }),
         mk('text', { text: L.themesTeaser.subtitle, align: 'center', muted: 'true' }),
-        mk('spacer', { height: 'sm' }),
-        mk('button', { text: 'Все темы', href: '/themes', variant: 'outline', size: 'default', align: 'center', type: 'link', hover: 'lift' }),
+        mk('spacer', { height: 'md' }),
+        mk('themeGallery', { count: '6', columns: '3' }),
+      ]),
+      // Made on the platform — video examples
+      mk('section', { padding: 'lg', bg: 'muted', width: 'wide' }, [
+        mk('heading', { text: 'Пример живого сайта', level: '2', align: 'center' }),
+        mk('text', { text: 'Эти секции с ИИ-видео собраны прямо в Студии — так выглядит результат.', align: 'center', muted: 'true' }),
+        mk('spacer', { height: 'md' }),
+        mk('videoGrid', { count: '6' }),
       ]),
       // Final CTA
       mk('section', { padding: 'lg', bg: 'card', width: 'normal' }, [
@@ -135,8 +142,8 @@ export function getOrCreateLandingSite(): Site | null {
     name: 'Лендинг (главная)',
     slug: LANDING_SLUG,
     draftDoc: json,
-    publishedDoc: json, // published on create so "Открыть" shows the real landing
-    publishedAt: now,    // and every save/autosave keeps / in sync
+    publishedDoc: null, // draft only — / stays the coded landing until the
+    publishedAt: null,  // editor explicitly hits "Опубликовать" (no accidental flips)
     createdAt: now,
     updatedAt: now,
   };

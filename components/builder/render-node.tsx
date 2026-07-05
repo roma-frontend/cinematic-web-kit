@@ -8,6 +8,12 @@ import { Reveal, Stagger, ParallaxBg } from './reveal';
 import { CountUp } from './count-up';
 import type { BuilderNode } from '@/lib/builder/types';
 import { isContainer } from '@/lib/builder/types';
+import { THEMES } from '@/lib/themes';
+import { VideoCardGrid } from '@/components/media/video-card';
+import mediaData from '@/data/media.json';
+import type { MediaEntry } from '@/lib/media';
+
+const okl = (v: string) => `oklch(${v})`;
 
 // Parses "Title::Body" (one per line) into [title, body] pairs.
 const parsePairs = (s: string | undefined): [string, string][] =>
@@ -585,6 +591,43 @@ function renderInner(node: BuilderNode) {
 
     case 'spacer':
       return <div className={pick(SPACE, p.height, 'md')} aria-hidden />;
+
+    case 'themeGallery': {
+      const count = Math.max(1, Math.min(12, parseInt(p.count || '6', 10) || 6));
+      const cols = p.columns === '2' ? 'sm:grid-cols-2' : p.columns === '4' ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3';
+      return (
+        <div className={cn('grid gap-4', cols)}>
+          {THEMES.slice(0, count).map((t) => {
+            const d = t.dark;
+            return (
+              <Link
+                key={t.id}
+                href="/themes"
+                className="group overflow-hidden rounded-2xl border shadow-sm transition-transform hover:-translate-y-0.5"
+                style={{ background: okl(d.background), color: okl(d.foreground), borderColor: okl(d.border) }}
+              >
+                <div className="p-5">
+                  <span className="text-base font-bold tracking-tight">{t.label}</span>
+                  <p className="mt-1 text-xs" style={{ color: okl(d['muted-foreground']) }}>{t.fontDisplay} · движение {t.motion}</p>
+                  <div className="mt-4 flex gap-2">
+                    {[d.primary, d.card, d.muted, d.foreground, d.border].map((c, i) => (
+                      <span key={i} className="h-6 w-6 rounded-md" style={{ background: okl(c), border: `1px solid ${okl(d.border)}` }} />
+                    ))}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      );
+    }
+
+    case 'videoGrid': {
+      const count = Math.max(1, Math.min(12, parseInt(p.count || '6', 10) || 6));
+      const entries = (mediaData as MediaEntry[]).slice(0, count);
+      if (entries.length === 0) return null;
+      return <VideoCardGrid entries={entries} />;
+    }
 
     default:
       return null;

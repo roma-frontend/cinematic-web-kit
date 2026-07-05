@@ -146,9 +146,14 @@ const FIELDS: Record<NodeType, Field[]> = {
   tabs: [{ k: 'items', label: 'Вкладка::Содержимое (по строкам)', kind: 'textarea' }],
   divider: [],
   spacer: [{ k: 'height', label: 'Высота', opts: ['sm', 'md', 'lg'] }],
+  themeGallery: [
+    { k: 'count', label: 'Сколько тем' },
+    { k: 'columns', label: 'Колонок', opts: ['2', '3', '4'] },
+  ],
+  videoGrid: [{ k: 'count', label: 'Сколько роликов' }],
 };
 
-const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'counter', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer'];
+const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'counter', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer', 'themeGallery', 'videoGrid'];
 
 // Styling controls available for EVERY element, grouped for quick access.
 const STYLE_GROUPS: { title: string; fields: Field[] }[] = [

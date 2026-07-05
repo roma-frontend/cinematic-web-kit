@@ -26,7 +26,9 @@ export type NodeType =
   | 'faq'
   | 'tabs'
   | 'divider'
-  | 'spacer';
+  | 'spacer'
+  | 'themeGallery'
+  | 'videoGrid';
 
 export interface BuilderNode {
   id: string;
@@ -92,6 +94,8 @@ export const NODE_LABELS: Record<NodeType, string> = {
   tabs: 'Вкладки',
   divider: 'Разделитель',
   spacer: 'Отступ',
+  themeGallery: 'Галерея тем',
+  videoGrid: 'Видео-сетка',
 };
 
 let counter = 0;
@@ -147,6 +151,10 @@ export function defaultProps(type: NodeType): Record<string, string> {
       return {};
     case 'spacer':
       return { height: 'md' };
+    case 'themeGallery':
+      return { count: '6', columns: '3' };
+    case 'videoGrid':
+      return { count: '6' };
     default:
       return {};
   }
