@@ -39,13 +39,15 @@ const ROLE_META: Record<Role, { label: string; cls: string; icon: React.Componen
   customer: { label: 'Клиент', cls: 'bg-muted text-muted-foreground', icon: UserCircle },
 };
 
-export function DashboardShell({ user, banner, children }: { user: ShellUser; banner?: React.ReactNode; children: React.ReactNode }) {
+export function DashboardShell({ user, banner, gated, children }: { user: ShellUser; banner?: React.ReactNode; gated?: boolean; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const isStaff = user.role === 'admin' || user.role === 'superadmin';
-  const visible = NAV.filter((i) => (i.staff ? isStaff : true) && (i.super ? user.role === 'superadmin' : true));
+  // Gated (no organization yet, awaiting superadmin approval): hide all platform
+  // navigation and actions so it's unmistakable there's no dashboard access.
+  const visible = gated ? [] : NAV.filter((i) => (i.staff ? isStaff : true) && (i.super ? user.role === 'superadmin' : true));
   const active = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
   const roleMeta = ROLE_META[user.role];
 
@@ -79,6 +81,11 @@ export function DashboardShell({ user, banner, children }: { user: ShellUser; ba
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {gated && (
+          <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+            Доступ к разделам откроется после одобрения заявки суперадмином.
+          </div>
+        )}
         {visible.map((item) => {
           const on = active(item.href);
           if (item.super) {
@@ -166,22 +173,26 @@ export function DashboardShell({ user, banner, children }: { user: ShellUser; ba
             <Menu className="h-5 w-5" />
           </button>
           <span className="text-sm font-semibold tracking-tight">
-            {visible.find((i) => active(i.href))?.label ?? 'Дашборд'}
+            {gated ? 'Доступ ограничен' : (visible.find((i) => active(i.href))?.label ?? 'Дашборд')}
           </span>
           <button
             onClick={() => window.dispatchEvent(new Event('cwk:open-palette'))}
-            className="ml-2 hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted md:flex"
+            className={`ml-2 hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted ${gated ? 'md:hidden' : 'md:flex'}`}
           >
             <Search className="h-3.5 w-3.5" /> Поиск команд
             <kbd className="rounded border border-border bg-background px-1 text-[10px]">⌘K</kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <Link href="/dashboard/sites">
-              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Новый сайт</span></Button>
-            </Link>
-            <Link href="/" target="_blank" className="hidden sm:block">
-              <Button size="sm" variant="outline" className="gap-1.5">Сайт <ExternalLink className="h-4 w-4" /></Button>
-            </Link>
+            {!gated && (
+              <>
+                <Link href="/dashboard/sites">
+                  <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Новый сайт</span></Button>
+                </Link>
+                <Link href="/" target="_blank" className="hidden sm:block">
+                  <Button size="sm" variant="outline" className="gap-1.5">Сайт <ExternalLink className="h-4 w-4" /></Button>
+                </Link>
+              </>
+            )}
             <ThemeToggle />
           </div>
         </header>

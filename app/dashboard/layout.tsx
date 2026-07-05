@@ -28,6 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <DashboardShell
       user={{ name: user.name, email: user.email, role: (user.role as Role) ?? 'customer' }}
       banner={impersonating ? <ImpersonationBanner name={user.name || user.email} /> : null}
+      gated={gated}
     >
       {gated ? (
         <>
