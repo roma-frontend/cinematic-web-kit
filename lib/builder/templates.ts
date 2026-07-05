@@ -22,6 +22,7 @@ export interface TemplateDef {
   description: string;
   suggestedPath: string;
   themeId?: string;
+  asideVariant?: string;
   build: () => BuilderPage;
 }
 
@@ -221,6 +222,65 @@ export const TEMPLATES: TemplateDef[] = [
             mk('heading', { text: 'Хотите так же?', level: '2', align: 'center' }),
             mk('button', { text: 'Обсудить проект', href: '/site/contact', variant: 'default', size: 'lg', align: 'center' }),
           ]),
+        ]),
+      ],
+    }),
+  },
+  {
+    id: 'dashboard',
+    label: 'Дашборд (с сайдбаром)',
+    description: 'Страница с боковой панелью, метрики и карточки.',
+    suggestedPath: 'dashboard',
+    asideVariant: 'left',
+    build: () => ({
+      id: newId('page'),
+      path: 'dashboard',
+      title: 'Дашборд',
+      description: 'Панель управления с метриками.',
+      blocks: [
+        mk('section', { padding: 'md', bg: 'none', width: 'wide' }, [
+          mk('heading', { text: 'Обзор', level: '1', align: 'left' }),
+          mk('spacer', { height: 'sm' }),
+          mk('grid', { gap: 'md', columns: '3', stagger: 'true' }, [
+            ['Выручка', '₽1.2M'],
+            ['Пользователи', '8 340'],
+            ['Конверсия', '4.7%'],
+          ].map(([h, n]) =>
+            mk('card', { cardVariant: 'elevated', padding: 'md', gap: 'sm' }, [
+              mk('text', { text: h, align: 'left', muted: 'true' }),
+              mk('heading', { text: n, level: '2', align: 'left' }),
+            ]),
+          )),
+          mk('spacer', { height: 'md' }),
+          mk('grid', { gap: 'md', columns: '2' }, [
+            mk('card', { cardVariant: 'outline', padding: 'md', gap: 'sm' }, [mk('heading', { text: 'Активность', level: '3', align: 'left' }), mk('text', { text: 'График активности за период.', align: 'left', muted: 'true' })]),
+            mk('card', { cardVariant: 'outline', padding: 'md', gap: 'sm' }, [mk('heading', { text: 'Последние заказы', level: '3', align: 'left' }), mk('list', { items: 'Заказ #1024 — оплачен\nЗаказ #1025 — в работе\nЗаказ #1026 — новый', listVariant: 'check' })]),
+          ]),
+        ]),
+      ],
+    }),
+  },
+  {
+    id: 'docs',
+    label: 'Док-сайт (с сайдбаром)',
+    description: 'Документация с навигацией сбоку.',
+    suggestedPath: 'docs',
+    asideVariant: 'left',
+    build: () => ({
+      id: newId('page'),
+      path: 'docs',
+      title: 'Документация',
+      description: 'Раздел документации.',
+      blocks: [
+        mk('section', { padding: 'md', bg: 'none', width: 'normal' }, [
+          mk('heading', { text: 'Введение', level: '1', align: 'left' }),
+          mk('text', { text: 'Добро пожаловать в документацию. Здесь вы найдёте всё для быстрого старта.', align: 'left', muted: 'false', size: 'lg' }),
+          mk('spacer', { height: 'md' }),
+          mk('heading', { text: 'Установка', level: '2', align: 'left' }),
+          mk('list', { items: 'Создайте аккаунт\nПодключите проект\nЗапустите первую сборку', listVariant: 'numbered' }),
+          mk('spacer', { height: 'md' }),
+          mk('heading', { text: 'Часто задаваемые вопросы', level: '2', align: 'left' }),
+          mk('faq', { items: 'Как начать?::Следуйте разделу «Установка».\nЕсть ли API?::Да, полноценный REST API.', align: 'left', faqVariant: 'separated' }),
         ]),
       ],
     }),

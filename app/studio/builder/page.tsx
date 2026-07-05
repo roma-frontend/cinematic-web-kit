@@ -32,20 +32,24 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'width', label: 'Ширина', opts: ['narrow', 'normal', 'wide'] },
     { k: 'bgImage', label: 'Фоновая картинка (URL)' },
     { k: 'bgVideo', label: 'Фоновое видео (URL .mp4)' },
+    { k: 'parallax', label: 'Параллакс фона', opts: ['false', 'true'] },
   ],
   stack: [
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
     { k: 'align', label: 'Выравнивание', opts: ['start', 'center', 'end', 'stretch'] },
+    { k: 'stagger', label: 'Появление по очереди', opts: ['false', 'true'] },
   ],
   row: [
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
     { k: 'align', label: 'По верт.', opts: ['start', 'center', 'end'] },
     { k: 'justify', label: 'По гориз.', opts: ['start', 'center', 'end', 'between'] },
     { k: 'wrap', label: 'Перенос', opts: ['wrap', 'nowrap'] },
+    { k: 'stagger', label: 'Появление по очереди', opts: ['false', 'true'] },
   ],
   grid: [
     { k: 'columns', label: 'Колонок', opts: ['1', '2', '3', '4'] },
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
+    { k: 'stagger', label: 'Появление по очереди', opts: ['false', 'true'] },
   ],
   card: [
     { k: 'cardVariant', label: 'Вариант', opts: ['elevated', 'outline', 'soft', 'plain'] },
@@ -463,6 +467,7 @@ export default function BuilderEditor() {
     if (!t) return;
     addPageDoc(t.build());
     if (t.themeId) setDoc((d) => ({ ...d, themeId: t.themeId! }));
+    if (t.asideVariant) setDoc((d) => ({ ...d, asideVariant: t.asideVariant! }));
     setMsg(`Добавлено: «${t.label}»${t.themeId ? ' (тема применена)' : ''}. Не забудьте «Сохранить».`);
   };
   const addSectionPreset = (id: string) => {
@@ -759,43 +764,31 @@ export default function BuilderEditor() {
           <div className={tab === 'design' ? 'space-y-4' : 'hidden'}>
           {/* Chrome variants */}
           <Card className="p-3">
-            <p className="mb-2 text-sm font-semibold">Шапка / подвал / сайдбар</p>
-            <div className="grid grid-cols-1 gap-2">
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Шапка (header)</label>
-                <Select value={doc.headerVariant || 'minimal'} onValueChange={(v) => setDoc((d) => ({ ...d, headerVariant: v }))}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="minimal">Минимал (бренд + меню)</SelectItem>
-                    <SelectItem value="centered">По центру</SelectItem>
-                    <SelectItem value="split">Сплит (меню · бренд · CTA)</SelectItem>
-                    <SelectItem value="cta">С кнопкой CTA</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Подвал (footer)</label>
-                <Select value={doc.footerVariant || 'simple'} onValueChange={(v) => setDoc((d) => ({ ...d, footerVariant: v }))}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="simple">Простой</SelectItem>
-                    <SelectItem value="columns">Колонки</SelectItem>
-                    <SelectItem value="centered">По центру</SelectItem>
-                    <SelectItem value="newsletter">С подпиской</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Боковая панель (aside)</label>
-                <Select value={doc.asideVariant || 'none'} onValueChange={(v) => setDoc((d) => ({ ...d, asideVariant: v }))}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Нет</SelectItem>
-                    <SelectItem value="left">Слева</SelectItem>
-                    <SelectItem value="right">Справа</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <p className="mb-2 text-sm font-semibold">Шапка (header)</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(['minimal', 'centered', 'split', 'cta'] as const).map((v) => (
+                <button key={v} onClick={() => setDoc((d) => ({ ...d, headerVariant: v }))} className={`rounded-lg border p-1.5 text-left transition-colors ${(doc.headerVariant || 'minimal') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
+                  <HeaderThumb variant={v} />
+                  <span className="mt-1 block text-[11px] font-medium">{HEADER_LABELS[v]}</span>
+                </button>
+              ))}
+            </div>
+            <p className="mb-2 mt-3 text-sm font-semibold">Подвал (footer)</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(['simple', 'columns', 'centered', 'newsletter'] as const).map((v) => (
+                <button key={v} onClick={() => setDoc((d) => ({ ...d, footerVariant: v }))} className={`rounded-lg border p-1.5 text-left transition-colors ${(doc.footerVariant || 'simple') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
+                  <FooterThumb variant={v} />
+                  <span className="mt-1 block text-[11px] font-medium">{FOOTER_LABELS[v]}</span>
+                </button>
+              ))}
+            </div>
+            <p className="mb-1 mt-3 text-sm font-semibold">Боковая панель (aside)</p>
+            <div className="flex gap-1.5">
+              {(['none', 'left', 'right'] as const).map((v) => (
+                <Button key={v} size="sm" variant={(doc.asideVariant || 'none') === v ? 'default' : 'outline'} className="flex-1 text-xs" onClick={() => setDoc((d) => ({ ...d, asideVariant: v }))}>
+                  {v === 'none' ? 'Нет' : v === 'left' ? 'Слева' : 'Справа'}
+                </Button>
+              ))}
             </div>
           </Card>
 
@@ -854,6 +847,27 @@ export default function BuilderEditor() {
       </div>
     </main>
   );
+}
+
+// Schematic mini-previews for header/footer variant pickers.
+const HEADER_LABELS: Record<string, string> = { minimal: 'Минимал', centered: 'По центру', split: 'Сплит', cta: 'С кнопкой' };
+const FOOTER_LABELS: Record<string, string> = { simple: 'Простой', columns: 'Колонки', centered: 'По центру', newsletter: 'С подпиской' };
+const Bar = ({ w = 24, accent = false }: { w?: number; accent?: boolean }) => (
+  <span className="inline-block h-1.5 rounded-full" style={{ width: w, background: accent ? 'var(--primary)' : 'var(--muted-foreground)', opacity: accent ? 1 : 0.4 }} />
+);
+function HeaderThumb({ variant }: { variant: string }) {
+  const box = 'flex h-9 items-center rounded-md bg-muted/40 px-2';
+  if (variant === 'centered') return <div className={`${box} flex-col justify-center gap-1`}><Bar w={20} accent /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /><Bar w={12} /></div></div>;
+  if (variant === 'split') return <div className={`${box} justify-between`}><div className="flex gap-1"><Bar w={10} /><Bar w={10} /></div><Bar w={16} accent /><span className="h-3 w-8 rounded bg-primary" /></div>;
+  if (variant === 'cta') return <div className={`${box} justify-between`}><Bar w={16} accent /><div className="flex items-center gap-1"><Bar w={10} /><Bar w={10} /><span className="h-3 w-8 rounded bg-primary" /></div></div>;
+  return <div className={`${box} justify-between`}><Bar w={16} accent /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /><Bar w={12} /></div></div>;
+}
+function FooterThumb({ variant }: { variant: string }) {
+  const box = 'flex h-12 rounded-md bg-muted/40 p-2';
+  if (variant === 'columns') return <div className={`${box} justify-between`}>{[0, 1, 2].map((i) => <div key={i} className="flex flex-col gap-1"><Bar w={20} accent={i === 0} /><Bar w={16} /><Bar w={16} /></div>)}</div>;
+  if (variant === 'centered') return <div className={`${box} flex-col items-center justify-center gap-1`}><Bar w={18} accent /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /></div></div>;
+  if (variant === 'newsletter') return <div className={`${box} items-center justify-between`}><div className="flex flex-col gap-1"><Bar w={20} accent /><Bar w={28} /></div><div className="flex items-center gap-1"><span className="h-4 w-14 rounded border border-border" /><span className="h-4 w-8 rounded bg-primary" /></div></div>;
+  return <div className={`${box} items-center justify-between`}><Bar w={24} /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /></div></div>;
 }
 
 // Real, theme-scoped mini-preview of a landing (scaled-down actual render).

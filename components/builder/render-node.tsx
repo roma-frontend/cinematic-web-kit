@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { BuilderForm } from './builder-form';
 import { Accordion, Tabs } from './interactive';
-import { Reveal } from './reveal';
+import { Reveal, Stagger, ParallaxBg } from './reveal';
 import type { BuilderNode } from '@/lib/builder/types';
 import { isContainer } from '@/lib/builder/types';
 
@@ -183,8 +183,12 @@ function renderInner(node: BuilderNode) {
             // eslint-disable-next-line jsx-a11y/media-has-caption
             <video className="absolute inset-0 h-full w-full object-cover" src={p.bgVideo} autoPlay muted loop playsInline />
           ) : p.bgImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="absolute inset-0 h-full w-full object-cover" src={p.bgImage} alt="" />
+            p.parallax === 'true' ? (
+              <ParallaxBg src={p.bgImage} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="absolute inset-0 h-full w-full object-cover" src={p.bgImage} alt="" />
+            )
           ) : null}
           {hasMedia && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />}
           <div className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), hasMedia && 'text-white')}>
@@ -196,14 +200,12 @@ function renderInner(node: BuilderNode) {
       );
     }
 
-    case 'stack':
-      return (
-        <div className={cn('flex flex-col', pick(GAP, p.gap, 'md'), pick(ALIGN, p.align, 'stretch'))}>
-          {kids.map((c) => (
-            <RenderNode key={c.id} node={c} />
-          ))}
-        </div>
-      );
+    case 'stack': {
+      const stackCls = cn('flex flex-col', pick(GAP, p.gap, 'md'), pick(ALIGN, p.align, 'stretch'));
+      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} />);
+      if (p.stagger === 'true') return <Stagger className={stackCls}>{kidsEls}</Stagger>;
+      return <div className={stackCls}>{kidsEls}</div>;
+    }
 
     case 'row':
       return (
@@ -222,14 +224,12 @@ function renderInner(node: BuilderNode) {
         </div>
       );
 
-    case 'grid':
-      return (
-        <div className={cn('grid grid-cols-1', pick(COLS, p.columns, '3'), pick(GAP, p.gap, 'md'))}>
-          {kids.map((c) => (
-            <RenderNode key={c.id} node={c} />
-          ))}
-        </div>
-      );
+    case 'grid': {
+      const gridCls = cn('grid grid-cols-1', pick(COLS, p.columns, '3'), pick(GAP, p.gap, 'md'));
+      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} />);
+      if (p.stagger === 'true') return <Stagger className={gridCls}>{kidsEls}</Stagger>;
+      return <div className={gridCls}>{kidsEls}</div>;
+    }
 
     case 'card': {
       const cv = p.cardVariant || (p.border === 'false' ? 'plain' : 'elevated');
