@@ -561,7 +561,8 @@ function BuilderEditor() {
         const data = await res.json();
         if (res.ok) {
           if (stateRef.current.doc === sentDoc) setDirty(false);
-          setMsg(auto ? 'Автосохранено' : `Сохранено · страниц: ${data.pages}`);
+          const liveMsg = data.published ? ' · обновлено в live' : '';
+          setMsg(auto ? `Автосохранено${liveMsg}` : `Сохранено · страниц: ${data.pages}${liveMsg}`);
           if (!auto) setPreviewKey((k) => k + 1);
           return true;
         }

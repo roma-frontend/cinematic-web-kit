@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getSiteForUser, parseDoc, saveDraft } from '@/lib/sites';
+import { getSiteForUser, parseDoc, saveDraft, publishSite } from '@/lib/sites';
 import type { BuilderDoc } from '@/lib/builder/types';
 import { DEFAULT_DOC } from '@/lib/builder/types';
 
@@ -56,8 +56,13 @@ export async function POST(request: Request) {
   }
   try {
     saveDraft(site, doc);
+    // If the site is already live, keep the published snapshot in sync on every
+    // save (and autosave) so edits appear on /s/<slug> immediately — no extra
+    // "publish" step needed once the site has been published the first time.
+    const live = Boolean(site.publishedDoc);
+    if (live) publishSite({ ...site, draftDoc: JSON.stringify(doc) });
+    return NextResponse.json({ ok: true, pages: doc.pages.length, published: live });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'write failed' }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, pages: doc.pages.length });
 }
