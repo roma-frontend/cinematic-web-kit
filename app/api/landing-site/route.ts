@@ -4,9 +4,9 @@ import { getOrCreateLandingSite } from '@/lib/landing-site';
 
 export const runtime = 'nodejs';
 
-// Returns the landing builder site, creating + publishing a seeded one on first
-// call. Staff-only: the landing (/) is a shared platform page. The returned id
-// is used to open it in the visual builder (/studio/builder?site=<id>).
+// Returns the landing builder site, creating a seeded DRAFT one on first call
+// (not published — / keeps showing the marketing page until the editor hits
+// "Опубликовать"). Staff-only. The id is used to open it in the visual builder.
 export async function POST() {
   const user = await getCurrentUser();
   if (!isStaff(user)) {

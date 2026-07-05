@@ -132,7 +132,8 @@ export function getLandingSite(): Site | null {
   return getDb().select().from(sites).where(eq(sites.slug, LANDING_SLUG)).get() ?? null;
 }
 
-/** Get the landing site, creating + publishing a seeded one on first call.
+/** Get the landing site, creating a seeded DRAFT one on first call (not
+ *  published — / keeps showing marketing until the editor hits "Опубликовать").
  *  Returns null only if there is no user yet to own it. */
 export function getOrCreateLandingSite(): Site | null {
   const db = getDb();
@@ -149,8 +150,8 @@ export function getOrCreateLandingSite(): Site | null {
     name: 'Лендинг (главная)',
     slug: LANDING_SLUG,
     draftDoc: json,
-    publishedDoc: json, // publish immediately so / renders it right away
-    publishedAt: now,
+    publishedDoc: null, // NOT published — / keeps showing the marketing page
+    publishedAt: null,  // until the editor explicitly hits "Опубликовать"
     createdAt: now,
     updatedAt: now,
   };
