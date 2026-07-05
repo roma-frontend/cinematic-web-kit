@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ArrowUp, ArrowDown, X, Plus, Save, Loader2, Monitor, Tablet, Smartphone,
   ExternalLink, Trash2, FileText, LayoutTemplate, ChevronRight, Copy, Upload, Wand2, Palette,
-  Undo2, Redo2, LayoutGrid, ChevronDown,
+  Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2,
 } from 'lucide-react';
 import seed from '@/data/builder.json';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
@@ -198,6 +198,7 @@ export default function BuilderEditor() {
   const [device, setDevice] = useState<keyof typeof DEVICE>('full');
   const [tab, setTab] = useState<'pages' | 'blocks' | 'design'>('pages');
   const [previewWidth, setPreviewWidth] = useState(520);
+  const [fullscreen, setFullscreen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [dropHint, setDropHint] = useState<{ id: string; pos: 'before' | 'after' } | null>(null);
   const toggleCollapse = (id: string) =>
@@ -842,21 +843,29 @@ export default function BuilderEditor() {
         {/* Resizable splitter */}
         <div
           onMouseDown={startResize}
-          className="w-1.5 shrink-0 cursor-col-resize bg-border/60 transition-colors hover:bg-primary/60"
+          className={`w-1.5 shrink-0 cursor-col-resize bg-border/60 transition-colors hover:bg-primary/60 ${fullscreen ? 'hidden' : ''}`}
           title="Потяните, чтобы изменить ширину"
         />
 
         {/* Live preview canvas */}
-        <div className="flex shrink-0 flex-col border-l border-border/60 bg-muted/20" style={{ width: previewWidth }}>
+        <div
+          className={fullscreen ? 'fixed inset-0 z-50 flex flex-col bg-muted/20' : 'flex shrink-0 flex-col border-l border-border/60 bg-muted/20'}
+          style={fullscreen ? undefined : { width: previewWidth }}
+        >
           <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs text-muted-foreground">
             <ChevronRight className="h-4 w-4 text-primary" />
             <span className="truncate">{previewSrc}</span>
             <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">в реальном времени</span>
-            <span className="ml-auto hidden sm:inline">Клик по элементу — выбрать · </span>
-            <button onClick={() => setPreviewKey((k) => k + 1)} className="rounded-md px-2 py-1 hover:bg-muted">Перезагрузить</button>
+            <div className="ml-auto flex items-center gap-1">
+              <button onClick={() => setPreviewKey((k) => k + 1)} className="rounded-md px-2 py-1 hover:bg-muted">Перезагрузить</button>
+              <button onClick={() => setFullscreen((f) => !f)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted" title="Полноэкранный предпросмотр">
+                {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                {fullscreen ? 'Свернуть' : 'На весь экран'}
+              </button>
+            </div>
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            <div className="mx-auto h-full transition-[width] duration-300" style={{ width: DEVICE[device] }}>
+            <div className="mx-auto h-full transition-[width] duration-300" style={{ width: fullscreen ? DEVICE[device] : (device === 'full' ? '100%' : DEVICE[device]) }}>
               <iframe
                 ref={previewRef}
                 key={previewKey}
@@ -882,10 +891,21 @@ function ChromeThumb({ doc, kind, variant }: { doc: BuilderDoc; kind: 'header' |
   const css = useMemo(() => themeCss(theme).split(':root').join(`.${cls}`).split('.dark').join(`.${cls}`), [theme, cls]);
   const previewDoc = { ...doc, headerVariant: variant, headerBehavior: 'solid', footerVariant: variant } as BuilderDoc;
   const h = kind === 'header' ? 46 : 84;
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.33);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / 1000);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ height: h }}>
+    <div ref={ref} className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ height: h }}>
       <style dangerouslySetInnerHTML={{ __html: css }} />
-      <div className={`${cls} pointer-events-none absolute left-0 top-0 origin-top-left`} style={{ width: 1000, transform: 'scale(0.33)', background: 'var(--background)', color: 'var(--foreground)' }}>
+      <div className={`${cls} pointer-events-none absolute left-0 top-0 origin-top-left`} style={{ width: 1000, transform: `scale(${scale})`, background: 'var(--background)', color: 'var(--foreground)' }}>
         <RevealDisabled.Provider value={true}>
           {kind === 'header' ? <ChromeHeader doc={previewDoc} /> : <ChromeFooter doc={previewDoc} />}
         </RevealDisabled.Provider>
@@ -900,12 +920,23 @@ function LandingThumb({ def }: { def: { id: string; themeId?: string; build: () 
   const blocks = useMemo(() => def.build().blocks, [def]);
   const cls = `thumb-${def.id}`;
   const css = useMemo(() => themeCss(theme).split(':root').join(`.${cls}`).split('.dark').join(`.${cls}`), [theme, cls]);
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.3);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / 1280);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <div className="relative h-40 w-full overflow-hidden border-b border-border bg-background">
+    <div ref={ref} className="relative h-40 w-full overflow-hidden border-b border-border bg-background">
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div
         className={`${cls} pointer-events-none absolute left-0 top-0 origin-top-left`}
-        style={{ width: 1280, transform: 'scale(0.34)', background: 'var(--background)', color: 'var(--foreground)' }}
+        style={{ width: 1280, transform: `scale(${scale})`, background: 'var(--background)', color: 'var(--foreground)' }}
       >
         <RevealDisabled.Provider value={true}>
           {blocks.map((n) => (
