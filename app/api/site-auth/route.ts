@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb, sites, type SiteUser } from '@/lib/db';
+import { findUserByEmail, verifyPassword } from '@/lib/auth';
 import {
   createSiteUser,
   verifySiteCredentials,
@@ -62,6 +63,22 @@ export async function GET(request: Request) {
     if (user.status !== 'approved') return NextResponse.json({ error: 'Доступ только для участников' }, { status: 403 });
     return NextResponse.json({ materials: listPublishedMaterials(siteId) });
   }
+  if (resource === 'overview') {
+    // Everything the account home screen needs in one round-trip.
+    const materials = user.status === 'approved' ? listPublishedMaterials(siteId) : [];
+    const notifications = listNotifications(siteId, user.id);
+    const submissions = listSiteUserSubmissions(siteId, user.id, user.email);
+    const sessions = await listSiteSessions(siteId, user.id);
+    return NextResponse.json({
+      unread: countUnreadNotifications(siteId, user.id),
+      notificationsCount: notifications.length,
+      recentNotifications: notifications.slice(0, 3),
+      materialsCount: materials.length,
+      recentMaterials: materials.slice(0, 3),
+      submissionsCount: submissions.length,
+      sessionsCount: sessions.length,
+    });
+  }
   return NextResponse.json({ error: 'Неизвестный ресурс' }, { status: 400 });
 }
 
@@ -108,7 +125,16 @@ export async function POST(request: Request) {
 
   if (action === 'login') {
     const user = verifySiteCredentials(siteId, str('email').trim(), str('password'));
-    if (!user) return NextResponse.json({ error: 'Неверный email или пароль' }, { status: 401 });
+    if (!user) {
+      // They may have been promoted to a platform admin (their tenant account
+      // was moved to `users`). If the same credentials match a platform user,
+      // bounce them to the platform login / dashboard instead of erroring.
+      const p = findUserByEmail(str('email').trim());
+      if (p && verifyPassword(str('password'), p.passwordHash)) {
+        return NextResponse.json({ ok: true, redirect: '/login' });
+      }
+      return NextResponse.json({ error: 'Неверный email или пароль' }, { status: 401 });
+    }
     await createSiteSession(user.id, siteId, siteRequestMeta(request));
     return NextResponse.json({ ok: true, user: pub(user) });
   }

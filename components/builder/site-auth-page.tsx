@@ -16,7 +16,7 @@ import { SiteAccount } from '@/components/builder/site-account';
 
 type Props = { siteId: string; base: string; brand: string; mode: 'login' | 'register' | 'account' };
 
-async function siteAuth(action: string, body: Record<string, string>): Promise<{ ok: boolean; error?: string; user?: unknown }> {
+async function siteAuth(action: string, body: Record<string, string>): Promise<{ ok: boolean; error?: string; user?: unknown; redirect?: string }> {
   try {
     const res = await fetch('/api/site-auth', {
       method: 'POST',
@@ -24,7 +24,7 @@ async function siteAuth(action: string, body: Record<string, string>): Promise<{
       body: JSON.stringify({ action, ...body }),
     });
     const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, error: data.error, user: data.user };
+    return { ok: res.ok, error: data.error, user: data.user, redirect: data.redirect };
   } catch {
     return { ok: false, error: 'Сеть недоступна, попробуйте ещё раз.' };
   }
@@ -42,6 +42,7 @@ function LoginForm({ siteId, base, brand }: Omit<Props, 'mode'>) {
     e.preventDefault();
     setError(''); setBusy(true);
     const r = await siteAuth('login', { siteId, email, password });
+    if (r.redirect) { window.location.assign(r.redirect); return; }
     if (!r.ok) { setError(r.error || 'Не удалось войти'); setBusy(false); return; }
     router.push(`${base}/account`);
     router.refresh();
