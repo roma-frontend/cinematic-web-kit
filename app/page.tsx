@@ -5,21 +5,31 @@ import { VideoSection } from '@/components/media/video-section';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { StickyShowcase } from '@/components/media/sticky-showcase';
 import { Reveal } from '@/components/reveal';
-import { AccentFromPoster } from '@/components/accent-from-poster';
+import { ThemeStyle } from '@/components/theme-style';
+import { pickTheme, getTheme } from '@/lib/themes';
+import { ThemeFX } from '@/components/theme-fx';
 import { SiteHeader } from '@/components/site-header';
 import { Film } from 'lucide-react';
 
 // data/media.json is produced by the pipeline (scripts/media-pipeline). Static
 // import → a rebuild picks up new clips; `next dev` hot-reloads them.
-export default function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ theme?: string }> }) {
+  const sp = await searchParams;
   const media = mediaData as MediaEntry[];
   const hero = media.find((m) => m.section === 'hero');
   const backgrounds = media.filter((m) => m.section === 'background');
   const cards = media.filter((m) => m.section === 'card');
 
+  // The theme is chosen from the page's own content, so the whole design
+  // (palette, display font, radius) adapts to the topic — coffee vs sport etc.
+  // `?theme=<id>` overrides it for live preview.
+  const brief = media.map((m) => `${m.title} ${m.subtitle ?? ''} ${m.prompt ?? ''}`).join(' ');
+  const theme = sp.theme ? getTheme(sp.theme) : pickTheme(brief);
+
   return (
     <main className="min-h-dvh">
-      <AccentFromPoster src={hero?.poster} />
+      <ThemeStyle theme={theme} />
+      <ThemeFX />
       <SiteHeader />
 
       {hero ? (
@@ -27,7 +37,7 @@ export default function Home() {
       ) : (
         <section className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
           <Film className="h-12 w-12 text-primary" />
-          <h1 className="text-3xl font-black tracking-tight sm:text-5xl">Кинематографический веб-кит</h1>
+          <h1 className="font-display text-3xl font-black tracking-tight sm:text-5xl">Кинематографический веб-кит</h1>
           <p className="max-w-xl text-muted-foreground">
             Генерируйте кинематографические ИИ-видео, автоматически оптимизируйте их в <code>.webm</code> и
             выводите в красивых секциях. Запустите пайплайн, чтобы наполнить эту страницу.
@@ -44,7 +54,7 @@ export default function Home() {
         <Reveal>
           <div className="mb-8 flex items-center gap-2">
             <Film className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold tracking-tight">Избранные клипы</h2>
+            <h2 className="font-display text-2xl font-bold tracking-tight">Избранные клипы</h2>
           </div>
         </Reveal>
         {cards.length > 0 ? (

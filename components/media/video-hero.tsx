@@ -21,7 +21,7 @@ export function VideoHero({ entry }: { entry: MediaEntry }) {
             </p>
           )}
           <h1
-            className="max-w-3xl text-balance text-4xl font-black tracking-tight text-white sm:text-6xl"
+            className="font-display max-w-3xl text-balance text-4xl font-black tracking-tight text-white sm:text-6xl"
             style={{ textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}
           >
             {entry.title}

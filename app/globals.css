@@ -16,6 +16,7 @@
   --muted-foreground: oklch(0.5 0.01 260);
   --border: oklch(0.9 0.005 260);
   --radius: 0.75rem;
+  --font-display: var(--font-sans);
 }
 
 .dark {
@@ -58,6 +59,53 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Display font for headings — driven by the active theme (--font-display). */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* ── Theme FX: primary-tinted drifting glows + film grain ─────────── */
+.theme-fx-glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.22;
+  background: radial-gradient(circle, var(--primary), transparent 62%);
+  will-change: transform;
+}
+.theme-fx-glow-a {
+  width: 46rem;
+  height: 46rem;
+  top: -14rem;
+  left: -12rem;
+  animation: themeFxDriftA 24s ease-in-out infinite;
+}
+.theme-fx-glow-b {
+  width: 38rem;
+  height: 38rem;
+  top: 20%;
+  right: -14rem;
+  opacity: 0.16;
+  animation: themeFxDriftB 30s ease-in-out infinite;
+}
+@keyframes themeFxDriftA {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(60px, 40px); }
+}
+@keyframes themeFxDriftB {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-50px, 60px); }
+}
+.theme-fx-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-fx-glow { animation: none; }
 }
 
 /* Scroll indicator */

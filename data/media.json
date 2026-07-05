@@ -1,21 +1,56 @@
 [
   {
-    "id": "hero-demo",
-    "title": "Создано, чтобы останавливать",
+    "id": "coffee-hero",
+    "title": "Проснись медленно",
     "section": "hero",
-    "subtitle": "Производительность",
-    "src": "/media/generated/hero-demo.webm",
-    "poster": "/media/generated/hero-demo-poster.jpg",
+    "subtitle": "Ремесленный кофе",
+    "ctaLabel": "Смотреть каталог",
+    "ctaHref": "/presets/product",
+    "src": "/media/generated/coffee-hero.webm",
+    "srcMp4": "/media/generated/coffee-hero.mp4",
+    "poster": "/media/generated/coffee-hero-poster.jpg",
     "aspectRatio": "16:9",
-    "createdAt": "2026-07-05T07:34:42.494Z"
+    "createdAt": "2026-07-05T09:38:12.413Z"
   },
   {
-    "id": "card-brakes",
-    "title": "Тормозные диски",
+    "id": "coffee-pourover",
+    "title": "Пуровер",
     "section": "card",
-    "src": "/media/generated/card-brakes.webm",
-    "poster": "/media/generated/card-brakes-poster.jpg",
+    "src": "/media/generated/coffee-pourover.webm",
+    "srcMp4": "/media/generated/coffee-pourover.mp4",
+    "poster": "/media/generated/coffee-pourover-poster.jpg",
     "aspectRatio": "16:9",
-    "createdAt": "2026-07-05T07:36:37.001Z"
+    "createdAt": "2026-07-05T09:39:17.416Z"
+  },
+  {
+    "id": "coffee-espresso",
+    "title": "Эспрессо",
+    "section": "card",
+    "src": "/media/generated/coffee-espresso.webm",
+    "srcMp4": "/media/generated/coffee-espresso.mp4",
+    "poster": "/media/generated/coffee-espresso-poster.jpg",
+    "aspectRatio": "16:9",
+    "createdAt": "2026-07-05T09:39:59.628Z"
+  },
+  {
+    "id": "coffee-latte",
+    "title": "Латте-арт",
+    "section": "card",
+    "src": "/media/generated/coffee-latte.webm",
+    "srcMp4": "/media/generated/coffee-latte.mp4",
+    "poster": "/media/generated/coffee-latte-poster.jpg",
+    "aspectRatio": "16:9",
+    "createdAt": "2026-07-05T09:44:24.888Z"
+  },
+  {
+    "id": "coffee-roast",
+    "title": "Обжарка каждое утро",
+    "section": "background",
+    "subtitle": "Свежие зёрна",
+    "src": "/media/generated/coffee-roast.webm",
+    "srcMp4": "/media/generated/coffee-roast.mp4",
+    "poster": "/media/generated/coffee-roast-poster.jpg",
+    "aspectRatio": "16:9",
+    "createdAt": "2026-07-05T09:52:33.207Z"
   }
 ]

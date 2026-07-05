@@ -22,7 +22,7 @@ export function SplitHero({ entry, reverse = false }: { entry: MediaEntry; rever
             {entry.subtitle}
           </p>
         )}
-        <h2 className="text-balance text-3xl font-black tracking-tight sm:text-5xl">{entry.title}</h2>
+        <h2 className="font-display text-balance text-3xl font-black tracking-tight sm:text-5xl">{entry.title}</h2>
         {entry.prompt && <p className="mt-4 max-w-prose text-muted-foreground">{entry.prompt}</p>}
         {entry.ctaHref && (
           <div className="mt-6">

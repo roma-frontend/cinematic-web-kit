@@ -12,7 +12,7 @@ export function VideoSection({ entry }: { entry: MediaEntry }) {
             <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-white/80">{entry.subtitle}</p>
           )}
           <h2
-            className="text-balance text-3xl font-bold text-white sm:text-5xl"
+            className="font-display text-balance text-3xl font-bold text-white sm:text-5xl"
             style={{ textShadow: '0 2px 18px rgba(0,0,0,0.6)' }}
           >
             {entry.title}

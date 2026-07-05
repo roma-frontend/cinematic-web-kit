@@ -14,6 +14,9 @@ export function SiteHeader() {
           <span className="sm:hidden">Кит</span>
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2">
+          <Link href="/themes">
+            <Button variant="ghost" size="sm">Темы</Button>
+          </Link>
           <Link href="/presets">
             <Button variant="ghost" size="sm">Пресеты</Button>
           </Link>

@@ -66,7 +66,7 @@ function Panel({
             {panel.eyebrow}
           </p>
         )}
-        <h2 className="text-balance text-4xl font-black tracking-tight sm:text-6xl" style={{ textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}>
+        <h2 className="font-display text-balance text-4xl font-black tracking-tight sm:text-6xl" style={{ textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}>
           {panel.title}
         </h2>
         {panel.text && <p className="mx-auto mt-4 max-w-xl text-white/85">{panel.text}</p>}
