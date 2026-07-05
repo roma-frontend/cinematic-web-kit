@@ -6,7 +6,7 @@ import { ScrollHeader } from './scroll-header';
 // Shared header + footer (+ optional aside) for all builder pages, with several
 // professional variants selectable in the editor.
 
-function Header({ doc }: { doc: BuilderDoc }) {
+export function Header({ doc }: { doc: BuilderDoc }) {
   const variant = doc.headerVariant || 'minimal';
   const brand = (
     <Link href="/site" className="font-display text-lg font-black tracking-tight">
@@ -79,7 +79,7 @@ function Header({ doc }: { doc: BuilderDoc }) {
   );
 }
 
-function Footer({ doc }: { doc: BuilderDoc }) {
+export function Footer({ doc }: { doc: BuilderDoc }) {
   const variant = doc.footerVariant || 'simple';
   const links = doc.footer.links;
   if (variant === 'centered') {
@@ -145,19 +145,39 @@ function Footer({ doc }: { doc: BuilderDoc }) {
 }
 
 function Aside({ doc }: { doc: BuilderDoc }) {
+  const style = doc.asideStyle || 'default';
+  if (style === 'icons') {
+    return (
+      <aside className="hidden w-16 shrink-0 flex-col items-center gap-2 border-r border-border/60 bg-muted/20 py-4 lg:flex">
+        <Link href="/site" className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground" title={doc.brand}>
+          {doc.brand.charAt(0)}
+        </Link>
+        <nav className="mt-4 flex flex-col gap-2">
+          {doc.nav.map((l) => (
+            <Link key={l.href + l.label} href={l.href} title={l.label} className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              {l.label.charAt(0)}
+            </Link>
+          ))}
+        </nav>
+      </aside>
+    );
+  }
+  const width = style === 'compact' ? 'w-48' : 'w-60';
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-border/60 bg-muted/20 p-4 lg:block">
+    <aside className={`hidden ${width} shrink-0 border-r border-border/60 bg-muted/20 p-4 lg:block`}>
       <Link href="/site" className="font-display text-lg font-black tracking-tight">{doc.brand}</Link>
-      <nav className="mt-6 flex flex-col gap-1">
+      <nav className={`mt-6 flex flex-col ${style === 'compact' ? 'gap-0.5' : 'gap-1'}`}>
         {doc.nav.map((l) => (
           <Link key={l.href + l.label} href={l.href} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
             {l.label}
           </Link>
         ))}
       </nav>
-      <Link href="/site/contact" className="mt-4 block rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-        Связаться
-      </Link>
+      {style !== 'compact' && (
+        <Link href="/site/contact" className="mt-4 block rounded-lg bg-primary px-3 py-2 text-center text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+          Связаться
+        </Link>
+      )}
     </aside>
   );
 }

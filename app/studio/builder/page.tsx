@@ -16,6 +16,7 @@ import seed from '@/data/builder.json';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
 import { RenderNode } from '@/components/builder/render-node';
 import { RevealDisabled } from '@/components/builder/reveal';
+import { Header as ChromeHeader, Footer as ChromeFooter } from '@/components/builder/site-chrome';
 import { TEMPLATES, LANDINGS, SECTION_PRESETS } from '@/lib/builder/templates';
 import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
@@ -70,6 +71,11 @@ const FIELDS: Record<NodeType, Field[]> = {
   list: [
     { k: 'items', label: 'Пункты (по строкам)', kind: 'textarea' },
     { k: 'listVariant', label: 'Вариант', opts: ['bullet', 'check', 'arrow', 'numbered', 'plain'] },
+  ],
+  counter: [
+    { k: 'value', label: 'Значение (напр. 10000+, 99.9%)' },
+    { k: 'label', label: 'Подпись' },
+    { k: 'align', label: 'Выравнивание', opts: ['left', 'center', 'right'] },
   ],
   button: [
     { k: 'text', label: 'Текст' },
@@ -139,7 +145,7 @@ const FIELDS: Record<NodeType, Field[]> = {
   spacer: [{ k: 'height', label: 'Высота', opts: ['sm', 'md', 'lg'] }],
 };
 
-const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer'];
+const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'counter', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer'];
 
 // Styling controls available for EVERY element, grouped for quick access.
 const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
@@ -177,7 +183,7 @@ const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
     fields: [
       { k: 'animate', label: 'Анимация появления', opts: ['—', 'none', 'fade', 'slide-up', 'slide-left', 'slide-right', 'zoom', 'mask'] },
       { k: 'loop', label: 'Постоянная анимация', opts: ['—', 'none', 'pulse', 'float', 'bounce'] },
-      { k: 'hover', label: 'Движение при наведении', opts: ['—', 'none', 'lift', 'grow', 'glow', 'bright'] },
+      { k: 'hover', label: 'Движение при наведении', opts: ['—', 'none', 'lift', 'grow', 'glow', 'bright', 'pulse'] },
       { k: 'hoverBg', label: 'Фон при наведении', opts: ['—', 'none', 'primary', 'muted', 'foreground', 'dark'] },
       { k: 'hoverText', label: 'Цвет текста при наведении', opts: ['—', 'none', 'primary', 'foreground', 'muted'] },
     ],
@@ -768,8 +774,8 @@ export default function BuilderEditor() {
             <p className="mb-2 text-sm font-semibold">Шапка (header)</p>
             <div className="grid grid-cols-2 gap-2">
               {(['minimal', 'centered', 'split', 'cta'] as const).map((v) => (
-                <button key={v} onClick={() => setDoc((d) => ({ ...d, headerVariant: v }))} className={`rounded-lg border p-1.5 text-left transition-colors ${(doc.headerVariant || 'minimal') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
-                  <HeaderThumb variant={v} />
+                <button key={v} onClick={() => setDoc((d) => ({ ...d, headerVariant: v }))} className={`overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.headerVariant || 'minimal') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
+                  <ChromeThumb doc={doc} kind="header" variant={v} />
                   <span className="mt-1 block text-[11px] font-medium">{HEADER_LABELS[v]}</span>
                 </button>
               ))}
@@ -785,8 +791,8 @@ export default function BuilderEditor() {
             <p className="mb-2 mt-3 text-sm font-semibold">Подвал (footer)</p>
             <div className="grid grid-cols-2 gap-2">
               {(['simple', 'columns', 'centered', 'newsletter'] as const).map((v) => (
-                <button key={v} onClick={() => setDoc((d) => ({ ...d, footerVariant: v }))} className={`rounded-lg border p-1.5 text-left transition-colors ${(doc.footerVariant || 'simple') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
-                  <FooterThumb variant={v} />
+                <button key={v} onClick={() => setDoc((d) => ({ ...d, footerVariant: v }))} className={`overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.footerVariant || 'simple') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
+                  <ChromeThumb doc={doc} kind="footer" variant={v} />
                   <span className="mt-1 block text-[11px] font-medium">{FOOTER_LABELS[v]}</span>
                 </button>
               ))}
@@ -799,6 +805,15 @@ export default function BuilderEditor() {
                 </Button>
               ))}
             </div>
+            {(doc.asideVariant && doc.asideVariant !== 'none') && (
+              <div className="mt-1.5 flex gap-1.5">
+                {(['default', 'compact', 'icons'] as const).map((v) => (
+                  <Button key={v} size="sm" variant={(doc.asideStyle || 'default') === v ? 'default' : 'outline'} className="flex-1 text-xs" onClick={() => setDoc((d) => ({ ...d, asideStyle: v }))}>
+                    {v === 'default' ? 'Обычный' : v === 'compact' ? 'Компакт' : 'Иконки'}
+                  </Button>
+                ))}
+              </div>
+            )}
           </Card>
 
           {/* Navigation editor */}
@@ -858,25 +873,25 @@ export default function BuilderEditor() {
   );
 }
 
-// Schematic mini-previews for header/footer variant pickers.
+// Real, theme-scoped mini-preview of a header/footer variant.
 const HEADER_LABELS: Record<string, string> = { minimal: 'Минимал', centered: 'По центру', split: 'Сплит', cta: 'С кнопкой' };
 const FOOTER_LABELS: Record<string, string> = { simple: 'Простой', columns: 'Колонки', centered: 'По центру', newsletter: 'С подпиской' };
-const Bar = ({ w = 24, accent = false }: { w?: number; accent?: boolean }) => (
-  <span className="inline-block h-1.5 rounded-full" style={{ width: w, background: accent ? 'var(--primary)' : 'var(--muted-foreground)', opacity: accent ? 1 : 0.4 }} />
-);
-function HeaderThumb({ variant }: { variant: string }) {
-  const box = 'flex h-9 items-center rounded-md bg-muted/40 px-2';
-  if (variant === 'centered') return <div className={`${box} flex-col justify-center gap-1`}><Bar w={20} accent /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /><Bar w={12} /></div></div>;
-  if (variant === 'split') return <div className={`${box} justify-between`}><div className="flex gap-1"><Bar w={10} /><Bar w={10} /></div><Bar w={16} accent /><span className="h-3 w-8 rounded bg-primary" /></div>;
-  if (variant === 'cta') return <div className={`${box} justify-between`}><Bar w={16} accent /><div className="flex items-center gap-1"><Bar w={10} /><Bar w={10} /><span className="h-3 w-8 rounded bg-primary" /></div></div>;
-  return <div className={`${box} justify-between`}><Bar w={16} accent /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /><Bar w={12} /></div></div>;
-}
-function FooterThumb({ variant }: { variant: string }) {
-  const box = 'flex h-12 rounded-md bg-muted/40 p-2';
-  if (variant === 'columns') return <div className={`${box} justify-between`}>{[0, 1, 2].map((i) => <div key={i} className="flex flex-col gap-1"><Bar w={20} accent={i === 0} /><Bar w={16} /><Bar w={16} /></div>)}</div>;
-  if (variant === 'centered') return <div className={`${box} flex-col items-center justify-center gap-1`}><Bar w={18} accent /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /></div></div>;
-  if (variant === 'newsletter') return <div className={`${box} items-center justify-between`}><div className="flex flex-col gap-1"><Bar w={20} accent /><Bar w={28} /></div><div className="flex items-center gap-1"><span className="h-4 w-14 rounded border border-border" /><span className="h-4 w-8 rounded bg-primary" /></div></div>;
-  return <div className={`${box} items-center justify-between`}><Bar w={24} /><div className="flex gap-1"><Bar w={12} /><Bar w={12} /></div></div>;
+function ChromeThumb({ doc, kind, variant }: { doc: BuilderDoc; kind: 'header' | 'footer'; variant: string }) {
+  const theme = getTheme(doc.themeId ?? 'modern-clean');
+  const cls = `cthumb-${kind}-${variant}`;
+  const css = useMemo(() => themeCss(theme).split(':root').join(`.${cls}`).split('.dark').join(`.${cls}`), [theme, cls]);
+  const previewDoc = { ...doc, headerVariant: variant, headerBehavior: 'solid', footerVariant: variant } as BuilderDoc;
+  const h = kind === 'header' ? 46 : 84;
+  return (
+    <div className="relative w-full overflow-hidden rounded-md border border-border/60" style={{ height: h }}>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <div className={`${cls} pointer-events-none absolute left-0 top-0 origin-top-left`} style={{ width: 1000, transform: 'scale(0.33)', background: 'var(--background)', color: 'var(--foreground)' }}>
+        <RevealDisabled.Provider value={true}>
+          {kind === 'header' ? <ChromeHeader doc={previewDoc} /> : <ChromeFooter doc={previewDoc} />}
+        </RevealDisabled.Provider>
+      </div>
+    </div>
+  );
 }
 
 // Real, theme-scoped mini-preview of a landing (scaled-down actual render).

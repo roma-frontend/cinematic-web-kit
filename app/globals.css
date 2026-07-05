@@ -215,6 +215,8 @@ body {
 .b-loop-pulse { animation: b-pulse 2.2s ease-in-out infinite; }
 .b-loop-float { animation: b-float 3s ease-in-out infinite; }
 .b-loop-bounce { animation: b-bounce 1.6s ease-in-out infinite; }
+.hover-pulse { transition: transform 0.2s ease; }
+.hover-pulse:hover { animation: b-pulse 0.6s ease-in-out; }
 
 /* Builder edit-mode: highlight selectable elements on hover */
 .builder-edit [data-nid] { cursor: pointer; }

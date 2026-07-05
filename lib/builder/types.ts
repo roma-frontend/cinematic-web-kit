@@ -13,6 +13,7 @@ export type NodeType =
   | 'heading'
   | 'text'
   | 'list'
+  | 'counter'
   | 'button'
   | 'image'
   | 'video'
@@ -54,6 +55,7 @@ export interface BuilderDoc {
   headerBehavior?: string;
   footerVariant?: string;
   asideVariant?: string;
+  asideStyle?: string;
   nav: NavLink[];
   footer: { text: string; links: NavLink[] };
   pages: BuilderPage[];
@@ -73,6 +75,7 @@ export const NODE_LABELS: Record<NodeType, string> = {
   heading: 'Заголовок',
   text: 'Текст',
   list: 'Список',
+  counter: 'Счётчик (count-up)',
   button: 'Кнопка',
   image: 'Картинка',
   video: 'Видео',
@@ -113,6 +116,8 @@ export function defaultProps(type: NodeType): Record<string, string> {
       return { text: 'Немного описательного текста для вашего сайта.', align: 'left', muted: 'true' };
     case 'list':
       return { items: 'Первый пункт\nВторой пункт\nТретий пункт', listVariant: 'bullet' };
+    case 'counter':
+      return { value: '10000+', label: 'клиентов', align: 'center' };
     case 'button':
       return { text: 'Кнопка', href: '/site', variant: 'default', size: 'default', align: 'left', type: 'link' };
     case 'image':

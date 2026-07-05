@@ -311,11 +311,8 @@ const featureGrid = (title: string, cols: string, items: [string, string][], bg 
 
 const statsRow = (items: [string, string][], bg = 'muted'): BuilderNode =>
   mk('section', { padding: 'md', bg, width: 'wide' }, [
-    mk('grid', { gap: 'md', columns: String(items.length) }, items.map(([n, l]) =>
-      mk('stack', { gap: 'sm', align: 'center' }, [
-        mk('heading', { text: n, level: '2', align: 'center' }),
-        mk('text', { text: l, align: 'center', muted: 'true' }),
-      ]),
+    mk('grid', { gap: 'md', columns: String(items.length), stagger: 'true' }, items.map(([n, l]) =>
+      mk('counter', { value: n, label: l, align: 'center' }),
     )),
   ]);
 

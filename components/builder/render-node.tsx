@@ -5,6 +5,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { BuilderForm } from './builder-form';
 import { Accordion, Tabs } from './interactive';
 import { Reveal, Stagger, ParallaxBg } from './reveal';
+import { CountUp } from './count-up';
 import type { BuilderNode } from '@/lib/builder/types';
 import { isContainer } from '@/lib/builder/types';
 
@@ -51,6 +52,7 @@ const HOVER_FX: Record<string, string> = {
   grow: 'transition-transform duration-300 hover:scale-[1.03]',
   glow: 'transition-shadow duration-300 hover:shadow-xl hover:shadow-primary/25',
   bright: 'transition-opacity duration-300 hover:opacity-80',
+  pulse: 'hover-pulse',
 };
 const ANIM_FX: Record<string, string> = { none: '', fade: 'b-anim-fade', 'slide-up': 'b-anim-slide', zoom: 'b-anim-zoom' };
 const MT: Record<string, string> = { none: '', sm: 'mt-3', md: 'mt-6', lg: 'mt-12' };
@@ -308,6 +310,16 @@ function renderInner(node: BuilderNode) {
             <RenderNode key={c.id} node={c} />
           ))}
         </BuilderForm>
+      );
+
+    case 'counter':
+      return (
+        <div className={pick(TEXT_ALIGN, p.align, 'center')}>
+          <div className="font-display text-4xl font-black tracking-tight sm:text-5xl">
+            <CountUp value={p.value || '0'} />
+          </div>
+          {p.label ? <div className="mt-1 text-sm text-muted-foreground">{p.label}</div> : null}
+        </div>
       );
 
     case 'divider':
