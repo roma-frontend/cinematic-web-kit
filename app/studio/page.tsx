@@ -239,19 +239,37 @@ export default function StudioPage() {
   const [contentMsg, setContentMsg] = useState('');
   const setField = (id: string, field: keyof ContentRow, val: string) =>
     setContent((c) => c.map((e) => (e.id === id ? { ...e, [field]: val } : e)));
+  const removeContent = (id: string) => setContent((c) => c.filter((e) => e.id !== id));
+  const contentDrag = useRef<number | null>(null);
+  const onContentDragStart = (i: number) => () => {
+    contentDrag.current = i;
+  };
+  const onContentDrop = (i: number) => () => {
+    const from = contentDrag.current;
+    contentDrag.current = null;
+    if (from === null || from === i) return;
+    setContent((c) => {
+      const next = [...c];
+      const [moved] = next.splice(from, 1);
+      next.splice(i, 0, moved);
+      return next;
+    });
+  };
+  const originalIds = (mediaData as Array<{ id: string }>).map((m) => m.id);
 
   const saveContent = async () => {
     setContentBusy(true);
     setContentMsg('');
     try {
+      const remove = originalIds.filter((id) => !content.some((r) => r.id === id));
       const res = await fetch('/api/set-content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: content }),
+        body: JSON.stringify({ entries: content, order: content.map((r) => r.id), remove }),
       });
       const data = await res.json();
       if (res.ok) {
-        setContentMsg(`Сохранено секций: ${data.changed}`);
+        setContentMsg(`Сохранено секций: ${data.count}`);
         setPreviewKey((k) => k + 1);
       } else {
         setContentMsg(data.error || 'Ошибка');
@@ -529,11 +547,20 @@ export default function StudioPage() {
               <Wand2 className="h-4 w-4 text-primary" /> Контент секций
             </label>
             <Card className="space-y-3 p-3">
-              {content.map((row) => (
-                <div key={row.id} className="rounded-xl border border-border/60 bg-background/40 p-3">
+              {content.map((row, i) => (
+                <div
+                  key={row.id}
+                  draggable
+                  onDragStart={onContentDragStart(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={onContentDrop(i)}
+                  className="rounded-xl border border-border/60 bg-background/40 p-3"
+                >
                   <div className="mb-2 flex items-center gap-2">
+                    <span className="cursor-grab text-muted-foreground/60 active:cursor-grabbing" aria-hidden>⋮⋮</span>
                     <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{row.section}</span>
-                    <span className="truncate text-xs text-muted-foreground">{row.id}</span>
+                    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{row.id}</span>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500" onClick={() => removeContent(row.id)} aria-label="Удалить секцию"><X className="h-4 w-4" /></Button>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Input value={row.title} onChange={(e) => setField(row.id, 'title', e.target.value)} placeholder="Заголовок" />

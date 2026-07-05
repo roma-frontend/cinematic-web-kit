@@ -19,9 +19,13 @@ interface Edit {
 
 export async function POST(request: Request) {
   let edits: Edit[] = [];
+  let order: string[] | undefined;
+  let remove: string[] = [];
   try {
     const body = await request.json();
     edits = Array.isArray(body?.entries) ? body.entries : [];
+    if (Array.isArray(body?.order)) order = body.order.map(String);
+    if (Array.isArray(body?.remove)) remove = body.remove.map(String);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -35,8 +39,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'media.json not readable' }, { status: 500 });
   }
 
+  // 1) Apply text edits by id.
   const byId = new Map(edits.map((e) => [e.id, e]));
-  let changed = 0;
   for (const item of list) {
     const edit = byId.get(String(item.id));
     if (!edit) continue;
@@ -47,7 +51,18 @@ export async function POST(request: Request) {
         else delete item[f];
       }
     }
-    changed += 1;
+  }
+
+  // 2) Remove entries.
+  if (remove.length) {
+    const gone = new Set(remove);
+    list = list.filter((m) => !gone.has(String(m.id)));
+  }
+
+  // 3) Reorder by the given id order (unknown ids keep their relative order).
+  if (order && order.length) {
+    const rank = new Map(order.map((id, i) => [id, i]));
+    list.sort((a, b) => (rank.get(String(a.id)) ?? 999) - (rank.get(String(b.id)) ?? 999));
   }
 
   try {
@@ -55,5 +70,5 @@ export async function POST(request: Request) {
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'write failed' }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, changed });
+  return NextResponse.json({ ok: true, count: list.length });
 }
