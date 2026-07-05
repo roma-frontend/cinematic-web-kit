@@ -412,23 +412,29 @@ function BuilderEditor() {
     [selectedId, page],
   );
 
-  const setBlocks = (next: BuilderNode[]) =>
-    setDoc((d) => ({ ...d, pages: d.pages.map((p) => (p.id === page?.id ? { ...p, blocks: next } : p)) }));
+  // Apply a blocks transform to the CURRENT page using the latest state — never
+  // a render-time snapshot — so consecutive edits accumulate instead of the
+  // last one overwriting the rest.
+  const setBlocks = (fn: (blocks: BuilderNode[]) => BuilderNode[]) =>
+    setDoc((d) => {
+      const pid = page?.id ?? d.pages[0]?.id;
+      return { ...d, pages: d.pages.map((p) => (p.id === pid ? { ...p, blocks: fn(p.blocks) } : p)) };
+    });
 
   const addNode = (type: NodeType) => {
     if (!page) return;
     const node = makeNode(type);
-    if (selected && isContainer(selected.type)) setBlocks(insertChild(page.blocks, selected.id, node));
-    else setBlocks([...page.blocks, node]);
+    if (selected && isContainer(selected.type)) setBlocks((b) => insertChild(b, selected.id, node));
+    else setBlocks((b) => [...b, node]);
     setSelectedId(node.id);
   };
 
-  const patch = (id: string, p: Record<string, string>) => page && setBlocks(updateProps(page.blocks, id, p));
+  const patch = (id: string, p: Record<string, string>) => setBlocks((b) => updateProps(b, id, p));
 
   const duplicate = (id: string) => {
     if (!page) return;
     const { nodes, newId: nid } = duplicateNode(page.blocks, id);
-    setBlocks(nodes);
+    setBlocks(() => nodes);
     if (nid) setSelectedId(nid);
   };
 
@@ -442,7 +448,7 @@ function BuilderEditor() {
     dragId.current = null;
     if (!page || !pType) return;
     const node = makeNode(pType);
-    setBlocks([...page.blocks, node]);
+    setBlocks((b) => [...b, node]);
     setSelectedId(node.id);
   };
 
@@ -558,7 +564,7 @@ function BuilderEditor() {
     const s = SECTION_PRESETS.find((x) => x.id === id);
     if (!s || !page) return;
     const node = s.build();
-    setBlocks([...page.blocks, node]);
+    setBlocks((b) => [...b, node]);
     setSelectedId(node.id);
     setMsg(`Секция «${s.label}» добавлена в конец страницы.`);
   };
@@ -865,11 +871,11 @@ function BuilderEditor() {
               <Tree nodes={page.blocks} depth={0} selectedId={selectedId} onSelect={setSelectedId}
                 collapsed={collapsed} onToggle={toggleCollapse}
                 dropHint={dropHint} setDropHint={setDropHint}
-                onMove={(id, dir) => setBlocks(moveNode(page.blocks, id, dir))}
+                onMove={(id, dir) => setBlocks((b) => moveNode(b, id, dir))}
                 onDuplicate={duplicate}
                 onDragStartId={(id) => { dragId.current = id; }}
-                onDropRow={(id, pos) => { if (dragId.current) setBlocks(moveTo(page.blocks, dragId.current, id, pos)); dragId.current = null; setDropHint(null); }}
-                onDelete={(id) => { setBlocks(removeNode(page.blocks, id)); if (selectedId === id) setSelectedId(null); }} />
+                onDropRow={(id, pos) => { const dg = dragId.current; if (dg) setBlocks((b) => moveTo(b, dg, id, pos)); dragId.current = null; setDropHint(null); }}
+                onDelete={(id) => { setBlocks((b) => removeNode(b, id)); if (selectedId === id) setSelectedId(null); }} />
             ) : (
               <p className="rounded-lg border border-dashed p-3 text-center text-xs text-muted-foreground">Пусто — добавьте элемент из палитры.</p>
             )}
