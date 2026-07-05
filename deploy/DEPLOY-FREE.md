@@ -134,13 +134,15 @@ sudo systemctl enable --now cwk
    (напр. `media.ваш-домен.com`) — это и будет `R2_PUBLIC_BASE_URL`.
 3. R2 → Manage API Tokens → создать токен (Object Read & Write) — получите
    Access Key ID и Secret.
-4. Задать переменные окружения (Fly: `fly secrets set ...`; VM: в `cwk.service`):
+4. Задать переменные окружения (Fly: `fly secrets set ...`; VM: в `cwk.service`;
+   локально: `.env.local`). **НИКОГДА не храните секреты в этом файле/репозитории** —
+   только в env/секретах хостинга:
 ```
-R2_ACCOUNT_ID=<cloudflare account id>
-R2_ACCESS_KEY_ID=<access key>
-R2_SECRET_ACCESS_KEY=<secret>
+R2_ACCOUNT_ID=<account id из S3 endpoint>
+R2_ACCESS_KEY_ID=<Access Key ID из токена>
+R2_SECRET_ACCESS_KEY=<Secret Access Key из токена>
 R2_BUCKET=cwk-media
-R2_PUBLIC_BASE_URL=https://media.ваш-домен.com
+R2_PUBLIC_BASE_URL=https://pub-xxxxxxxx.r2.dev
 ```
 После этого новые загрузки уходят в R2. Старые локальные ссылки продолжают
 работать (обратная совместимость).
