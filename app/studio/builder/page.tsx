@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ArrowUp, ArrowDown, X, Plus, Save, Loader2, Monitor, Tablet, Smartphone,
   ExternalLink, Trash2, FileText, LayoutTemplate, ChevronRight, Copy, Upload, Wand2, Palette,
-  Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2, Sun, Moon, Rocket,
+  Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2, Sun, Moon, Rocket, Home,
 } from 'lucide-react';
 import seed from '@/data/builder.json';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
@@ -90,7 +90,7 @@ const FIELDS: Record<NodeType, Field[]> = {
   image: [
     { k: 'src', label: 'URL картинки' },
     { k: 'alt', label: 'Alt-текст' },
-    { k: 'imgMode', label: 'Режим показа', opts: ['inline', 'cover', 'glow', 'overlay', 'duotone', 'framed'] },
+    { k: 'imgMode', label: 'Режим показа', opts: ['inline', 'cover', 'background', 'glow', 'overlay', 'duotone', 'framed'] },
     { k: 'rounded', label: 'Скругление', opts: ['none', 'lg', 'full'] },
     { k: 'ratio', label: 'Пропорции (напр. 16/9)' },
   ],
@@ -504,8 +504,25 @@ function BuilderEditor() {
   const renamePage = (field: 'title' | 'path' | 'description', val: string) =>
     setDoc((d) => ({ ...d, pages: d.pages.map((p) => (p.id === page?.id ? { ...p, [field]: field === 'path' ? val.replace(/^\/+|\/+$/g, '') : val } : p)) }));
 
+  // Swap the chosen page into the site root: it takes the empty path and the
+  // former homepage inherits its old one, so neither page loses its URL.
+  const makeHomepage = (id: string) => {
+    const target = doc.pages.find((p) => p.id === id);
+    if (!target || target.path === '') return;
+    const oldHome = doc.pages.find((p) => p.path === '');
+    setDoc((d) => ({
+      ...d,
+      pages: d.pages.map((p) =>
+        p.id === id ? { ...p, path: '' } : p.path === '' ? { ...p, path: target.path } : p,
+      ),
+    }));
+    setMsg(oldHome
+      ? `«${target.title}» теперь главная страница. Прежняя главная («${oldHome.title}») доступна по /${target.path}.`
+      : `«${target.title}» теперь главная страница.`);
+  };
+
   // Adds a page, ensuring its path is unique; selects it.
-  const addPageDoc = (np: BuilderPage): void => {
+  const addPageDoc = (np: BuilderPage): BuilderPage => {
     let base = np.path ?? '';
     if (base === '' && doc.pages.some((p) => p.path === '')) base = 'home';
     let path = base;
@@ -515,14 +532,17 @@ function BuilderEditor() {
     setDoc((d) => ({ ...d, pages: [...d.pages, created] }));
     setPageId(created.id);
     setSelectedId(null);
+    return created;
   };
   const addTemplate = (id: string) => {
     const t = [...LANDINGS, ...TEMPLATES].find((x) => x.id === id);
     if (!t) return;
-    addPageDoc(t.build());
+    const created = addPageDoc(t.build());
     if (t.themeId) setDoc((d) => ({ ...d, themeId: t.themeId! }));
     if (t.asideVariant) setDoc((d) => ({ ...d, asideVariant: t.asideVariant! }));
-    setMsg(`Добавлено: «${t.label}»${t.themeId ? ' (тема применена)' : ''}. Не забудьте «Сохранить».`);
+    setMsg(created.path === ''
+      ? `«${t.label}» добавлен как главная страница${t.themeId ? ' (тема применена)' : ''}.`
+      : `«${t.label}» — новая страница /${created.path}${t.themeId ? ' (тема применена)' : ''}. Посетители по-прежнему увидят текущую главную — чтобы показать эту страницу первой, нажмите домик в списке страниц.`);
   };
   const addSectionPreset = (id: string) => {
     const s = SECTION_PRESETS.find((x) => x.id === id);
@@ -736,10 +756,15 @@ function BuilderEditor() {
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><FileText className="h-4 w-4 text-primary" /> Страницы</p>
             <div className="space-y-1">
               {doc.pages.map((p) => (
-                <div key={p.id} className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm ${p.id === page?.id ? 'bg-primary/10 text-foreground' : 'hover:bg-muted'}`}>
+                <div key={p.id} className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm ${p.id === page?.id ? 'bg-primary/10 text-foreground' : 'hover:bg-muted'}`}>
                   <button className="min-w-0 flex-1 truncate text-left" onClick={() => { setPageId(p.id); setSelectedId(null); }}>
                     {p.title} <span className="text-xs text-muted-foreground">/{p.path}</span>
                   </button>
+                  {p.path === '' ? (
+                    <span title="Главная страница — открывается по адресу сайта" className="shrink-0 text-primary"><Home className="h-3.5 w-3.5" /></span>
+                  ) : (
+                    <button onClick={() => makeHomepage(p.id)} className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-primary focus-visible:opacity-100 group-hover:opacity-100" title="Сделать главной страницей" aria-label="Сделать главной страницей"><Home className="h-3.5 w-3.5" /></button>
+                  )}
                   {doc.pages.length > 1 && (
                     <button onClick={() => deletePage(p.id)} className="text-muted-foreground hover:text-red-500" aria-label="Удалить страницу"><Trash2 className="h-3.5 w-3.5" /></button>
                   )}

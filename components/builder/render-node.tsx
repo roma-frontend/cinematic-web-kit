@@ -311,6 +311,18 @@ function renderInner(node: BuilderNode) {
       const ratioStyle = p.ratio ? { aspectRatio: p.ratio.replace('/', ' / ') } : undefined;
       const mode = p.imgMode || 'inline';
 
+      // Background: the image fills the block as a backdrop with a dark scrim;
+      // sibling text/buttons render on top (classic hero-over-image look).
+      if (mode === 'background') {
+        return (
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.src} alt={p.alt || ''} className="h-full w-full object-cover" />
+            <div className="absolute inset-0" style={{ background: p.overlay || 'rgba(0,0,0,0.5)' }} />
+          </div>
+        );
+      }
+
       // Glow: a blurred copy sits behind for a soft, modern halo.
       if (mode === 'glow') {
         return (
