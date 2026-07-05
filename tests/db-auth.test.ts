@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createUser,
   findUserByEmail,
@@ -11,9 +11,12 @@ import {
   destroySession,
   MAX_LOGIN_FAILURES,
 } from '@/lib/auth';
+import { resetDb } from './helpers';
 
 // These run against an isolated throwaway SQLite file (see vitest.config env
 // DATABASE_FILE), so they never touch the real data/app.db.
+
+beforeEach(() => resetDb());
 
 describe('user bootstrap + credentials', () => {
   it('makes the first account a superadmin, later ones customers', () => {
