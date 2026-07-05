@@ -1,4 +1,23 @@
 /** @type {import('next').NextConfig} */
+
+// Restrict next/image to trusted remote hosts (R2 public bucket + optional
+// custom media domain from env). No wildcard '**' — avoids the app becoming an
+// open image-optimization proxy for arbitrary hosts.
+const remotePatterns = [
+  { protocol: 'https', hostname: '*.r2.dev' },
+  { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },
+];
+try {
+  if (process.env.R2_PUBLIC_BASE_URL) {
+    const h = new URL(process.env.R2_PUBLIC_BASE_URL).hostname;
+    if (h && !remotePatterns.some((p) => p.hostname === h)) {
+      remotePatterns.push({ protocol: 'https', hostname: h });
+    }
+  }
+} catch {
+  /* ignore malformed env */
+}
+
 const nextConfig = {
   // Core hardening / hygiene.
   reactStrictMode: true,
@@ -8,9 +27,7 @@ const nextConfig = {
   images: {
     // Modern formats first; fall back automatically.
     formats: ['image/avif', 'image/webp'],
-    // Allow remote poster/video hosts (e.g. Cloudflare R2 public bucket) if you
-    // reference media by remote URL. Local (public/) media needs nothing.
-    remotePatterns: [{ protocol: 'https', hostname: '**' }],
+    remotePatterns,
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
 

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb, sites, type SiteUser } from '@/lib/db';
-import { findUserByEmail, verifyPassword } from '@/lib/auth';
+import { DUMMY_HASH, findUserByEmail, rateLimit, verifyPassword } from '@/lib/auth';
 import {
   createSiteUser,
   verifySiteCredentials,
+  getSiteUserByEmail,
+  siteLockRemainingMs,
+  recordSiteLoginFailure,
+  clearSiteLoginFailures,
   createSiteSession,
   destroySiteSession,
   getSiteUser,
@@ -21,6 +25,7 @@ import {
   markNotificationsRead,
 } from '@/lib/site-auth';
 import { listPublishedMaterials } from '@/lib/site-membership';
+import { recordAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -104,11 +109,16 @@ export async function POST(request: Request) {
   if (!site) return NextResponse.json({ error: 'Сайт не найден' }, { status: 404 });
 
   // ── Unauthenticated actions ───────────────────────────────────────────
+  const ip = siteRequestMeta(request).ip || 'local';
+
   if (action === 'register') {
+    if (!rateLimit(`site-register:${ip}`, 10)) {
+      return NextResponse.json({ error: 'Слишком много попыток, подождите немного' }, { status: 429 });
+    }
     const email = str('email').trim();
     const password = str('password');
     if (!emailOk(email)) return NextResponse.json({ error: 'Введите корректный email' }, { status: 400 });
-    if (password.length < 6) return NextResponse.json({ error: 'Пароль должен быть не короче 6 символов' }, { status: 400 });
+    if (password.length < 8) return NextResponse.json({ error: 'Пароль должен быть не короче 8 символов' }, { status: 400 });
     try {
       // Org-isolation: if the site requires approval, new members start 'pending'.
       const status = site.memberApproval ? 'pending' : 'approved';
@@ -124,18 +134,48 @@ export async function POST(request: Request) {
   }
 
   if (action === 'login') {
-    const user = verifySiteCredentials(siteId, str('email').trim(), str('password'));
+    if (!rateLimit(`site-login:${ip}`, 15)) {
+      return NextResponse.json({ error: 'Слишком много попыток, подождите немного' }, { status: 429 });
+    }
+    const email = str('email').trim();
+    const existing = getSiteUserByEmail(siteId, email);
+    // Account lockout after repeated failures — checked before the password.
+    if (existing) {
+      const remaining = siteLockRemainingMs(existing);
+      if (remaining > 0) {
+        const minutes = Math.ceil(remaining / 60_000);
+        return NextResponse.json(
+          { error: `Аккаунт временно заблокирован из-за неудачных попыток входа. Попробуйте через ${minutes} мин.` },
+          { status: 429 },
+        );
+      }
+    } else {
+      // Burn the same scrypt cost for unknown emails (no enumeration oracle).
+      verifyPassword('invalid', DUMMY_HASH);
+    }
+    const user = verifySiteCredentials(siteId, email, str('password'));
     if (!user) {
+      if (existing) {
+        const lockedNow = recordSiteLoginFailure(existing);
+        recordAudit(
+          { id: existing.id, email: existing.email },
+          lockedNow ? 'site.lockout' : 'site.login_failed',
+          siteId,
+          `ip=${ip}`,
+        );
+      }
       // They may have been promoted to a platform admin (their tenant account
       // was moved to `users`). If the same credentials match a platform user,
       // bounce them to the platform login / dashboard instead of erroring.
-      const p = findUserByEmail(str('email').trim());
+      const p = findUserByEmail(email);
       if (p && verifyPassword(str('password'), p.passwordHash)) {
         return NextResponse.json({ ok: true, redirect: '/login' });
       }
       return NextResponse.json({ error: 'Неверный email или пароль' }, { status: 401 });
     }
+    clearSiteLoginFailures(user);
     await createSiteSession(user.id, siteId, siteRequestMeta(request));
+    recordAudit({ id: user.id, email: user.email }, 'site.login', siteId, `ip=${ip}`);
     return NextResponse.json({ ok: true, user: pub(user) });
   }
 
@@ -158,7 +198,7 @@ export async function POST(request: Request) {
   if (action === 'change-password') {
     const current = str('currentPassword');
     const next = str('newPassword');
-    if (next.length < 6) return NextResponse.json({ error: 'Новый пароль должен быть не короче 6 символов' }, { status: 400 });
+    if (next.length < 8) return NextResponse.json({ error: 'Новый пароль должен быть не короче 8 символов' }, { status: 400 });
     try {
       changeSitePassword(siteId, me.id, current, next);
       return NextResponse.json({ ok: true });
