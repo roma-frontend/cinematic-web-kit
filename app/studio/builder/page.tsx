@@ -775,10 +775,10 @@ export default function BuilderEditor() {
             <p className="mb-2 text-sm font-semibold">Шапка (header)</p>
             <div className="grid grid-cols-2 gap-2">
               {(['minimal', 'centered', 'split', 'cta'] as const).map((v) => (
-                <button key={v} onClick={() => setDoc((d) => ({ ...d, headerVariant: v }))} className={`overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.headerVariant || 'minimal') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
+                <div key={v} role="button" tabIndex={0} onClick={() => setDoc((d) => ({ ...d, headerVariant: v }))} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDoc((d) => ({ ...d, headerVariant: v })); }} className={`cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.headerVariant || 'minimal') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
                   <ChromeThumb doc={doc} kind="header" variant={v} />
                   <span className="mt-1 block text-[11px] font-medium">{HEADER_LABELS[v]}</span>
-                </button>
+                </div>
               ))}
             </div>
             <div className="mt-2 flex items-center gap-1.5">
@@ -792,10 +792,10 @@ export default function BuilderEditor() {
             <p className="mb-2 mt-3 text-sm font-semibold">Подвал (footer)</p>
             <div className="grid grid-cols-2 gap-2">
               {(['simple', 'columns', 'centered', 'newsletter'] as const).map((v) => (
-                <button key={v} onClick={() => setDoc((d) => ({ ...d, footerVariant: v }))} className={`overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.footerVariant || 'simple') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
+                <div key={v} role="button" tabIndex={0} onClick={() => setDoc((d) => ({ ...d, footerVariant: v }))} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDoc((d) => ({ ...d, footerVariant: v })); }} className={`cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.footerVariant || 'simple') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
                   <ChromeThumb doc={doc} kind="footer" variant={v} />
                   <span className="mt-1 block text-[11px] font-medium">{FOOTER_LABELS[v]}</span>
-                </button>
+                </div>
               ))}
             </div>
             <p className="mb-1 mt-3 text-sm font-semibold">Боковая панель (aside)</p>
@@ -922,6 +922,8 @@ function LandingThumb({ def }: { def: { id: string; themeId?: string; build: () 
   const css = useMemo(() => themeCss(theme).split(':root').join(`.${cls}`).split('.dark').join(`.${cls}`), [theme, cls]);
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -930,10 +932,11 @@ function LandingThumb({ def }: { def: { id: string; themeId?: string; build: () 
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [mounted]);
   return (
     <div ref={ref} className="relative h-40 w-full overflow-hidden border-b border-border bg-background">
       <style dangerouslySetInnerHTML={{ __html: css }} />
+      {mounted && (
       <div
         className={`${cls} pointer-events-none absolute left-0 top-0 origin-top-left`}
         style={{ width: 1280, transform: `scale(${scale})`, background: 'var(--background)', color: 'var(--foreground)' }}
@@ -944,6 +947,7 @@ function LandingThumb({ def }: { def: { id: string; themeId?: string; build: () 
           ))}
         </RevealDisabled.Provider>
       </div>
+      )}
     </div>
   );
 }
