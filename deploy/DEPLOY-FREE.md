@@ -123,9 +123,27 @@ sudo systemctl enable --now cwk
   запускается сборщик мусора (`lib/uploads-gc.ts`) и удаляет из `public/uploads`
   файлы, на которые больше нет ссылок (с окном 10 минут, чтобы не тронуть
   только что загруженный файл).
-- Хотите не зависеть от диска и раздавать через CDN — можно вынести загрузки в
-  **Cloudflare R2** (10 ГБ бесплатно). Это отдельная доработка `lib/media-optimize.ts`
-  (заливать в R2 вместо диска) — скажите, если нужно.
+- Хотите не зависеть от диска и раздавать через CDN — включите **Cloudflare R2**
+  (10 ГБ бесплатно). Загрузка уже поддержана: если заданы переменные `R2_*`,
+  файлы кладутся в R2 и раздаются с `R2_PUBLIC_BASE_URL`; иначе — локально в
+  `public/uploads` (полная обратная совместимость). Сборщик мусора чистит и R2.
+
+### Включить R2
+1. Cloudflare → R2 → создать bucket (напр. `cwk-media`).
+2. Включить публичный доступ: либо r2.dev-домен, либо привязать свой поддомен
+   (напр. `media.ваш-домен.com`) — это и будет `R2_PUBLIC_BASE_URL`.
+3. R2 → Manage API Tokens → создать токен (Object Read & Write) — получите
+   Access Key ID и Secret.
+4. Задать переменные окружения (Fly: `fly secrets set ...`; VM: в `cwk.service`):
+```
+R2_ACCOUNT_ID=<cloudflare account id>
+R2_ACCESS_KEY_ID=<access key>
+R2_SECRET_ACCESS_KEY=<secret>
+R2_BUCKET=cwk-media
+R2_PUBLIC_BASE_URL=https://media.ваш-домен.com
+```
+После этого новые загрузки уходят в R2. Старые локальные ссылки продолжают
+работать (обратная совместимость).
 
 ## Переменные окружения (сводка)
 | Переменная | Назначение |
@@ -135,3 +153,4 @@ sudo systemctl enable --now cwk
 | `NEXT_PUBLIC_APP_HOST` | базовый хост (для поддоменов/ссылок тенантов) |
 | `MUAPI_KEY` | (опц.) ключ генерации видео |
 | `SERVER_IP` | (опц.) IP для DNS-инструкций доменов в дашборде |
+| `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` / `R2_PUBLIC_BASE_URL` | (опц.) Cloudflare R2 для загрузок; без них — локальный `public/uploads` |

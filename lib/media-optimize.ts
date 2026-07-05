@@ -13,10 +13,26 @@ import { mkdir, writeFile, unlink, readFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
+import { r2Configured, r2Put, R2_PUBLIC_BASE, contentTypeFor } from '@/lib/storage';
 
 const execFileAsync = promisify(execFile);
 
 export const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+
+/**
+ * Turn a produced local file into a public URL. With Cloudflare R2 configured
+ * the file is uploaded to R2 (key `uploads/<name>`) and removed locally, and the
+ * public R2 URL is returned; otherwise the local `/uploads/<name>` path is used.
+ */
+async function finalize(localAbsPath: string, name: string): Promise<string> {
+  if (r2Configured()) {
+    const buf = await readFile(localAbsPath);
+    await r2Put(`uploads/${name}`, buf, contentTypeFor(name));
+    await unlink(localAbsPath).catch(() => {});
+    return `${R2_PUBLIC_BASE}/uploads/${name}`;
+  }
+  return `/uploads/${name}`;
+}
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
@@ -55,7 +71,7 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
   if (file.type === 'image/svg+xml') {
     const out = path.join(UPLOAD_DIR, `${base}.svg`);
     await writeFile(out, buf);
-    return { url: `/uploads/${base}.svg`, kind: 'raw', originalBytes, optimizedBytes: originalBytes };
+    return { url: await finalize(out, `${base}.svg`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
   }
 
   const isVideo = VIDEO_TYPES.includes(file.type);
@@ -75,7 +91,7 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
         out,
       ], { maxBuffer: 1024 * 1024 * 64 });
       const optimizedBytes = (await stat(out)).size;
-      return { url: `/uploads/${base}.webp`, kind: 'image', originalBytes, optimizedBytes };
+      return { url: await finalize(out, `${base}.webp`), kind: 'image', originalBytes, optimizedBytes };
     }
 
     if (isVideo) {
@@ -97,19 +113,19 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
         ], { maxBuffer: 1024 * 1024 * 64 });
       } catch { /* poster is best-effort */ }
       const optimizedBytes = (await stat(out)).size;
-      const posterUrl = existsSync(poster) ? `/uploads/${base}-poster.jpg` : undefined;
-      return { url: `/uploads/${base}.webm`, poster: posterUrl, kind: 'video', originalBytes, optimizedBytes };
+      const posterUrl = existsSync(poster) ? await finalize(poster, `${base}-poster.jpg`) : undefined;
+      return { url: await finalize(out, `${base}.webm`), poster: posterUrl, kind: 'video', originalBytes, optimizedBytes };
     }
 
     // Unknown but accepted → store raw.
     const out = path.join(UPLOAD_DIR, `${base}.${srcExt}`);
     await writeFile(out, buf);
-    return { url: `/uploads/${base}.${srcExt}`, kind: 'raw', originalBytes, optimizedBytes: originalBytes };
+    return { url: await finalize(out, `${base}.${srcExt}`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
   } catch {
     // ffmpeg unavailable/failed → keep the original so uploads never hard-fail.
     const out = path.join(UPLOAD_DIR, `${base}.${srcExt}`);
     await writeFile(out, await readFile(tmp));
-    return { url: `/uploads/${base}.${srcExt}`, kind: 'raw', originalBytes, optimizedBytes: originalBytes };
+    return { url: await finalize(out, `${base}.${srcExt}`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
   } finally {
     await unlink(tmp).catch(() => {});
   }

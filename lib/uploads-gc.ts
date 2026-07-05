@@ -3,6 +3,7 @@ import path from 'node:path';
 import { readdir, stat, unlink, readFile } from 'node:fs/promises';
 import { getDb, sites, siteMaterials } from '@/lib/db';
 import { UPLOAD_DIR } from '@/lib/media-optimize';
+import { r2Configured, r2List, r2Delete } from '@/lib/storage';
 
 // Garbage-collect orphaned uploads: when an image/video is replaced in the
 // builder, the old file is no longer referenced by any doc — so we delete it
@@ -47,13 +48,28 @@ async function collectReferenced(): Promise<Set<string>> {
 export async function gcUploads(): Promise<{ deleted: number }> {
   try {
     const referenced = await collectReferenced();
+    const now = Date.now();
+
+    // R2-backed storage: sweep the bucket's uploads/ prefix.
+    if (r2Configured()) {
+      let deleted = 0;
+      for (const obj of await r2List('uploads/')) {
+        const name = path.basename(obj.key);
+        if (referenced.has(name)) continue;
+        if (now - obj.lastModified < GRACE_MS) continue;
+        await r2Delete(obj.key);
+        deleted++;
+      }
+      return { deleted };
+    }
+
+    // Local disk fallback.
     let files: string[] = [];
     try {
       files = await readdir(UPLOAD_DIR);
     } catch {
       return { deleted: 0 }; // no upload dir yet
     }
-    const now = Date.now();
     let deleted = 0;
     for (const name of files) {
       if (referenced.has(name)) continue;
