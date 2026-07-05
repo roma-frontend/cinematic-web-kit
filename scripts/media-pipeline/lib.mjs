@@ -24,7 +24,7 @@ export const OUT_DIR = path.join(ROOT, 'public', 'media', 'generated');
 export const DATA_FILE = path.join(ROOT, 'data', 'media.json');
 
 const MUAPI_BASE = process.env.MUAPI_BASE || 'https://api.muapi.ai';
-const DEFAULT_VIDEO_ENDPOINT = process.env.MUAPI_VIDEO_ENDPOINT || 'kling/v1/standard/text-to-video';
+const DEFAULT_VIDEO_ENDPOINT = process.env.MUAPI_VIDEO_ENDPOINT || 'pixverse-v5.5-t2v';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

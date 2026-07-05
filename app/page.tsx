@@ -4,12 +4,10 @@ import { VideoHero } from '@/components/media/video-hero';
 import { VideoSection } from '@/components/media/video-section';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { StickyShowcase } from '@/components/media/sticky-showcase';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { Reveal } from '@/components/reveal';
 import { AccentFromPoster } from '@/components/accent-from-poster';
-import { Film, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { SiteHeader } from '@/components/site-header';
+import { Film } from 'lucide-react';
 
 // data/media.json is produced by the pipeline (scripts/media-pipeline). Static
 // import → a rebuild picks up new clips; `next dev` hot-reloads them.
@@ -22,20 +20,7 @@ export default function Home() {
   return (
     <main className="min-h-dvh">
       <AccentFromPoster src={hero?.poster} />
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-[var(--container-max)] items-center justify-between px-6 sm:px-10">
-          <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-            <Film className="h-5 w-5 text-primary" />
-            <span>Кинематографический кит</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/studio">
-              <Button size="sm" className="gap-1.5 shadow-lg"><Sparkles className="h-4 w-4" /> Студия</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {hero ? (
         <VideoHero entry={hero} />
