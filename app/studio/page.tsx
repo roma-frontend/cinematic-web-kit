@@ -140,6 +140,23 @@ export default function StudioPage() {
     } catch { setLandingMsg('Ошибка сохранения'); }
     finally { setLandingBusy(false); }
   };
+  const [openingBuilder, setOpeningBuilder] = useState(false);
+  const openLandingInBuilder = async () => {
+    setOpeningBuilder(true);
+    try {
+      const res = await fetch('/api/landing-site', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.id) {
+        window.location.href = `/studio/builder?site=${encodeURIComponent(data.id)}`;
+      } else {
+        setLandingMsg(data.error || 'Не удалось открыть конструктор');
+        setOpeningBuilder(false);
+      }
+    } catch {
+      setLandingMsg('Не удалось открыть конструктор');
+      setOpeningBuilder(false);
+    }
+  };
 
   // Step 2 — the generated prompt + section metadata
   const [prompt, setPrompt] = useState('');
@@ -523,6 +540,20 @@ export default function StudioPage() {
         {/* Landing editor */}
         {tab === 'landing' && (
         <motion.section {...fade} className="space-y-4">
+          {/* Full visual builder — the real deal */}
+          <Card className="relative overflow-hidden border-primary/40 p-4">
+            <div aria-hidden className="pointer-events-none absolute inset-0 opacity-20" style={{ background: 'radial-gradient(70% 120% at 100% 0%, var(--primary), transparent 60%)' }} />
+            <div className="relative flex flex-wrap items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-sm font-semibold"><LayoutTemplate className="h-4 w-4 text-primary" /> Полноценный конструктор лендинга</p>
+                <p className="mt-1 text-xs text-muted-foreground">Редактируйте всё: секции, карточки, бейджи, header, footer, меню, варианты блоков, эффекты при наведении, анимации, видео. Правки сразу публикуются на «/».</p>
+              </div>
+              <Button onClick={openLandingInBuilder} disabled={openingBuilder} className="gap-1.5">
+                {openingBuilder ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Открыть в конструкторе
+              </Button>
+            </div>
+          </Card>
+          <p className="text-[11px] text-muted-foreground">Ниже — быстрое редактирование текстов маркетинговой версии (используется, пока лендинг не открыт в конструкторе).</p>
           {/* Hero */}
           <Card className="space-y-2.5 p-4">
             <p className="text-sm font-semibold">Герой</p>

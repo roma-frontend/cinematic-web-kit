@@ -9,6 +9,9 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { getLanding } from '@/lib/landing';
+import { getLandingSite } from '@/lib/landing-site';
+import { parseDoc, rebaseDoc } from '@/lib/sites';
+import { SiteRenderer, findPageByPath } from '@/components/builder/site-renderer';
 import { Button } from '@/components/ui/button';
 import {
   Sparkles, Wand2, Palette, LayoutTemplate, Globe, Video, ArrowRight, Check,
@@ -19,7 +22,21 @@ const ok = (v: string) => `oklch(${v})`;
 const STEP_ICONS = [Wand2, LayoutTemplate, Globe];
 const FEATURE_ICONS = [Video, Palette, LayoutTemplate, Globe];
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
+  // If the landing has been opened in the visual builder, it becomes a normal
+  // builder site (reserved slug) and renders through the same renderer as
+  // /s/<slug> — fully editable (chrome, variants, effects). Until then, the
+  // marketing page below is shown.
+  const landingSite = getLandingSite();
+  const builderDoc = landingSite ? parseDoc(landingSite.publishedDoc) : null;
+  if (builderDoc) {
+    const doc = rebaseDoc(builderDoc, '');
+    const page = findPageByPath(doc, []);
+    if (page) return <SiteRenderer doc={doc} page={page} />;
+  }
+
   const media = mediaData as MediaEntry[];
   const theme = activeSiteTheme();
   const examples = media.slice(0, 6);
