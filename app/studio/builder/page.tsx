@@ -699,7 +699,7 @@ function BuilderEditor() {
       const data = await res.json();
       if (res.ok) {
         setSiteMeta((m) => (m ? { ...m, published: true } : m));
-        setMsg(`Опубликовано — сайт доступен по /s/${siteMeta?.slug ?? ''}`);
+        setMsg(siteMeta?.slug === '__landing__' ? 'Опубликовано — лендинг обновлён на «/»' : `Опубликовано — сайт доступен по /s/${siteMeta?.slug ?? ''}`);
       } else setMsg(data.error || 'Ошибка публикации');
     } catch {
       setMsg('Ошибка публикации');
@@ -709,7 +709,10 @@ function BuilderEditor() {
   };
 
   // Owner draft preview on the tenant route ('?draft=1' shows unsaved-published work).
-  const previewSrc = siteMeta
+  const isLanding = siteMeta?.slug === '__landing__';
+  const previewSrc = isLanding
+    ? '/'
+    : siteMeta
     ? `/s/${siteMeta.slug}${page?.path ? `/${page.path}` : ''}?draft=1`
     : '/dashboard';
 
@@ -718,10 +721,15 @@ function BuilderEditor() {
       {/* Toolbar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-3 px-4">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold tracking-tight" title="К списку сайтов">
+          <Link href={isLanding ? '/studio' : '/dashboard'} className="flex items-center gap-2 font-bold tracking-tight" title={isLanding ? 'Назад в Студию' : 'К списку сайтов'}>
             <LayoutTemplate className="h-5 w-5 text-primary" /> Конструктор
           </Link>
           <div className="mx-2 h-6 w-px bg-border" />
+          {isLanding && (
+            <span className="mr-1 inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary" title="Вы редактируете главную страницу сайта (/)">
+              <Home className="h-3.5 w-3.5" /> Лендинг «/»
+            </span>
+          )}
           <Input value={doc.brand} onChange={(e) => setDoc((d) => ({ ...d, brand: e.target.value }))} className="h-8 w-44" aria-label="Название сайта" />
           <div className="hidden items-center gap-1 sm:flex">
             <Palette className="h-4 w-4 text-muted-foreground" />
@@ -769,6 +777,13 @@ function BuilderEditor() {
 
           {/* TAB: Страницы */}
           <div className={tab === 'pages' ? 'space-y-4' : 'hidden'}>
+          {isLanding && (
+            <Card className="border-primary/40 p-3">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-primary"><Home className="h-4 w-4" /> Редактирование лендинга</p>
+              <p className="mt-1 text-xs text-muted-foreground">Это главная страница сайта («/»). Здесь только она — без других страниц и без путаницы с проектами тенантов. Меняйте блоки на вкладках «Блоки» и «Сайт», жмите «Сохранить» — изменения уйдут именно в лендинг.</p>
+            </Card>
+          )}
+          {!isLanding && (<>
           {/* Ready-made landings */}
           <Card className="p-3">
             <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold"><LayoutTemplate className="h-4 w-4 text-primary" /> Готовые лендинги</p>
@@ -834,13 +849,16 @@ function BuilderEditor() {
               </div>
             </div>
           </Card>
+          </>)}
 
           {/* Current page settings */}
           {page && (
             <Card className="space-y-2 p-3">
-              <p className="text-sm font-semibold">Страница</p>
+              <p className="text-sm font-semibold">{isLanding ? 'Лендинг' : 'Страница'}</p>
               <Input value={page.title} onChange={(e) => renamePage('title', e.target.value)} placeholder="Заголовок" className="h-8" />
-              <Input value={page.path} onChange={(e) => renamePage('path', e.target.value)} placeholder="путь (пусто = главная)" className="h-8" />
+              {!isLanding && (
+                <Input value={page.path} onChange={(e) => renamePage('path', e.target.value)} placeholder="путь (пусто = главная)" className="h-8" />
+              )}
               <Textarea value={page.description ?? ''} onChange={(e) => renamePage('description', e.target.value)} rows={2} placeholder="SEO-описание (meta description)" />
             </Card>
           )}
