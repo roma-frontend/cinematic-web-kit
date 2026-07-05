@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 type SiteLite = { id: string; name: string; slug: string; ownerName: string; ownerEmail: string; published: boolean };
-type PlatformUser = { id: string; name: string; email: string; role: string };
+type PlatformUser = { name: string; email: string; source: 'platform' | 'tenant' };
 type Overview = {
   id: string; name: string; slug: string; published: boolean; publishedAt: string | null; memberApproval: boolean; createdAt: string;
   owner: { id: string; name: string; email: string; role: string } | null;
@@ -104,7 +104,7 @@ function OrgDetail({ overview, users, onReload }: { overview: Overview; users: P
 
   const q = query.trim().toLowerCase();
   const matches = q
-    ? users.filter((u) => u.id !== overview.owner?.id && `${u.name} ${u.email}`.toLowerCase().includes(q)).slice(0, 6)
+    ? users.filter((u) => u.email !== overview.owner?.email && `${u.name} ${u.email}`.toLowerCase().includes(q)).slice(0, 6)
     : [];
 
   const assign = async () => {
@@ -167,13 +167,16 @@ function OrgDetail({ overview, users, onReload }: { overview: Overview; users: P
             {openList && matches.length > 0 && !picked && (
               <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
                 {matches.map((u) => (
-                  <li key={u.id}>
+                  <li key={u.email}>
                     <button type="button" onClick={() => { setPicked(u); setQuery(u.email); setOpenList(false); }}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted">
                       <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{(u.name || u.email).charAt(0).toUpperCase()}</span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{u.name || 'Без имени'}</span>
-                        <span className="block truncate text-xs text-muted-foreground">{u.email} · {u.role}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
+                      </span>
+                      <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-semibold ${u.source === 'platform' ? 'bg-primary/15 text-primary' : 'bg-amber-500/15 text-amber-600'}`}>
+                        {u.source === 'platform' ? 'Платформа' : 'Участник'}
                       </span>
                     </button>
                   </li>
@@ -187,7 +190,7 @@ function OrgDetail({ overview, users, onReload }: { overview: Overview; users: P
         </div>
         {picked && <p className="mt-2 text-xs text-muted-foreground">Выбран: <span className="font-medium text-foreground">{picked.name || picked.email}</span> ({picked.email})</p>}
         {msg && <p className={`mt-2 text-sm ${msg.ok ? 'text-green-600' : 'text-red-500'}`}>{msg.text}</p>}
-        <p className="mt-2 text-xs text-muted-foreground">Владение сайтом перейдёт этому пользователю; роль customer будет повышена до admin.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Владение организацией перейдёт выбранному пользователю (роль → admin). Если выбран участник (tenant), он будет перенесён в платформенные администраторы и удалён из участников — без дублей.</p>
       </div>
     </div>
   );

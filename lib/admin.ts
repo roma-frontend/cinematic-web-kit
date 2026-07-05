@@ -6,7 +6,7 @@ import 'server-only';
 import path from 'node:path';
 import { statSync } from 'node:fs';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
-import { getDb, users, sites, submissions, sessions, domains, audit, siteUsers, siteSessions, siteMaterials, type User, type Role } from '@/lib/db';
+import { getDb, newId, users, sites, submissions, sessions, domains, audit, siteUsers, siteSessions, siteMaterials, type User, type Role } from '@/lib/db';
 
 /** A user counts as online when a session heartbeat fired within this window. */
 const ONLINE_WINDOW_MS = 15 * 60 * 1000;
@@ -197,17 +197,52 @@ export function getOrgOverview(siteId: string): OrgOverview | null {
 }
 
 /** Transfer a site (organization) to a platform user by email and make them admin.
+ *  Accepts EITHER an existing platform user OR a tenant user (site_user): the
+ *  latter is promoted into a platform admin (created in `users` from their
+ *  credentials) and removed from the tenant base, so a person is never in both.
  *  Superadmin-only (enforced in the route). Returns the new owner. */
 export function assignSiteAdmin(siteId: string, email: string): { id: string; email: string; name: string } {
   const db = getDb();
+  const norm = email.trim().toLowerCase();
   const site = db.select().from(sites).where(eq(sites.id, siteId)).get();
   if (!site) throw new Error('SITE_NOT_FOUND');
-  const target = db.select().from(users).where(eq(users.email, email.trim().toLowerCase())).get();
-  if (!target) throw new Error('USER_NOT_FOUND');
+
+  let target = db.select().from(users).where(eq(users.email, norm)).get() ?? null;
+
+  if (!target) {
+    // Promote a tenant user (site_user) into a platform admin.
+    const su = db.select().from(siteUsers).where(eq(siteUsers.email, norm)).get();
+    if (!su) throw new Error('USER_NOT_FOUND');
+    const now = new Date();
+    const created: User = {
+      id: newId('u'), email: norm, name: su.name, passwordHash: su.passwordHash,
+      role: 'admin', isActive: true, createdAt: now,
+    };
+    db.insert(users).values(created).run();
+    // Single identity: drop ALL tenant memberships for this email (sessions cascade).
+    db.delete(siteUsers).where(eq(siteUsers.email, norm)).run();
+    target = created;
+  }
+
   db.update(sites).set({ userId: target.id, updatedAt: new Date() }).where(eq(sites.id, siteId)).run();
-  // Promote a plain customer to admin; never demote an existing admin/superadmin.
   if (target.role === 'customer') db.update(users).set({ role: 'admin' }).where(eq(users.id, target.id)).run();
   return { id: target.id, email: target.email, name: target.name };
+}
+
+export interface AssignableUser { name: string; email: string; source: 'platform' | 'tenant' }
+
+/** Everyone who could be made an org admin — platform users AND tenant users
+ *  (site_users), deduped by email (platform wins). */
+export function listAssignableUsers(): AssignableUser[] {
+  const db = getDb();
+  const map = new Map<string, AssignableUser>();
+  for (const u of db.select({ name: users.name, email: users.email }).from(users).all()) {
+    map.set(u.email, { name: u.name, email: u.email, source: 'platform' });
+  }
+  for (const u of db.select({ name: siteUsers.name, email: siteUsers.email }).from(siteUsers).all()) {
+    if (!map.has(u.email)) map.set(u.email, { name: u.name, email: u.email, source: 'tenant' });
+  }
+  return [...map.values()];
 }
 
 // ── Tenant users (site_users) — superadmin global view + org assignment ──────

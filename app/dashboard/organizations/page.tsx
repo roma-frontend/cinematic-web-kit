@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
-import { listAllSites, listUsers } from '@/lib/admin';
+import { listAllSites, listAssignableUsers } from '@/lib/admin';
 import { PageHeader, EmptyState } from '@/components/dashboard/ui';
 import { OrgManager } from '@/components/dashboard/org-manager';
 import { OrgRequests } from '@/components/dashboard/org-requests';
@@ -24,7 +24,7 @@ export default async function OrganizationsPage() {
     published: s.published,
   }));
 
-  const users = listUsers().map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role }));
+  const users = listAssignableUsers();
 
   return (
     <>
