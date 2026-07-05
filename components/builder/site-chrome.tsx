@@ -89,10 +89,13 @@ export function Header({ doc }: { doc: BuilderDoc }) {
   return (
     <ScrollHeader behavior={doc.headerBehavior || 'solid'}>
       {desktop}
-      {/* mobile / tablet bar — auth + theme toggle live inside the burger */}
+      {/* mobile / tablet bar — theme toggle always visible, auth lives in the burger */}
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-2 px-6 md:hidden">
         {brand}
-        <MobileNav links={doc.nav} authBase={authBase(doc)} showAuth={showAuth(doc)} />
+        <div className="flex items-center gap-2">
+          {themeToggle}
+          <MobileNav links={doc.nav} authBase={authBase(doc)} showAuth={showAuth(doc)} />
+        </div>
       </div>
     </ScrollHeader>
   );

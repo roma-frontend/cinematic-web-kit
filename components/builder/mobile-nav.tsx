@@ -6,10 +6,9 @@ import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { NavLink } from '@/lib/builder/types';
 import { SiteAuthButtons } from './site-auth-blocks';
-import { SiteThemeToggle } from './site-theme-toggle';
 
-// Burger menu shown on mobile/tablet — nav links + auth buttons + theme toggle
-// all collapse into a single dropdown so the top bar stays clean.
+// Burger menu shown on mobile/tablet — nav links + auth buttons collapse into a
+// single dropdown. The theme toggle stays outside, always visible on the bar.
 export function MobileNav({ links, authBase, showAuth }: { links: NavLink[]; authBase?: string; showAuth?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
@@ -43,14 +42,8 @@ export function MobileNav({ links, authBase, showAuth }: { links: NavLink[]; aut
                 </Link>
               ))}
               {showAuth && authBase !== undefined && (
-                <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-3" onClick={() => setOpen(false)}>
+                <div className="mt-2 flex items-center gap-2 border-t border-border/60 pt-3" onClick={() => setOpen(false)}>
                   <SiteAuthButtons base={authBase} />
-                  <SiteThemeToggle />
-                </div>
-              )}
-              {(!showAuth || authBase === undefined) && (
-                <div className="mt-2 flex justify-end border-t border-border/60 pt-3">
-                  <SiteThemeToggle />
                 </div>
               )}
             </nav>
