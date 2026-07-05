@@ -101,7 +101,6 @@ export function Header({ doc }: { doc: BuilderDoc }) {
 export function Footer({ doc }: { doc: BuilderDoc }) {
   const variant = doc.footerVariant || 'simple';
   const links = doc.footer.links;
-  const fauth = showAuth(doc) ? <div className="mt-1"><SiteAuthButtons base={authBase(doc)} /></div> : null;
   if (variant === 'centered') {
     return (
       <footer className="border-t border-border/60 bg-muted/30">
@@ -110,7 +109,6 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
           <nav className="flex flex-wrap justify-center gap-4">
             {links.map((l) => <Link key={l.href + l.label} href={l.href} className="text-sm text-muted-foreground hover:text-foreground">{l.label}</Link>)}
           </nav>
-          {fauth}
           <p className="text-xs text-muted-foreground">{doc.footer.text}</p>
         </div>
       </footer>
@@ -123,7 +121,6 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
           <div className="space-y-2">
             <Link href={homeHref(doc)} className="font-display text-lg font-black">{doc.brand}</Link>
             <p className="text-sm text-muted-foreground">{doc.footer.text}</p>
-            {fauth}
           </div>
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold">Навигация</p>
@@ -144,7 +141,6 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
           <div className="space-y-2">
             <Link href={homeHref(doc)} className="font-display text-lg font-black">{doc.brand}</Link>
             <p className="text-sm text-muted-foreground">{doc.footer.text}</p>
-            {fauth}
           </div>
           <form action="/api/form" method="post" className="flex w-full gap-2">
             <input type="email" name="email" placeholder="you@example.com" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
@@ -161,7 +157,6 @@ export function Footer({ doc }: { doc: BuilderDoc }) {
         <p className="text-sm text-muted-foreground">{doc.footer.text}</p>
         <nav className="flex flex-wrap items-center gap-4">
           {links.map((l) => <Link key={l.href + l.label} href={l.href} className="text-sm text-muted-foreground hover:text-foreground">{l.label}</Link>)}
-          {fauth}
         </nav>
       </div>
     </footer>
