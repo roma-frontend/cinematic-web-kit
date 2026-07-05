@@ -1,6 +1,7 @@
 import 'server-only';
 import { desc } from 'drizzle-orm';
 import { getDb, newId, audit } from '@/lib/db';
+import { notifyCritical } from '@/lib/notify';
 
 export interface AuditActor { id: string; email: string }
 
@@ -19,6 +20,8 @@ export function recordAudit(actor: AuditActor, action: string, target = '', deta
   } catch {
     /* auditing must never break the actual operation */
   }
+  // Critical actions also page the Telegram admin chat (no-op when unconfigured).
+  notifyCritical(action, actor.email, target, detail);
 }
 
 export interface AuditRow {

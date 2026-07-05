@@ -55,9 +55,6 @@
   border-color: var(--color-border);
 }
 
-html {
-  scroll-behavior: smooth;
-}
 
 body {
   background-color: var(--background);

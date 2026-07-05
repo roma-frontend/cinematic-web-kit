@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSession, findUserByEmail, rateLimit, setSessionCookie, verifyPassword } from '@/lib/auth';
+import { createSession, findUserByEmail, rateLimit, requestMeta, setSessionCookie, verifyPassword } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -26,8 +26,11 @@ export async function POST(request: Request) {
   if (!ok || !user) {
     return NextResponse.json({ error: 'Неверный email или пароль.' }, { status: 401 });
   }
+  if (!user.isActive) {
+    return NextResponse.json({ error: 'Аккаунт заблокирован администратором.' }, { status: 403 });
+  }
 
-  const { token, expiresAt } = createSession(user.id);
+  const { token, expiresAt } = createSession(user.id, requestMeta(request));
   await setSessionCookie(token, expiresAt);
   return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name } });
 }

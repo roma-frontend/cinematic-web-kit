@@ -41,12 +41,34 @@ export function verifyPassword(password: string, stored: string): boolean {
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
-export function createSession(userId: string): { token: string; expiresAt: Date } {
+/** Bump the presence heartbeat at most this often to avoid a write per request. */
+const PRESENCE_THROTTLE_MS = 60 * 1000;
+
+export interface SessionMeta { userAgent?: string; ip?: string }
+
+/** Device/IP metadata from an incoming request, for session fingerprinting. */
+export function requestMeta(request: Request): SessionMeta {
+  return {
+    userAgent: (request.headers.get('user-agent') ?? '').slice(0, 400),
+    ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local',
+  };
+}
+
+export function createSession(userId: string, meta: SessionMeta = {}): { token: string; expiresAt: Date } {
   const db = getDb();
   const token = randomBytes(32).toString('base64url');
-  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
   db.insert(sessions)
-    .values({ id: hashToken(token), userId, expiresAt, createdAt: new Date() })
+    .values({
+      id: hashToken(token),
+      userId,
+      expiresAt,
+      createdAt: now,
+      lastActiveAt: now,
+      userAgent: meta.userAgent ?? '',
+      ip: meta.ip ?? '',
+    })
     .run();
   return { token, expiresAt };
 }
@@ -72,11 +94,17 @@ export function getUserByToken(token: string): User | null {
     db.delete(sessions).where(eq(sessions.id, id)).run();
     return null;
   }
+  // A suspended user is locked out immediately, even with a valid session.
+  if (!row.user.isActive) return null;
   if (row.session.expiresAt.getTime() - now < SESSION_RENEW_MS) {
     db.update(sessions)
       .set({ expiresAt: new Date(now + SESSION_TTL_MS) })
       .where(eq(sessions.id, id))
       .run();
+  }
+  const seen = row.session.lastActiveAt?.getTime() ?? 0;
+  if (now - seen > PRESENCE_THROTTLE_MS) {
+    db.update(sessions).set({ lastActiveAt: new Date(now) }).where(eq(sessions.id, id)).run();
   }
   return row.user;
 }
@@ -134,6 +162,7 @@ export function createUser(email: string, password: string, name: string): User 
     name: name.trim(),
     passwordHash: hashPassword(password),
     role,
+    isActive: true,
     createdAt: new Date(),
   };
   db.insert(users).values(user).run();

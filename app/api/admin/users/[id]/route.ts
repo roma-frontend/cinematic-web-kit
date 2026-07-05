@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
-import { getUserById, setUserRole, deleteUser, countSuperadmins } from '@/lib/admin';
+import { getUserById, setUserRole, setUserActive, deleteUser, countSuperadmins, revokeUserSessions } from '@/lib/admin';
 import { recordAudit } from '@/lib/audit';
 import type { Role } from '@/lib/db';
 
@@ -15,15 +15,33 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!isSuperadmin(me)) return NextResponse.json({ error: 'Недостаточно прав.' }, { status: 403 });
 
   const { id } = await params;
-  if (id === me.id) return NextResponse.json({ error: 'Нельзя изменить свою роль.' }, { status: 400 });
+  if (id === me.id) return NextResponse.json({ error: 'Нельзя изменить свой аккаунт.' }, { status: 400 });
 
-  let body: { role?: string };
+  let body: { role?: string; action?: string };
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-  const role = body.role as Role;
-  if (!ROLES.includes(role)) return NextResponse.json({ error: 'Неизвестная роль.' }, { status: 400 });
 
   const target = getUserById(id);
   if (!target) return NextResponse.json({ error: 'Пользователь не найден.' }, { status: 404 });
+
+  // Suspend / reinstate. Suspension also kills every live session immediately.
+  if (body.action === 'suspend' || body.action === 'activate') {
+    const suspend = body.action === 'suspend';
+    if (suspend && target.role === 'superadmin' && countSuperadmins() <= 1) {
+      return NextResponse.json({ error: 'Нельзя заблокировать последнего суперадмина.' }, { status: 400 });
+    }
+    setUserActive(id, !suspend);
+    const revoked = suspend ? revokeUserSessions(id) : 0;
+    recordAudit(
+      { id: me.id, email: me.email },
+      suspend ? 'user.suspend' : 'user.activate',
+      target.email,
+      suspend ? `${revoked} сессий завершено` : '',
+    );
+    return NextResponse.json({ ok: true, id, isActive: !suspend });
+  }
+
+  const role = body.role as Role;
+  if (!ROLES.includes(role)) return NextResponse.json({ error: 'Неизвестная роль.' }, { status: 400 });
 
   // Never leave the platform without a superadmin.
   if (target.role === 'superadmin' && role !== 'superadmin' && countSuperadmins() <= 1) {

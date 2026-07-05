@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface SiteInfo {
   id: string;
@@ -53,6 +54,7 @@ export function SiteSettings({
   initialSiteUsers: SiteUserRow[];
 }) {
   const router = useRouter();
+  const { confirm, confirmDialog } = useConfirm();
   const [name, setName] = useState(site.name);
   const [slug, setSlug] = useState(site.slug);
   const [savedSlug, setSavedSlug] = useState(site.slug);
@@ -177,13 +179,20 @@ export function SiteSettings({
   };
 
   const deleteSite = async () => {
-    if (!window.confirm(`Удалить сайт «${site.name}» безвозвратно? Страницы, домены и заявки будут удалены.`)) return;
+    const ok = await confirm({
+      title: `Удалить сайт «${site.name}»?`,
+      description: 'Сайт будет удалён безвозвратно: страницы, домены и заявки будут потеряны.',
+      confirmLabel: 'Удалить сайт',
+      tone: 'danger',
+    });
+    if (!ok) return;
     const res = await fetch(`/api/sites/${site.id}`, { method: 'DELETE' });
     if (res.ok) router.push('/dashboard');
   };
 
   return (
     <main className="min-h-dvh bg-background">
+      {confirmDialog}
       <header className="border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">

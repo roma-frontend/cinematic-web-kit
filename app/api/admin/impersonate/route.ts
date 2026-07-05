@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import {
-  getCurrentUser, isSuperadmin, createSession, getSessionToken,
+  getCurrentUser, isSuperadmin, createSession, getSessionToken, requestMeta,
   SESSION_COOKIE, ADMIN_RETURN_COOKIE,
 } from '@/lib/auth';
 import { getUserById } from '@/lib/admin';
@@ -23,9 +23,10 @@ export async function POST(request: Request) {
   }
   const target = getUserById(body.userId);
   if (!target) return NextResponse.json({ error: 'Пользователь не найден.' }, { status: 404 });
+  if (!target.isActive) return NextResponse.json({ error: 'Пользователь заблокирован — сначала разблокируйте его.' }, { status: 400 });
 
   const myToken = await getSessionToken();
-  const { token, expiresAt } = createSession(target.id);
+  const { token, expiresAt } = createSession(target.id, requestMeta(request));
   const jar = await cookies();
   const secure = process.env.NODE_ENV === 'production';
   if (myToken) {

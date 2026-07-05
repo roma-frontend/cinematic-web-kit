@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
-import { platformStats, systemInfo, recentActivity, listSessions, listUsers, listAllSites } from '@/lib/admin';
+import {
+  platformStats, systemInfo, recentActivity, listSessions, listUsers, listAllSites,
+  livePulse, securityAlerts, dataQuality, backupStatus,
+} from '@/lib/admin';
 import { listAudit } from '@/lib/audit';
 import { ControlCenter } from '@/components/dashboard/control-center';
 
@@ -22,6 +25,10 @@ export default async function ControlPage() {
       users={listUsers()}
       sites={listAllSites()}
       audit={listAudit(120)}
+      pulse={livePulse()}
+      security={securityAlerts()}
+      quality={dataQuality()}
+      backup={backupStatus()}
     />
   );
 }

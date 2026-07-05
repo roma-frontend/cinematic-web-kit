@@ -2,15 +2,18 @@
 
 // Professional self-service account for a tenant site's end-users. Themed with
 // the tenant's own tokens, wired to the isolated /api/site-auth (scoped by
-// siteId). Tabs: Профиль · Безопасность · Обращения · Настройки.
+// siteId). Tabs: Обзор · Профиль · Материалы · Уведомления · Безопасность ·
+// Обращения · Настройки.
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   User, Shield, FileText, Settings, LogOut, Loader2, Check, Mail, Phone, Lock,
   Eye, EyeOff, Monitor, Smartphone, Trash2, Save, CalendarDays, ShieldCheck, X,
   Store, Menu, ExternalLink, Library, Clock, Ban, LinkIcon, Bell,
+  LayoutDashboard, ChevronRight, Search, Copy, Wand2, KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,6 +94,7 @@ function Toggle({ checked, onChange, label, desc }: { checked: boolean; onChange
 }
 
 const TABS = [
+  { id: 'overview', label: 'Обзор', icon: LayoutDashboard },
   { id: 'profile', label: 'Профиль', icon: User },
   { id: 'materials', label: 'Материалы', icon: Library },
   { id: 'notifications', label: 'Уведомления', icon: Bell },
@@ -104,7 +108,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<TabId>('profile');
+  const [tab, setTab] = useState<TabId>('overview');
   const [loggingOut, setLoggingOut] = useState(false);
   const [open, setOpen] = useState(false); // mobile sidebar
   const [unread, setUnread] = useState(0);
@@ -245,15 +249,29 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-            <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
-              {tab === 'profile' && <ProfileTab siteId={siteId} me={me} onSaved={setMe} />}
-              {tab === 'materials' && <MaterialsTab siteId={siteId} />}
-              {tab === 'notifications' && <NotificationsTab siteId={siteId} />}
-              {tab === 'security' && <SecurityTab siteId={siteId} />}
-              {tab === 'activity' && <ActivityTab siteId={siteId} />}
-              {tab === 'settings' && <SettingsTab siteId={siteId} base={base} me={me} onSaved={setMe} router={router} />}
-            </div>
+          <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={tab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18 }}
+              >
+                {tab === 'overview' ? (
+                  <OverviewTab siteId={siteId} me={me} unread={unread} onNavigate={openTab} />
+                ) : (
+                  <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
+                    {tab === 'profile' && <ProfileTab siteId={siteId} me={me} onSaved={setMe} />}
+                    {tab === 'materials' && <MaterialsTab siteId={siteId} />}
+                    {tab === 'notifications' && <NotificationsTab siteId={siteId} />}
+                    {tab === 'security' && <SecurityTab siteId={siteId} />}
+                    {tab === 'activity' && <ActivityTab siteId={siteId} />}
+                    {tab === 'settings' && <SettingsTab siteId={siteId} base={base} me={me} onSaved={setMe} router={router} />}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </main>
       </div>
@@ -262,25 +280,223 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
 }
 
 type Notif = { id: string; type: string; title: string; message: string; read: boolean; createdAt: string | number | Date };
+type Overview = {
+  unread: number; notificationsCount: number; recentNotifications: Notif[];
+  materialsCount: number; recentMaterials: Material[];
+  submissionsCount: number; sessionsCount: number;
+};
+
+function greeting(name: string) {
+  const h = new Date().getHours();
+  const word = h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
+  return name ? `${word}, ${name.split(/\s+/)[0]}!` : `${word}!`;
+}
+
+function OverviewTab({ siteId, me, unread, onNavigate }: { siteId: string; me: Me; unread: number; onNavigate: (t: TabId) => void }) {
+  const [ov, setOv] = useState<Overview | null>(null);
+  useEffect(() => {
+    fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=overview`)
+      .then((r) => r.json()).then((d) => setOv(d)).catch(() => {});
+  }, [siteId]);
+
+  const color = me.avatarColor || AVATAR_COLORS[0];
+  const checklist = [
+    { done: !!me.name.trim(), label: 'Укажите имя' },
+    { done: !!me.phone.trim(), label: 'Добавьте телефон' },
+    { done: !!me.avatarColor, label: 'Выберите цвет аватара' },
+  ];
+  const doneCount = checklist.filter((c) => c.done).length;
+  const percent = Math.round((doneCount / checklist.length) * 100);
+
+  const stats: { id: TabId; label: string; value: number | null; icon: React.ComponentType<{ className?: string }>; badge?: number }[] = [
+    { id: 'materials', label: 'Материалы', value: ov?.materialsCount ?? null, icon: Library },
+    { id: 'notifications', label: 'Уведомления', value: ov?.notificationsCount ?? null, icon: Bell, badge: unread },
+    { id: 'activity', label: 'Обращения', value: ov?.submissionsCount ?? null, icon: FileText },
+    { id: 'security', label: 'Устройства', value: ov?.sessionsCount ?? null, icon: Monitor },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Hero greeting */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-20 blur-3xl"
+          style={{ background: `radial-gradient(circle, ${color}, transparent 70%)` }}
+        />
+        <div className="relative flex flex-wrap items-center gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-lg" style={{ background: color }}>
+            {initials(me.name, me.email)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{greeting(me.name)}</h1>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> {me.email}</span>
+              <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> с нами с {fmtDay(me.createdAt)}</span>
+            </p>
+          </div>
+          <div className="flex flex-none gap-2">
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate('profile')}>
+              <User className="h-3.5 w-3.5" /> Профиль
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => onNavigate('security')}>
+              <KeyRound className="h-3.5 w-3.5" /> Пароль
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((s) => {
+          const Icon = s.icon;
+          return (
+            <button
+              key={s.id}
+              onClick={() => onNavigate(s.id)}
+              className="group rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Icon className="h-4.5 w-4.5" />
+                </span>
+                {!!s.badge && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{s.badge}</span>
+                )}
+              </div>
+              <p className="mt-3 text-2xl font-bold tabular-nums tracking-tight">{s.value ?? '—'}</p>
+              <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                {s.label} <ChevronRight className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+              </p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Profile completeness */}
+      {percent < 100 && (
+        <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">Заполните профиль</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Профиль заполнен на {percent}%</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => onNavigate('profile')}>Дополнить</Button>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+            <motion.div
+              className="h-full rounded-full bg-primary"
+              initial={{ width: 0 }}
+              animate={{ width: `${percent}%` }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+          </div>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {checklist.map((c) => (
+              <li key={c.label} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                c.done ? 'border-green-500/30 bg-green-500/10 text-green-600' : 'border-border bg-muted/40 text-muted-foreground'
+              }`}>
+                {c.done ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />} {c.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Recent columns */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold"><Bell className="h-4 w-4 text-primary" /> Последние уведомления</h2>
+            <button onClick={() => onNavigate('notifications')} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
+              Все <ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+          {!ov ? (
+            <div className="py-6 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></div>
+          ) : ov.recentNotifications.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Уведомлений пока нет.</p>
+          ) : (
+            <ul className="space-y-2">
+              {ov.recentNotifications.map((n) => (
+                <li key={n.id} className="rounded-xl border border-border/60 bg-background/60 px-3.5 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`truncate text-sm ${n.read ? 'font-medium' : 'font-semibold'}`}>{n.title}</p>
+                    <span className="flex-none text-[11px] text-muted-foreground">{fmtDate(n.createdAt)}</span>
+                  </div>
+                  {n.message && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{n.message}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold"><Library className="h-4 w-4 text-primary" /> Свежие материалы</h2>
+            <button onClick={() => onNavigate('materials')} className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline">
+              Все <ChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+          {!ov ? (
+            <div className="py-6 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></div>
+          ) : ov.recentMaterials.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">Материалов пока нет.</p>
+          ) : (
+            <ul className="space-y-2">
+              {ov.recentMaterials.map((m) => (
+                <li key={m.id} className="rounded-xl border border-border/60 bg-background/60 px-3.5 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium">{m.title || 'Без названия'}</p>
+                    <span className="flex-none text-[11px] text-muted-foreground">{fmtDay(m.createdAt)}</span>
+                  </div>
+                  {m.body && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{m.body}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function NotificationsTab({ siteId }: { siteId: string }) {
-  const [items, setItems] = useState<Notif[] | null>(null);
+  const [all, setAll] = useState<Notif[] | null>(null);
+  const [onlyUnread, setOnlyUnread] = useState(false);
   useEffect(() => {
     fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=notifications`)
-      .then((r) => r.json()).then((d) => setItems(d.notifications ?? [])).catch(() => setItems([]));
+      .then((r) => r.json()).then((d) => setAll(d.notifications ?? [])).catch(() => setAll([]));
   }, [siteId]);
+
+  const unreadCount = all?.filter((n) => !n.read).length ?? 0;
+  const items = all && onlyUnread ? all.filter((n) => !n.read) : all;
 
   const dot = (t: string) => t === 'join_approved' || t === 'material' ? 'bg-green-500' : t === 'join_rejected' || t === 'suspended' ? 'bg-red-500' : 'bg-primary';
 
   return (
     <div>
       <SectionTitle title="Уведомления" desc="Сообщения о вашем членстве и новых материалах." />
+      {all && all.length > 0 && (
+        <div className="mb-4 flex gap-2">
+          {([['Все', false], [`Непрочитанные${unreadCount ? ` · ${unreadCount}` : ''}`, true]] as const).map(([label, v]) => (
+            <button
+              key={label}
+              onClick={() => setOnlyUnread(v)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                onlyUnread === v ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {!items ? (
         <div className="py-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-10 text-center">
           <Bell className="mx-auto h-8 w-8 text-muted-foreground/50" />
-          <p className="mt-2 text-sm text-muted-foreground">Уведомлений пока нет.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{onlyUnread ? 'Непрочитанных уведомлений нет.' : 'Уведомлений пока нет.'}</p>
         </div>
       ) : (
         <ul className="space-y-2">
@@ -338,39 +554,61 @@ function MembershipGate({ me, base, brand, onLogout, loggingOut }: { me: Me; bas
 
 type Material = { id: string; title: string; body: string; url: string; createdAt: string | number | Date };
 
+const NEW_MS = 7 * 24 * 60 * 60 * 1000; // «новое» — моложе недели
+
 function MaterialsTab({ siteId }: { siteId: string }) {
   const [items, setItems] = useState<Material[] | null>(null);
+  const [q, setQ] = useState('');
   useEffect(() => {
     fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=materials`)
       .then((r) => r.json()).then((d) => setItems(d.materials ?? [])).catch(() => setItems([]));
   }, [siteId]);
 
+  const filtered = useMemo(() => {
+    if (!items) return null;
+    const needle = q.trim().toLowerCase();
+    if (!needle) return items;
+    return items.filter((m) => `${m.title} ${m.body}`.toLowerCase().includes(needle));
+  }, [items, q]);
+
   return (
     <div>
       <SectionTitle title="Материалы" desc="Материалы, доступные участникам организации." />
-      {!items ? (
+      {items && items.length > 0 && (
+        <div className="relative mb-4">
+          <Search className={iconCls} />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по материалам…" className="h-11 pl-10" />
+        </div>
+      )}
+      {!filtered ? (
         <div className="py-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-10 text-center">
           <Library className="mx-auto h-8 w-8 text-muted-foreground/50" />
-          <p className="mt-2 text-sm text-muted-foreground">Материалов пока нет.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{q ? 'Ничего не найдено по запросу.' : 'Материалов пока нет.'}</p>
         </div>
       ) : (
         <ul className="space-y-3">
-          {items.map((m) => (
-            <li key={m.id} className="rounded-xl border border-border bg-background/60 p-4">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <h3 className="font-semibold">{m.title || 'Без названия'}</h3>
-                <span className="flex-none text-xs text-muted-foreground">{fmtDay(m.createdAt)}</span>
-              </div>
-              {m.body && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.body}</p>}
-              {m.url && (
-                <a href={m.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-                  <LinkIcon className="h-3.5 w-3.5" /> Открыть
-                </a>
-              )}
-            </li>
-          ))}
+          {filtered.map((m) => {
+            const isNew = Date.now() - new Date(m.createdAt).getTime() < NEW_MS;
+            return (
+              <li key={m.id} className="rounded-xl border border-border bg-background/60 p-4 transition-colors hover:border-primary/40">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <h3 className="flex min-w-0 items-center gap-2 font-semibold">
+                    <span className="truncate">{m.title || 'Без названия'}</span>
+                    {isNew && <span className="flex-none rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">Новое</span>}
+                  </h3>
+                  <span className="flex-none text-xs text-muted-foreground">{fmtDay(m.createdAt)}</span>
+                </div>
+                {m.body && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{m.body}</p>}
+                {m.url && (
+                  <a href={m.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                    <LinkIcon className="h-3.5 w-3.5" /> Открыть
+                  </a>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -412,6 +650,15 @@ function ProfileTab({ siteId, me, onSaved }: { siteId: string; me: Me; onSaved: 
   return (
     <form onSubmit={save} className="space-y-5">
       <SectionTitle title="Профиль" desc="Ваши личные данные и оформление аккаунта." />
+      <div className="flex items-center gap-4 rounded-xl border border-border bg-muted/30 p-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-md transition-colors duration-300" style={{ background: avatarColor }}>
+          {initials(name, me.email)}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate font-semibold">{name.trim() || 'Без имени'}</p>
+          <p className="truncate text-sm text-muted-foreground">Так вас видят на сайте</p>
+        </div>
+      </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Имя</label>
         <div className="relative">
@@ -459,14 +706,42 @@ function ProfileTab({ siteId, me, onSaved }: { siteId: string; me: Me; onSaved: 
   );
 }
 
+/** Cryptographically random 14-char password with all character classes. */
+function generatePassword(): string {
+  const sets = ['abcdefghijkmnopqrstuvwxyz', 'ABCDEFGHJKLMNPQRSTUVWXYZ', '23456789', '!@#$%^&*-_+'];
+  const all = sets.join('');
+  const buf = new Uint32Array(14);
+  crypto.getRandomValues(buf);
+  // Guarantee one char from each class, fill the rest from the full alphabet.
+  const chars = sets.map((s, i) => s[buf[i] % s.length]);
+  for (let i = sets.length; i < buf.length; i++) chars.push(all[buf[i] % all.length]);
+  // Fisher–Yates with fresh randomness so the guaranteed chars aren't always first.
+  const mix = new Uint32Array(chars.length);
+  crypto.getRandomValues(mix);
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = mix[i] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+
 function SecurityTab({ siteId }: { siteId: string }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const score = useMemo(() => passwordScore(next), [next]);
+
+  const suggest = () => {
+    const pw = generatePassword();
+    setNext(pw); setConfirm(pw); setShow(true); setCopied(false);
+  };
+  const copyPw = async () => {
+    try { await navigator.clipboard.writeText(next); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard denied */ }
+  };
 
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [sesBusy, setSesBusy] = useState('');
@@ -506,7 +781,19 @@ function SecurityTab({ siteId }: { siteId: string }) {
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium">Новый пароль</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Новый пароль</label>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={suggest} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10">
+                <Wand2 className="h-3.5 w-3.5" /> Сгенерировать
+              </button>
+              {next && (
+                <button type="button" onClick={copyPw} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                  {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />} {copied ? 'Скопирован' : 'Копировать'}
+                </button>
+              )}
+            </div>
+          </div>
           <div className="relative">
             <Lock className={iconCls} />
             <Input type={show ? 'text' : 'password'} value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" placeholder="Минимум 6 символов" className="h-11 pl-10" />
@@ -572,24 +859,38 @@ function SecurityTab({ siteId }: { siteId: string }) {
 
 function ActivityTab({ siteId }: { siteId: string }) {
   const [items, setItems] = useState<Submission[] | null>(null);
+  const [q, setQ] = useState('');
   useEffect(() => {
     fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=submissions`)
       .then((r) => r.json()).then((d) => setItems(d.submissions ?? [])).catch(() => setItems([]));
   }, [siteId]);
 
+  const filtered = useMemo(() => {
+    if (!items) return null;
+    const needle = q.trim().toLowerCase();
+    if (!needle) return items;
+    return items.filter((it) => `${it.formId} ${Object.values(it.data).join(' ')}`.toLowerCase().includes(needle));
+  }, [items, q]);
+
   return (
     <div>
       <SectionTitle title="Мои обращения" desc="Заявки и сообщения, отправленные через формы сайта." />
-      {!items ? (
+      {items && items.length > 0 && (
+        <div className="relative mb-4">
+          <Search className={iconCls} />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по обращениям…" className="h-11 pl-10" />
+        </div>
+      )}
+      {!filtered ? (
         <div className="py-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border py-10 text-center">
           <FileText className="mx-auto h-8 w-8 text-muted-foreground/50" />
-          <p className="mt-2 text-sm text-muted-foreground">Пока нет обращений.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{q ? 'Ничего не найдено по запросу.' : 'Пока нет обращений.'}</p>
         </div>
       ) : (
         <ul className="space-y-3">
-          {items.map((it) => {
+          {filtered.map((it) => {
             const fields = Object.entries(it.data).filter(([k]) => k !== 'formId').slice(0, 6);
             return (
               <li key={it.id} className="rounded-xl border border-border bg-background/60 p-4">

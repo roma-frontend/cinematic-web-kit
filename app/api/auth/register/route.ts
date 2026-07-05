@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createUser, createSession, findUserByEmail, rateLimit, setSessionCookie } from '@/lib/auth';
+import { createUser, createSession, findUserByEmail, rateLimit, requestMeta, setSessionCookie } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   const user = createUser(email, password, name);
-  const { token, expiresAt } = createSession(user.id);
+  const { token, expiresAt } = createSession(user.id, requestMeta(request));
   await setSessionCookie(token, expiresAt);
   return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name } });
 }
