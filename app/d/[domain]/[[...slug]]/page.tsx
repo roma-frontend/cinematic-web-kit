@@ -17,7 +17,7 @@ function resolve(domainParam: string) {
   const doc = parseDoc(site.publishedDoc);
   if (!doc) return null;
   // Custom domain serves the site at its root, so links rebase to ''.
-  return { site, doc: rebaseDoc(doc, '') };
+  return { site, doc: { ...rebaseDoc(doc, ''), siteId: site.id } };
 }
 
 export async function generateMetadata({ params }: Props) {

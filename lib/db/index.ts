@@ -73,6 +73,27 @@ CREATE TABLE IF NOT EXISTS audit (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS audit_created_idx ON audit (created_at);
+
+CREATE TABLE IF NOT EXISTS site_users (
+  id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  password_hash TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS site_users_site_email_idx ON site_users (site_id, email);
+CREATE INDEX IF NOT EXISTS site_users_site_idx ON site_users (site_id);
+
+CREATE TABLE IF NOT EXISTS site_sessions (
+  id TEXT PRIMARY KEY,
+  site_user_id TEXT NOT NULL REFERENCES site_users(id) ON DELETE CASCADE,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  expires_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS site_sessions_user_idx ON site_sessions (site_user_id);
+CREATE INDEX IF NOT EXISTS site_sessions_site_idx ON site_sessions (site_id);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;

@@ -32,7 +32,7 @@ export default function Home() {
   const landingSite = getLandingSite();
   const builderDoc = landingSite ? parseDoc(landingSite.publishedDoc) : null;
   if (builderDoc) {
-    const doc = rebaseDoc(builderDoc, '');
+    const doc = { ...rebaseDoc(builderDoc, ''), siteId: landingSite!.id };
     const page = findPageByPath(doc, []);
     if (page) return <SiteRenderer doc={doc} page={page} />;
   }

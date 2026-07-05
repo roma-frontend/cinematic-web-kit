@@ -28,7 +28,10 @@ export type NodeType =
   | 'divider'
   | 'spacer'
   | 'themeGallery'
-  | 'videoGrid';
+  | 'videoGrid'
+  | 'authLogin'
+  | 'authRegister'
+  | 'authAccount';
 
 export interface BuilderNode {
   id: string;
@@ -61,6 +64,9 @@ export interface BuilderDoc {
   /** Transient link base set by rebaseDoc for tenant rendering (e.g. '/s/slug').
    *  Absent for the legacy /site route. Used by chrome for brand/CTA links. */
   base?: string;
+  /** Transient site id injected at render so end-user auth blocks know which
+   *  tenant they belong to. Never edited/stored by the builder. */
+  siteId?: string;
   nav: NavLink[];
   footer: { text: string; links: NavLink[] };
   pages: BuilderPage[];
@@ -96,6 +102,9 @@ export const NODE_LABELS: Record<NodeType, string> = {
   spacer: 'Отступ',
   themeGallery: 'Галерея тем',
   videoGrid: 'Видео-сетка',
+  authLogin: 'Вход (клиенты сайта)',
+  authRegister: 'Регистрация (клиенты сайта)',
+  authAccount: 'Личный кабинет',
 };
 
 let counter = 0;
@@ -155,6 +164,12 @@ export function defaultProps(type: NodeType): Record<string, string> {
       return { count: '6', columns: '3' };
     case 'videoGrid':
       return { count: '6' };
+    case 'authLogin':
+      return { title: 'Вход', submitText: 'Войти', successMsg: 'Вы вошли.' };
+    case 'authRegister':
+      return { title: 'Регистрация', submitText: 'Создать аккаунт', successMsg: 'Аккаунт создан.', showName: 'true' };
+    case 'authAccount':
+      return { title: 'Личный кабинет', logoutText: 'Выйти' };
     default:
       return {};
   }

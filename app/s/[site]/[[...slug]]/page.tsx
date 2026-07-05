@@ -24,7 +24,7 @@ async function resolve(siteSlug: string, wantDraft: boolean) {
     if (user && user.id === site.userId) doc = parseDoc(site.draftDoc) ?? doc;
   }
   if (!doc) return null;
-  return { site, doc: rebaseDoc(doc, `/s/${site.slug}`) };
+  return { site, doc: { ...rebaseDoc(doc, `/s/${site.slug}`), siteId: site.id } };
 }
 
 export async function generateMetadata({ params, searchParams }: Props) {

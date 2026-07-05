@@ -151,9 +151,24 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'columns', label: 'Колонок', opts: ['2', '3', '4'] },
   ],
   videoGrid: [{ k: 'count', label: 'Сколько роликов' }],
+  authLogin: [
+    { k: 'title', label: 'Заголовок' },
+    { k: 'submitText', label: 'Текст кнопки' },
+    { k: 'successMsg', label: 'Сообщение после входа' },
+  ],
+  authRegister: [
+    { k: 'title', label: 'Заголовок' },
+    { k: 'submitText', label: 'Текст кнопки' },
+    { k: 'successMsg', label: 'Сообщение после регистрации' },
+    { k: 'showName', label: 'Поле «Имя»', opts: ['true', 'false'] },
+  ],
+  authAccount: [
+    { k: 'title', label: 'Заголовок' },
+    { k: 'logoutText', label: 'Текст кнопки выхода' },
+  ],
 };
 
-const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'counter', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer', 'themeGallery', 'videoGrid'];
+const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'counter', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer', 'themeGallery', 'videoGrid', 'authLogin', 'authRegister', 'authAccount'];
 
 // Styling controls available for EVERY element, grouped for quick access.
 const STYLE_GROUPS: { title: string; fields: Field[] }[] = [

@@ -6,6 +6,7 @@ import { ThemeStyle } from '@/components/theme-style';
 import { SiteChrome } from '@/components/builder/site-chrome';
 import { RenderNode } from '@/components/builder/render-node';
 import { EditBridge } from '@/components/builder/edit-bridge';
+import { SiteAuthProvider } from '@/components/builder/site-auth-blocks';
 import type { BuilderDoc, BuilderPage } from '@/lib/builder/types';
 
 export function findPageByPath(doc: BuilderDoc, slug: string[]): BuilderPage | null {
@@ -19,11 +20,13 @@ export function SiteRenderer({ doc, page, edit }: { doc: BuilderDoc; page: Build
     <>
       <ThemeStyle theme={theme} />
       {edit && <EditBridge />}
-      <SiteChrome doc={doc}>
-        {page.blocks.map((node) => (
-          <RenderNode key={node.id} node={node} />
-        ))}
-      </SiteChrome>
+      <SiteAuthProvider siteId={doc.siteId ?? ''}>
+        <SiteChrome doc={doc}>
+          {page.blocks.map((node) => (
+            <RenderNode key={node.id} node={node} />
+          ))}
+        </SiteChrome>
+      </SiteAuthProvider>
     </>
   );
 }

@@ -12,6 +12,7 @@ import { THEMES } from '@/lib/themes';
 import { VideoCardGrid } from '@/components/media/video-card';
 import mediaData from '@/data/media.json';
 import type { MediaEntry } from '@/lib/media';
+import { SiteAuthForm, SiteAccount } from '@/components/builder/site-auth-blocks';
 
 const okl = (v: string) => `oklch(${v})`;
 
@@ -628,6 +629,15 @@ function renderInner(node: BuilderNode) {
       if (entries.length === 0) return null;
       return <VideoCardGrid entries={entries} />;
     }
+
+    case 'authLogin':
+      return <SiteAuthForm mode="login" title={p.title} submitText={p.submitText} successMsg={p.successMsg} />;
+
+    case 'authRegister':
+      return <SiteAuthForm mode="register" title={p.title} submitText={p.submitText} successMsg={p.successMsg} showName={p.showName !== 'false'} />;
+
+    case 'authAccount':
+      return <SiteAccount title={p.title} logoutText={p.logoutText} />;
 
     default:
       return null;

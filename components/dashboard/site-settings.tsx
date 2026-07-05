@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Loader2, Save, Globe, Plus, Trash2, RefreshCw, CheckCircle2, Inbox, ExternalLink, Copy, Check,
+  ArrowLeft, Loader2, Save, Globe, Plus, Trash2, RefreshCw, CheckCircle2, Inbox, ExternalLink, Copy, Check, Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,12 @@ interface SubmissionRow {
   data: Record<string, unknown>;
   createdAt: string;
 }
+interface SiteUserRow {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+}
 
 export function SiteSettings({
   appHost,
@@ -37,12 +43,14 @@ export function SiteSettings({
   site,
   initialDomains,
   initialSubmissions,
+  initialSiteUsers,
 }: {
   appHost: string;
   serverIp: string;
   site: SiteInfo;
   initialDomains: DomainRow[];
   initialSubmissions: SubmissionRow[];
+  initialSiteUsers: SiteUserRow[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(site.name);
@@ -266,6 +274,27 @@ export function SiteSettings({
                       ))}
                     </div>
                   )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Site end-users (tenant's own customers) */}
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Users className="h-4 w-4 text-primary" /> Клиенты сайта</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Пользователи, которые зарегистрировались на вашем опубликованном сайте (через блоки «Вход»/«Регистрация»). Это отдельная база — она не смешивается с аккаунтами платформы.
+          </p>
+          {initialSiteUsers.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">Пока никто не зарегистрировался. Добавьте на страницу блок «Регистрация (клиенты сайта)» в конструкторе.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
+              {initialSiteUsers.map((u) => (
+                <li key={u.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                  <span className="font-medium">{u.name || '—'}</span>
+                  <span className="text-muted-foreground">{u.email}</span>
+                  <time className="ml-auto text-xs text-muted-foreground" dateTime={u.createdAt}>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</time>
                 </li>
               ))}
             </ul>

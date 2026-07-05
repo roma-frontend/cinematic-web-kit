@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { getSiteForUser, listDomains, listSubmissions, APP_HOST } from '@/lib/sites';
+import { listSiteUsers } from '@/lib/site-auth';
 import { SiteSettings } from '@/components/dashboard/site-settings';
 
 export const metadata = { title: 'Настройки сайта — Cinematic Kit' };
@@ -35,6 +36,12 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ i
         formId: s.formId,
         data: JSON.parse(s.data) as Record<string, unknown>,
         createdAt: s.createdAt.toISOString(),
+      }))}
+      initialSiteUsers={listSiteUsers(site.id, 500).map((u) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        createdAt: u.createdAt.toISOString(),
       }))}
     />
   );

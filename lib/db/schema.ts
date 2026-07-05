@@ -72,6 +72,46 @@ export const domains = sqliteTable(
 export type User = typeof users.$inferSelect;
 export type Role = 'customer' | 'admin' | 'superadmin';
 
+// ─────────────────────────────────────────────────────────────────────────
+// Per-tenant END-USER auth. Completely separate from platform `users`: these
+// are the customers who register on a tenant's PUBLISHED site to receive that
+// tenant's services. Scoped by siteId (email is unique per-site, so the same
+// email can exist on different tenant sites), with their own sessions/cookie.
+export const siteUsers = sqliteTable(
+  'site_users',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    name: text('name').notNull().default(''),
+    passwordHash: text('password_hash').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [uniqueIndex('site_users_site_email_idx').on(t.siteId, t.email), index('site_users_site_idx').on(t.siteId)],
+);
+
+export const siteSessions = sqliteTable(
+  'site_sessions',
+  {
+    /** sha256 hex of the bearer token. */
+    id: text('id').primaryKey(),
+    siteUserId: text('site_user_id')
+      .notNull()
+      .references(() => siteUsers.id, { onDelete: 'cascade' }),
+    /** Denormalized for fast validation that a session belongs to the current site. */
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('site_sessions_user_idx').on(t.siteUserId), index('site_sessions_site_idx').on(t.siteId)],
+);
+export type SiteUser = typeof siteUsers.$inferSelect;
+export type SiteSession = typeof siteSessions.$inferSelect;
+
 export const submissions = sqliteTable(
   'submissions',
   {
