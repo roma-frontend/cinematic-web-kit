@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { BuilderForm } from './builder-form';
 import { Accordion, Tabs } from './interactive';
+import { Reveal } from './reveal';
 import type { BuilderNode } from '@/lib/builder/types';
 import { isContainer } from '@/lib/builder/types';
 
@@ -56,7 +57,9 @@ const MT: Record<string, string> = { none: '', sm: 'mt-3', md: 'mt-6', lg: 'mt-1
 const MB: Record<string, string> = { none: '', sm: 'mb-3', md: 'mb-6', lg: 'mb-12' };
 
 function motionClass(p: Record<string, string>): string {
-  return cn(p.animate && ANIM_FX[p.animate], p.hover && HOVER_FX[p.hover], p.mt && MT[p.mt], p.mb && MB[p.mb]);
+  // animation now handled by <Reveal> (Framer Motion, scroll-triggered)
+  void ANIM_FX;
+  return cn(p.hover && HOVER_FX[p.hover], p.mt && MT[p.mt], p.mb && MB[p.mb]);
 }
 
 // surfaceClass: shadow, focus ring, hover background/text (need :hover/:focus)
@@ -158,7 +161,9 @@ export function RenderNode({ node }: { node: BuilderNode }) {
     const st = surfaceStyle(p);
     if (Object.keys(st).length) merged.style = { ...(elProps.style ?? {}), ...st };
   }
-  return cloneElement(el as ReactElement<typeof merged>, merged);
+  const cloned = cloneElement(el as ReactElement<typeof merged>, merged);
+  if (p.animate && p.animate !== 'none') return <Reveal type={p.animate}>{cloned}</Reveal>;
+  return cloned;
 }
 
 function renderInner(node: BuilderNode) {

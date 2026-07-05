@@ -15,6 +15,7 @@ import {
 import seed from '@/data/builder.json';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
 import { RenderNode } from '@/components/builder/render-node';
+import { RevealDisabled } from '@/components/builder/reveal';
 import { TEMPLATES, LANDINGS, SECTION_PRESETS } from '@/lib/builder/templates';
 import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
@@ -170,7 +171,7 @@ const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
   {
     title: 'Анимация и наведение',
     fields: [
-      { k: 'animate', label: 'Анимация появления', opts: ['—', 'none', 'fade', 'slide-up', 'zoom'] },
+      { k: 'animate', label: 'Анимация появления', opts: ['—', 'none', 'fade', 'slide-up', 'slide-left', 'slide-right', 'zoom'] },
       { k: 'hover', label: 'Движение при наведении', opts: ['—', 'none', 'lift', 'grow', 'glow', 'bright'] },
       { k: 'hoverBg', label: 'Фон при наведении', opts: ['—', 'none', 'primary', 'muted', 'foreground', 'dark'] },
       { k: 'hoverText', label: 'Цвет текста при наведении', opts: ['—', 'none', 'primary', 'foreground', 'muted'] },
@@ -756,6 +757,48 @@ export default function BuilderEditor() {
 
           {/* TAB: Сайт */}
           <div className={tab === 'design' ? 'space-y-4' : 'hidden'}>
+          {/* Chrome variants */}
+          <Card className="p-3">
+            <p className="mb-2 text-sm font-semibold">Шапка / подвал / сайдбар</p>
+            <div className="grid grid-cols-1 gap-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Шапка (header)</label>
+                <Select value={doc.headerVariant || 'minimal'} onValueChange={(v) => setDoc((d) => ({ ...d, headerVariant: v }))}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="minimal">Минимал (бренд + меню)</SelectItem>
+                    <SelectItem value="centered">По центру</SelectItem>
+                    <SelectItem value="split">Сплит (меню · бренд · CTA)</SelectItem>
+                    <SelectItem value="cta">С кнопкой CTA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Подвал (footer)</label>
+                <Select value={doc.footerVariant || 'simple'} onValueChange={(v) => setDoc((d) => ({ ...d, footerVariant: v }))}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simple">Простой</SelectItem>
+                    <SelectItem value="columns">Колонки</SelectItem>
+                    <SelectItem value="centered">По центру</SelectItem>
+                    <SelectItem value="newsletter">С подпиской</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Боковая панель (aside)</label>
+                <Select value={doc.asideVariant || 'none'} onValueChange={(v) => setDoc((d) => ({ ...d, asideVariant: v }))}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Нет</SelectItem>
+                    <SelectItem value="left">Слева</SelectItem>
+                    <SelectItem value="right">Справа</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+
           {/* Navigation editor */}
           <Card className="p-3">
             <div className="mb-2 flex items-center justify-between">
@@ -826,9 +869,11 @@ function LandingThumb({ def }: { def: { id: string; themeId?: string; build: () 
         className={`${cls} pointer-events-none absolute left-0 top-0 origin-top-left`}
         style={{ width: 1280, transform: 'scale(0.34)', background: 'var(--background)', color: 'var(--foreground)' }}
       >
-        {blocks.map((n) => (
-          <RenderNode key={n.id} node={n} />
-        ))}
+        <RevealDisabled.Provider value={true}>
+          {blocks.map((n) => (
+            <RenderNode key={n.id} node={n} />
+          ))}
+        </RevealDisabled.Provider>
       </div>
     </div>
   );

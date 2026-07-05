@@ -50,6 +50,9 @@ export interface BuilderPage {
 export interface BuilderDoc {
   brand: string;
   themeId: string;
+  headerVariant?: string;
+  footerVariant?: string;
+  asideVariant?: string;
   nav: NavLink[];
   footer: { text: string; links: NavLink[] };
   pages: BuilderPage[];
