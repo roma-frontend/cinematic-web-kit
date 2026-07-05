@@ -58,6 +58,14 @@ const ANIM_FX: Record<string, string> = { none: '', fade: 'b-anim-fade', 'slide-
 const MT: Record<string, string> = { none: '', sm: 'mt-3', md: 'mt-6', lg: 'mt-12' };
 const MB: Record<string, string> = { none: '', sm: 'mb-3', md: 'mb-6', lg: 'mb-12' };
 const LOOP: Record<string, string> = { none: '', pulse: 'b-loop-pulse', float: 'b-loop-float', bounce: 'b-loop-bounce' };
+// Responsive visibility — uses only `hidden` utilities so the element's natural
+// display type is preserved when shown (safe for flex/grid/inline elements).
+const SHOW_ON: Record<string, string> = {
+  all: '',
+  mobile: 'md:hidden',
+  tablet: 'max-md:hidden lg:hidden',
+  desktop: 'max-lg:hidden',
+};
 
 function motionClass(p: Record<string, string>): string {
   // animation now handled by <Reveal> (Framer Motion, scroll-triggered)
@@ -157,7 +165,7 @@ export function RenderNode({ node }: { node: BuilderNode }) {
   const self = SELF_STYLED.has(node.type);
   const merged: { 'data-nid': string; 'data-container'?: string; className: string; style?: CSSProperties } = {
     'data-nid': node.id,
-    className: cn(elProps.className, motionClass(p), self ? '' : surfaceClass(p)),
+    className: cn(elProps.className, motionClass(p), self ? '' : surfaceClass(p), p.showOn && SHOW_ON[p.showOn]),
   };
   if (isContainer(node.type)) merged['data-container'] = '1';
   if (!self) {
@@ -176,7 +184,13 @@ function renderInner(node: BuilderNode) {
   switch (node.type) {
     case 'section': {
       const gradient = p.bg === 'gradient';
-      const hasMedia = !!(p.bgImage || p.bgVideo);
+      // A child image in 'background' mode is hoisted to fill the whole section
+      // (full-bleed height+width) with the text rendered on top.
+      const bgChild = kids.find((k) => k.type === 'image' && k.props?.imgMode === 'background' && k.props?.src);
+      const sectionKids = bgChild ? kids.filter((k) => k !== bgChild) : kids;
+      const bgImageSrc = p.bgImage || bgChild?.props?.src;
+      const bgChildOverlay = bgChild?.props?.overlay;
+      const hasMedia = !!(bgImageSrc || p.bgVideo);
       const gradStyle = gradient
         ? { backgroundImage: 'linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 45%, #000))', color: 'var(--primary-foreground)' }
         : undefined;
@@ -194,22 +208,24 @@ function renderInner(node: BuilderNode) {
         tint: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 65%, transparent), color-mix(in oklch, var(--primary) 30%, #000))',
         duotone: 'color-mix(in oklch, var(--primary) 45%, transparent)',
       };
+      const MINH: Record<string, string> = { none: '', half: 'min-h-[60vh]', screen: 'min-h-dvh' };
+      const tall = p.minH === 'half' || p.minH === 'screen';
       return (
-        <section className={cn('relative overflow-hidden', pick(PAD, p.padding, 'lg'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
+        <section className={cn('relative overflow-hidden', tall && 'flex flex-col justify-center', pick(PAD, p.padding, 'lg'), pick(MINH, p.minH, 'none'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
           {p.bgVideo ? (
             // eslint-disable-next-line jsx-a11y/media-has-caption
             <video className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgVideo} autoPlay muted loop playsInline />
-          ) : p.bgImage ? (
+          ) : bgImageSrc ? (
             p.parallax === 'true' ? (
-              <ParallaxBg src={p.bgImage} />
+              <ParallaxBg src={bgImageSrc} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgImage} alt="" />
+              <img className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={bgImageSrc} alt="" />
             )
           ) : null}
-          {hasMedia && <div className="absolute inset-0" style={{ background: overlayBg[bgMode] ?? overlayBg.cover }} />}
+          {hasMedia && <div className="absolute inset-0" style={{ background: bgChildOverlay || (overlayBg[bgMode] ?? overlayBg.cover) }} />}
           <div className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), hasMedia && 'text-white')}>
-            {kids.map((c) => (
+            {sectionKids.map((c) => (
               <RenderNode key={c.id} node={c} />
             ))}
           </div>

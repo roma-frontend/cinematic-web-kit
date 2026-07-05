@@ -30,6 +30,7 @@ type Field = { k: string; label: string; kind?: 'text' | 'textarea'; opts?: stri
 const FIELDS: Record<NodeType, Field[]> = {
   section: [
     { k: 'padding', label: 'Отступы', opts: ['none', 'sm', 'md', 'lg'] },
+    { k: 'minH', label: 'Мин. высота', opts: ['none', 'half', 'screen'] },
     { k: 'bg', label: 'Фон', opts: ['none', 'muted', 'card', 'primary', 'gradient'] },
     { k: 'width', label: 'Ширина', opts: ['narrow', 'normal', 'wide'] },
     { k: 'bgImage', label: 'Фоновая картинка (URL)' },
@@ -179,6 +180,12 @@ const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
     fields: [
       { k: 'mt', label: 'Отступ сверху', opts: ['—', 'none', 'sm', 'md', 'lg'] },
       { k: 'mb', label: 'Отступ снизу', opts: ['—', 'none', 'sm', 'md', 'lg'] },
+    ],
+  },
+  {
+    title: 'Адаптив (на каких экранах показывать)',
+    fields: [
+      { k: 'showOn', label: 'Показывать на', opts: ['—', 'all', 'mobile', 'tablet', 'desktop'] },
     ],
   },
   {
