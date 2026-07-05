@@ -12,6 +12,7 @@
     "media:list": "node scripts/media-pipeline/list.mjs"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.3.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",

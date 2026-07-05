@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Play } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Play, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /** Convert an "16:9" aspect string to a CSS aspect-ratio value. */
@@ -14,20 +14,32 @@ function toAspect(ratio?: string) {
  * (IntersectionObserver), so a page full of clips doesn't fetch/decode them all
  * up front. The poster image paints instantly and acts as the LCP-friendly
  * placeholder until the muted, autoplaying loop takes over.
+ *
+ * When `sound` is set, a floating toggle lets the viewer un-mute; volume is
+ * ramped in/out with a short fade so it never pops.
  */
 export function LazyVideo({
   src,
+  srcMp4,
   poster,
   ratio,
   className,
+  sound = false,
+  fill = false,
 }: {
   src: string;
+  srcMp4?: string;
   poster?: string;
   ratio?: string;
   className?: string;
+  sound?: boolean;
+  fill?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const rafRef = useRef<number | null>(null);
   const [visible, setVisible] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     const el = ref.current;
@@ -45,19 +57,72 @@ export function LazyVideo({
     return () => io.disconnect();
   }, [visible]);
 
+  // Ramp the volume toward a target over ~400ms instead of snapping.
+  const fadeTo = useCallback((target: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (target > 0) {
+      v.muted = false;
+      if (v.volume === 1) v.volume = 0; // start from silence when un-muting
+    }
+    const start = performance.now();
+    const from = v.volume;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 400);
+      v.volume = from + (target - from) * t;
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else if (target === 0) {
+        v.muted = true;
+        v.volume = 1; // reset for next un-mute
+      }
+    };
+    rafRef.current = requestAnimationFrame(step);
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setMuted((m) => {
+      const next = !m;
+      fadeTo(next ? 0 : 1);
+      return next;
+    });
+  }, [fadeTo]);
+
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+
   return (
-    <div ref={ref} className={cn('relative overflow-hidden bg-muted', className)} style={{ aspectRatio: toAspect(ratio) }}>
+    <div
+      ref={ref}
+      className={cn('relative overflow-hidden bg-muted', fill && 'h-full w-full', className)}
+      style={fill ? undefined : { aspectRatio: toAspect(ratio) }}
+    >
       {visible ? (
-        <video
-          src={src}
-          poster={poster}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          className="h-full w-full object-cover"
-        />
+        <>
+          <video
+            ref={videoRef}
+            poster={poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="h-full w-full object-cover"
+          >
+            <source src={src} type="video/webm" />
+            {srcMp4 && <source src={srcMp4} type="video/mp4" />}
+          </video>
+          {sound && (
+            <button
+              type="button"
+              onClick={toggleSound}
+              aria-label={muted ? 'Включить звук' : 'Выключить звук'}
+              className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60"
+            >
+              {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </button>
+          )}
+        </>
       ) : poster ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />

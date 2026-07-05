@@ -5,7 +5,7 @@ import type { MediaEntry } from '@/lib/media';
 export function VideoCard({ entry }: { entry: MediaEntry }) {
   return (
     <figure className="group overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-lg">
-      <LazyVideo src={entry.src} poster={entry.poster} ratio={entry.aspectRatio} className="w-full" />
+      <LazyVideo src={entry.src} srcMp4={entry.srcMp4} poster={entry.poster} ratio={entry.aspectRatio} className="w-full" />
       <figcaption className="p-4">
         <p className="truncate font-semibold">{entry.title}</p>
         {entry.prompt && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{entry.prompt}</p>}

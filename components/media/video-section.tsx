@@ -5,7 +5,7 @@ import type { MediaEntry } from '@/lib/media';
 export function VideoSection({ entry }: { entry: MediaEntry }) {
   return (
     <section className="relative isolate overflow-hidden">
-      <LazyVideo src={entry.src} poster={entry.poster} ratio={entry.aspectRatio} className="max-h-[56vh] w-full" />
+      <LazyVideo src={entry.src} srcMp4={entry.srcMp4} poster={entry.poster} ratio={entry.aspectRatio} sound={entry.sound} className="max-h-[56vh] w-full" />
       <div className="absolute inset-0 flex items-center justify-center bg-black/45">
         <div className="px-6 text-center">
           {entry.subtitle && (

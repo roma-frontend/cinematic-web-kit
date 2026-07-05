@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { execFile } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -8,6 +8,12 @@ export const runtime = 'nodejs';
 // using the server's MUAPI_KEY). It is intended for LOCAL/dev use — do not
 // expose it publicly without auth. Inputs are passed as an argv array (never a
 // shell string), so there is no command injection.
+//
+// The response is a *stream* of newline-delimited JSON (NDJSON). Each line is
+// one event so the client can render ffmpeg/generation logs live:
+//   {"type":"log","line":"[optimize] hero.webm (VP9, CRF 34)"}
+//   {"type":"done","entry":{...}}          ← final success, carries the entry
+//   {"type":"error","error":"..."}         ← failure, carries a message
 
 const SECTIONS = ['hero', 'background', 'card'] as const;
 type Section = (typeof SECTIONS)[number];
@@ -23,6 +29,8 @@ interface GenerateBody {
   aspect?: string;
   slug?: string;
   duration?: number;
+  style?: string;
+  negative?: string;
 }
 
 function argsFrom(body: GenerateBody): string[] {
@@ -41,6 +49,8 @@ function argsFrom(body: GenerateBody): string[] {
   push('--aspect', body.aspect?.trim());
   push('--slug', body.slug?.trim());
   push('--duration', body.duration);
+  push('--style', body.style?.trim());
+  push('--negative', body.negative?.trim());
   return a;
 }
 
@@ -60,30 +70,98 @@ export async function POST(request: Request) {
   const script = path.join(root, 'scripts', 'media-pipeline', 'run.mjs');
   const args = [script, ...argsFrom(body)];
 
-  const result = await new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
-    execFile(
-      process.execPath, // node
-      args,
-      { cwd: root, env: process.env, maxBuffer: 1024 * 1024 * 64, timeout: 1000 * 60 * 30 },
-      (err, stdout, stderr) => resolve({ code: err ? (err as NodeJS.ErrnoException & { code?: number }).code ?? 1 : 0, stdout: String(stdout), stderr: String(stderr) }),
-    );
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      let closed = false;
+      const send = (obj: unknown) => {
+        if (closed) return;
+        controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n'));
+      };
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
+      };
+
+      const child = spawn(process.execPath, args, {
+        cwd: root,
+        env: process.env,
+        timeout: 1000 * 60 * 30,
+      });
+
+      // Buffer partial lines from each stream so we emit clean, whole log lines.
+      let outBuf = '';
+      let errBuf = '';
+      const flush = (chunk: string, which: 'stdout' | 'stderr') => {
+        let buf = which === 'stdout' ? outBuf + chunk : errBuf + chunk;
+        let idx: number;
+        while ((idx = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, idx).replace(/\r$/, '');
+          buf = buf.slice(idx + 1);
+          send({ type: 'log', line, stream: which });
+        }
+        if (which === 'stdout') outBuf = buf;
+        else errBuf = buf;
+      };
+
+      child.stdout.on('data', (d: Buffer) => flush(d.toString(), 'stdout'));
+      child.stderr.on('data', (d: Buffer) => flush(d.toString(), 'stderr'));
+
+      child.on('error', (err) => {
+        send({ type: 'error', error: err.message });
+        close();
+      });
+
+      child.on('close', async (code) => {
+        // Emit any trailing partial lines.
+        if (outBuf.trim()) send({ type: 'log', line: outBuf.replace(/\r$/, ''), stream: 'stdout' });
+        if (errBuf.trim()) send({ type: 'log', line: errBuf.replace(/\r$/, ''), stream: 'stderr' });
+
+        if (code !== 0) {
+          send({ type: 'error', error: `Pipeline exited with code ${code ?? 'unknown'}` });
+          close();
+          return;
+        }
+
+        // Return the freshly written entry: prefer the one matching this slug/
+        // title, else fall back to the last item.
+        let entry: unknown = null;
+        try {
+          const data = JSON.parse(await readFile(path.join(root, 'data', 'media.json'), 'utf8'));
+          if (Array.isArray(data) && data.length) {
+            const wantTitle = (body.title || body.prompt || '').trim();
+            entry =
+              data.find(
+                (m: { title?: string }) => wantTitle && m.title === wantTitle,
+              ) ?? data[data.length - 1];
+          }
+        } catch {
+          /* ignore */
+        }
+
+        send({ type: 'done', entry });
+        close();
+      });
+
+      // If the client disconnects, kill the child process.
+      request.signal.addEventListener('abort', () => {
+        child.kill();
+        close();
+      });
+    },
   });
 
-  if (result.code !== 0) {
-    return NextResponse.json(
-      { error: 'Pipeline failed', detail: (result.stderr || result.stdout).slice(-2000) },
-      { status: 500 },
-    );
-  }
-
-  // Return the freshly written entry (last item matching the slug/title).
-  let entry = null;
-  try {
-    const data = JSON.parse(await readFile(path.join(root, 'data', 'media.json'), 'utf8'));
-    if (Array.isArray(data) && data.length) entry = data[data.length - 1];
-  } catch {
-    /* ignore */
-  }
-
-  return NextResponse.json({ ok: true, entry, log: result.stdout.slice(-2000) });
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    },
+  });
 }

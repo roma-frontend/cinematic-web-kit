@@ -1,11 +1,9 @@
 [
   {
     "id": "hero-demo",
-    "title": "Engineered to Stop",
+    "title": "Создано, чтобы останавливать",
     "section": "hero",
-    "subtitle": "Performance",
-    "ctaLabel": "Shop now",
-    "ctaHref": "/products",
+    "subtitle": "Производительность",
     "src": "/media/generated/hero-demo.webm",
     "poster": "/media/generated/hero-demo-poster.jpg",
     "aspectRatio": "16:9",
@@ -13,7 +11,7 @@
   },
   {
     "id": "card-brakes",
-    "title": "Brake Discs",
+    "title": "Тормозные диски",
     "section": "card",
     "src": "/media/generated/card-brakes.webm",
     "poster": "/media/generated/card-brakes-poster.jpg",

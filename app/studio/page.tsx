@@ -1,15 +1,75 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LazyVideo } from '@/components/media/lazy-video';
-import { planFromBrief, composePrompt, type Section, type PlanItem } from '@/lib/prompt-composer';
-import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo } from 'lucide-react';
+import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Section, type StyleId, type PlanItem } from '@/lib/prompt-composer';
+import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette } from 'lucide-react';
 
 type Status = 'idle' | 'running' | 'done' | 'error';
 type BatchItem = PlanItem & { state: 'pending' | 'running' | 'done' | 'error'; error?: string };
+type LogLine = { line: string; stream: 'stdout' | 'stderr' };
+type GenBody = { prompt: string; title: string; section: Section; aspect: string; style?: string; negative?: string };
+
+/**
+ * POST to /api/generate and consume the NDJSON stream. Each `log` event is
+ * forwarded to `onLog` so the UI can render pipeline output live; the resolved
+ * value is the final media entry from the `done` event.
+ */
+async function streamGenerate(
+  body: GenBody,
+  onLog: (l: LogLine) => void,
+): Promise<{ src: string; srcMp4?: string; poster?: string; aspectRatio?: string; title?: string }> {
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  // Non-stream error responses (e.g. 400/500 JSON) — surface them cleanly.
+  const ctype = res.headers.get('content-type') || '';
+  if (!res.ok && ctype.includes('application/json')) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || data.detail || 'Generation failed');
+  }
+  if (!res.body) throw new Error('Пустой ответ сервера (нет потока)');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let entry: { src: string } | null = null;
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf('\n')) >= 0) {
+      const raw = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 1);
+      if (!raw) continue;
+      let ev: { type: string; line?: string; stream?: 'stdout' | 'stderr'; entry?: { src: string }; error?: string };
+      try {
+        ev = JSON.parse(raw);
+      } catch {
+        continue;
+      }
+      if (ev.type === 'log') onLog({ line: ev.line ?? '', stream: ev.stream ?? 'stdout' });
+      else if (ev.type === 'done') entry = ev.entry ?? null;
+      else if (ev.type === 'error') throw new Error(ev.error || 'Generation failed');
+    }
+  }
+
+  if (!entry) throw new Error('Поток завершился без результата');
+  return entry;
+}
 
 const ease = [0.22, 1, 0.36, 1] as const;
 const fade = {
@@ -30,44 +90,76 @@ export default function StudioPage() {
   const [title, setTitle] = useState('');
   const [section, setSection] = useState<Section>('hero');
   const [aspect, setAspect] = useState('16:9');
+  const [styleId, setStyleId] = useState<StyleId>('auto');
   const [copied, setCopied] = useState(false);
 
   // Step 3 — generation
   const [status, setStatus] = useState<Status>('idle');
-  const [result, setResult] = useState<{ src: string; poster?: string; aspectRatio?: string; title?: string } | null>(null);
+  const [result, setResult] = useState<{ src: string; srcMp4?: string; poster?: string; aspectRatio?: string; title?: string } | null>(null);
   const [error, setError] = useState('');
 
   // Batch — whole-page plan
   const [batch, setBatch] = useState<BatchItem[]>([]);
   const [batchRunning, setBatchRunning] = useState(false);
 
-  async function runOne(body: { prompt: string; title: string; section: Section; aspect: string }) {
-    const res = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || data.detail || 'Generation failed');
-    return data.entry;
+  // Live pipeline logs (streamed from /api/generate).
+  const [logs, setLogs] = useState<LogLine[]>([]);
+  const logRef = useRef<HTMLDivElement>(null);
+  const appendLog = useCallback((l: LogLine) => setLogs((prev) => [...prev, l]), []);
+
+  // Keep the log view pinned to the newest line.
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [logs]);
+
+  async function runOne(body: GenBody) {
+    return streamGenerate({ negative: NEGATIVE_PROMPT, ...body }, appendLog);
   }
 
   const planWholePage = () => {
-    const plan = planFromBrief(brief);
+    const plan = planFromBrief(brief, styleId);
     setBatch(plan.map((p) => ({ ...p, state: 'pending' as const })));
   };
 
   const runBatch = async () => {
     setBatchRunning(true);
-    for (let i = 0; i < batch.length; i++) {
-      setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'running' } : it)));
-      try {
-        await runOne({ prompt: batch[i].prompt, title: batch[i].title, section: batch[i].section, aspect: batch[i].aspect });
-        setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'done' } : it)));
-      } catch (e) {
-        setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'error', error: e instanceof Error ? e.message : 'error' } : it)));
+    setLogs([]);
+    // Parallel queue: N workers pull from a shared cursor; each item is retried
+    // a couple of times before being marked failed.
+    const CONCURRENCY = 2;
+    const RETRIES = 2;
+    const items = batch;
+    let cursor = 0;
+
+    const worker = async () => {
+      while (cursor < items.length) {
+        const i = cursor++;
+        setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'running' } : it)));
+        let lastErr: unknown = null;
+        for (let attempt = 0; attempt <= RETRIES; attempt++) {
+          try {
+            await runOne({ prompt: items[i].prompt, title: items[i].title, section: items[i].section, aspect: items[i].aspect, style: items[i].style });
+            lastErr = null;
+            break;
+          } catch (e) {
+            lastErr = e;
+            if (attempt < RETRIES) {
+              appendLog({ line: `[retry] «${items[i].title}»: попытка ${attempt + 1} не удалась, повтор…`, stream: 'stderr' });
+              await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+            }
+          }
+        }
+        setBatch((b) =>
+          b.map((it, idx) =>
+            idx === i
+              ? { ...it, state: lastErr ? 'error' : 'done', error: lastErr instanceof Error ? lastErr.message : undefined }
+              : it,
+          ),
+        );
       }
-    }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, items.length) }, worker));
     setBatchRunning(false);
   };
 
@@ -87,14 +179,14 @@ export default function StudioPage() {
   );
 
   const generatePrompt = () => {
-    const plan = planFromBrief(brief);
+    const plan = planFromBrief(brief, styleId);
     if (plan.length) {
       setPrompt(plan[0].prompt);
       setTitle(plan[0].title);
       setSection(plan[0].section);
       setAspect(plan[0].aspect);
     } else {
-      setPrompt(composePrompt({ brief, section }));
+      setPrompt(composePrompt({ brief, section, style: styleId }));
     }
   };
 
@@ -108,15 +200,10 @@ export default function StudioPage() {
     setStatus('running');
     setError('');
     setResult(null);
+    setLogs([]);
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, title, section, aspect }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || data.detail || 'Generation failed');
-      setResult(data.entry);
+      const entry = await streamGenerate({ prompt, title, section, aspect, style: styleId, negative: NEGATIVE_PROMPT }, appendLog);
+      setResult(entry);
       setStatus('done');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
@@ -128,7 +215,20 @@ export default function StudioPage() {
 
   return (
     <main className="relative min-h-dvh overflow-hidden">
-      <div className="fixed right-4 top-4 z-50"><ThemeToggle /></div>
+      <header className="relative z-50 border-b border-border/60 bg-background/70 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
+            <Clapperboard className="h-5 w-5 text-primary" />
+            <span>Студия</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/">
+              <Button size="sm" variant="outline" className="gap-1.5">На главную <ArrowRight className="h-4 w-4" /></Button>
+            </Link>
+          </div>
+        </div>
+      </header>
 
       {/* Animated aurora background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -166,28 +266,39 @@ export default function StudioPage() {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-xs text-primary">1</span>
             Бриф или .md
           </label>
-          <div
+          <Card
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            className={`group relative rounded-2xl border bg-card/60 backdrop-blur transition-all ${dragOver ? 'border-primary ring-4 ring-primary/20' : 'border-border'}`}
+            className={`group relative transition-all ${dragOver ? 'border-primary ring-4 ring-primary/20' : ''}`}
           >
-            <textarea
+            <Textarea
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
               rows={5}
               placeholder="Напр.: Кофейный бренд. Пар над свежим эспрессо, тёплый утренний свет. Секции: пуровер, латте-арт, обжарка зёрен."
-              className="w-full resize-none rounded-2xl bg-transparent p-4 text-sm outline-none placeholder:text-muted-foreground/70"
+              className="resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/70"
             />
-            <div className="flex items-center justify-between gap-2 border-t border-border/60 p-3">
-              <button
+            <div className="flex flex-col items-start justify-between gap-3 sm:gap-2 border-t border-border/60 p-3">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               >
                 <Upload className="h-3.5 w-3.5" /> Загрузить .md
-              </button>
+              </Button>
               <input ref={fileRef} type="file" accept=".md,.markdown,.txt" hidden onChange={(e) => e.target.files?.[0] && readFile(e.target.files[0])} />
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Select value={styleId} onValueChange={(v) => setStyleId(v as StyleId)}>
+                  <SelectTrigger className="w-52 gap-1.5"><Palette className="h-4 w-4 opacity-60" /><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Авто (по брифу)</SelectItem>
+                    {STYLE_PRESETS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button size="sm" variant="outline" onClick={planWholePage} disabled={!brief.trim()} className="gap-1.5">
                   <ListVideo className="h-4 w-4" /> Собрать всю страницу
                 </Button>
@@ -196,7 +307,7 @@ export default function StudioPage() {
                 </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </motion.section>
 
         {/* Batch plan — whole page */}
@@ -207,7 +318,7 @@ export default function StudioPage() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-xs text-primary">★</span>
                 План страницы — {batch.length} секц.
               </label>
-              <div className="space-y-2 rounded-2xl border border-border bg-card/60 p-3 backdrop-blur">
+              <Card className="space-y-2 p-3">
                 {batch.map((it, i) => (
                   <motion.div
                     key={i}
@@ -234,9 +345,26 @@ export default function StudioPage() {
                     {batchRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clapperboard className="h-4 w-4" />}
                     {batchRunning ? 'Генерируем секции…' : 'Сгенерировать все секции'}
                   </Button>
-                  <a href="/" className="mt-2 block text-center text-xs text-muted-foreground hover:text-foreground">После готовности — открыть главную →</a>
+                  <Link href="/" className="mt-2 block text-center text-xs text-muted-foreground hover:text-foreground">После готовности — открыть главную →</Link>
                 </div>
-              </div>
+                {batchRunning && logs.length > 0 && (
+                  <div className="mt-1">
+                    <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <Terminal className="h-3.5 w-3.5" /> Логи пайплайна
+                    </div>
+                    <div
+                      ref={logRef}
+                      className="max-h-56 overflow-auto rounded-xl border border-border bg-black/80 p-3 font-mono text-[11px] leading-relaxed text-green-300"
+                    >
+                      {logs.map((l, i) => (
+                        <div key={i} className={l.stream === 'stderr' ? 'text-amber-300/90' : ''}>
+                          {l.line || '\u00a0'}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
             </motion.section>
           )}
         </AnimatePresence>
@@ -249,7 +377,7 @@ export default function StudioPage() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-xs text-primary">2</span>
                 Кинематографический промпт
               </label>
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-card/60 p-1 backdrop-blur">
+              <Card className="relative overflow-hidden p-1">
                 {/* animated gradient sheen */}
                 <motion.div
                   aria-hidden
@@ -259,35 +387,41 @@ export default function StudioPage() {
                   transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
                 />
                 <div className="relative">
-                  <textarea
+                  <Textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={3}
-                    className="w-full resize-none rounded-xl bg-transparent p-4 text-sm outline-none"
+                    className="resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
                   />
                   <div className="flex flex-wrap items-center gap-2 p-3 pt-0">
-                    <input
+                    <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Заголовок"
-                      className="h-9 flex-1 min-w-[8rem] rounded-lg border border-border bg-background/50 px-3 text-sm outline-none focus:border-primary"
+                      className="flex-1 min-w-[8rem]"
                     />
-                    <select value={section} onChange={(e) => setSection(e.target.value as Section)} className="h-9 rounded-lg border border-border bg-background/50 px-2 text-sm outline-none">
-                      <option value="hero">hero</option>
-                      <option value="background">background</option>
-                      <option value="card">card</option>
-                    </select>
-                    <select value={aspect} onChange={(e) => setAspect(e.target.value)} className="h-9 rounded-lg border border-border bg-background/50 px-2 text-sm outline-none">
-                      <option value="16:9">16:9</option>
-                      <option value="9:16">9:16</option>
-                      <option value="1:1">1:1</option>
-                    </select>
+                    <Select value={section} onValueChange={(v) => setSection(v as Section)}>
+                      <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hero">hero</SelectItem>
+                        <SelectItem value="background">background</SelectItem>
+                        <SelectItem value="card">card</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={aspect} onValueChange={setAspect}>
+                      <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="16:9">16:9</SelectItem>
+                        <SelectItem value="9:16">9:16</SelectItem>
+                        <SelectItem value="1:1">1:1</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button size="sm" variant="outline" onClick={copyPrompt} className="gap-1.5">
                       {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />} Копировать
                     </Button>
                   </div>
                 </div>
-              </div>
+              </Card>
             </motion.section>
           )}
         </AnimatePresence>
@@ -321,16 +455,33 @@ export default function StudioPage() {
                 <motion.div className="h-full rounded-full bg-primary" animate={{ x: ['-100%', '100%'] }} transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }} style={{ width: '40%' }} />
               </div>
               <p className="mt-3 text-xs text-muted-foreground">Видео-модели рендерят от 1 до нескольких минут — окно можно не закрывать.</p>
+              {logs.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Terminal className="h-3.5 w-3.5" /> Логи пайплайна
+                  </div>
+                  <div
+                    ref={logRef}
+                    className="max-h-56 overflow-auto rounded-xl border border-border bg-black/80 p-3 font-mono text-[11px] leading-relaxed text-green-300"
+                  >
+                    {logs.map((l, i) => (
+                      <div key={i} className={l.stream === 'stderr' ? 'text-amber-300/90' : ''}>
+                        {l.line || '\u00a0'}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
           {status === 'done' && result && (
             <motion.div {...fade} className="mt-8 rounded-2xl border border-border bg-card/60 p-4 backdrop-blur">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-green-500"><Check className="h-4 w-4" /> Готово — клип добавлен на сайт</div>
-              <LazyVideo src={result.src} poster={result.poster} ratio={result.aspectRatio} className="w-full rounded-xl" />
+              <LazyVideo src={result.src} srcMp4={result.srcMp4} poster={result.poster} ratio={result.aspectRatio} className="w-full rounded-xl" />
               <div className="mt-4 flex items-center justify-between">
                 <p className="truncate text-sm font-medium">{result.title}</p>
-                <a href="/"><Button size="sm" variant="outline" className="gap-1.5">На главную <ArrowRight className="h-4 w-4" /></Button></a>
+                <Link href="/"><Button size="sm" variant="outline" className="gap-1.5">На главную <ArrowRight className="h-4 w-4" /></Button></Link>
               </div>
             </motion.div>
           )}

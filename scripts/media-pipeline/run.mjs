@@ -36,6 +36,9 @@ async function main() {
   const slug = slugify(str(args.slug) || title);
   const prompt = str(args.prompt) || '';
   const aspect = str(args.aspect) || '16:9';
+  const negativePrompt = str(args.negative) || '';
+  const style = str(args.style) || '';
+  const keepAudio = args.audio === true || str(args.audio) === 'true';
 
   let sourcePath;
   if (str(args.from)) {
@@ -44,6 +47,7 @@ async function main() {
   } else {
     const videoUrl = await generateVideo({
       prompt,
+      negativePrompt,
       model: str(args.model),
       aspectRatio: aspect,
       duration: args.duration ? Number(args.duration) : undefined,
@@ -54,17 +58,21 @@ async function main() {
     console.log(`[run] downloaded → ${sourcePath}`);
   }
 
-  const { webm, poster } = await optimize(sourcePath, slug);
+  const { webm, mp4, poster } = await optimize(sourcePath, slug, { keepAudio });
 
   const entry = {
     id: slug,
     title,
     section,
     prompt: prompt || undefined,
+    style: style || undefined,
+    negativePrompt: negativePrompt || undefined,
+    sound: keepAudio || undefined,
     subtitle: str(args.subtitle),
     ctaLabel: str(args.cta),
     ctaHref: str(args.ctaHref),
     src: toPublicUrl(webm),
+    srcMp4: mp4 ? toPublicUrl(mp4) : undefined,
     poster: toPublicUrl(poster),
     aspectRatio: aspect,
     createdAt: new Date().toISOString(),
