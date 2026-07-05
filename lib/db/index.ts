@@ -160,6 +160,16 @@ CREATE TABLE IF NOT EXISTS org_requests (
 );
 CREATE INDEX IF NOT EXISTS org_requests_status_idx ON org_requests (status);
 CREATE INDEX IF NOT EXISTS org_requests_requester_idx ON org_requests (requester_id);
+
+CREATE TABLE IF NOT EXISTS org_members (
+  id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'editor',
+  created_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS org_members_site_user_idx ON org_members (site_id, user_id);
+CREATE INDEX IF NOT EXISTS org_members_user_idx ON org_members (user_id);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;

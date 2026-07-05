@@ -223,6 +223,26 @@ export const orgRequests = sqliteTable(
 );
 export type OrgRequest = typeof orgRequests.$inferSelect;
 
+// Platform users who belong to an organization (site) as co-admins/editors
+// WITHOUT owning it. A join-request approval adds a member here; site access is
+// granted to the owner OR any member (see lib/sites.userCanAccessSite).
+export const orgMembers = sqliteTable(
+  'org_members',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('editor'), // 'editor' | 'admin'
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [uniqueIndex('org_members_site_user_idx').on(t.siteId, t.userId), index('org_members_user_idx').on(t.userId)],
+);
+export type OrgMember = typeof orgMembers.$inferSelect;
+
 export const submissions = sqliteTable(
   'submissions',
   {

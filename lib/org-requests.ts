@@ -1,8 +1,7 @@
 import 'server-only';
 import { and, desc, eq } from 'drizzle-orm';
-import { getDb, newId, orgRequests, sites, users, type OrgRequest, type User } from '@/lib/db';
+import { getDb, newId, orgRequests, orgMembers, sites, users, type OrgRequest, type User } from '@/lib/db';
 import { createSite } from '@/lib/sites';
-import { assignSiteAdmin } from '@/lib/admin';
 
 // Platform-level organization requests (ported from hr-project). A logged-in
 // platform user requests to CREATE a new org (tenant site) or JOIN an existing
@@ -111,7 +110,15 @@ export function approveOrgRequest(superadminId: string, requestId: string): { si
     siteId = site.id;
   } else {
     if (!req.targetSiteId) throw new Error('ORG_NOT_FOUND');
-    assignSiteAdmin(req.targetSiteId, req.requesterEmail);
+    // Join = become a member (co-editor) of the org WITHOUT taking ownership.
+    const existing = db
+      .select({ id: orgMembers.id })
+      .from(orgMembers)
+      .where(and(eq(orgMembers.siteId, req.targetSiteId), eq(orgMembers.userId, req.requesterId)))
+      .get();
+    if (!existing) {
+      db.insert(orgMembers).values({ id: newId('om'), siteId: req.targetSiteId, userId: req.requesterId, role: 'editor', createdAt: new Date() }).run();
+    }
     siteId = req.targetSiteId;
   }
 

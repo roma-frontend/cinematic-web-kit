@@ -4,7 +4,7 @@
 
 import 'server-only';
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { getDb, newId, sites, domains, submissions, type Site, type Domain } from '@/lib/db';
+import { getDb, newId, sites, domains, submissions, orgMembers, type Site, type Domain } from '@/lib/db';
 import { DEFAULT_DOC, type BuilderDoc, type BuilderNode } from '@/lib/builder/types';
 import { starterPage } from '@/lib/builder/templates';
 
@@ -72,18 +72,33 @@ export function createSite(userId: string, name: string): Site {
 }
 
 export function listSitesForUser(userId: string): Site[] {
-  return getDb().select().from(sites).where(eq(sites.userId, userId)).orderBy(desc(sites.updatedAt)).all();
+  const db = getDb();
+  const owned = db.select().from(sites).where(eq(sites.userId, userId)).all();
+  // Also include organizations the user was added to as a member (co-editor).
+  const memberRows = db
+    .select({ site: sites })
+    .from(orgMembers)
+    .innerJoin(sites, eq(orgMembers.siteId, sites.id))
+    .where(eq(orgMembers.userId, userId))
+    .all();
+  const byId = new Map<string, Site>();
+  for (const s of owned) byId.set(s.id, s);
+  for (const { site } of memberRows) byId.set(site.id, site);
+  return [...byId.values()].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 }
 
-/** Site only if it belongs to the user — the single ownership gate for APIs. */
+/** Site only if the user owns it OR is a member of it — the access gate for APIs. */
 export function getSiteForUser(userId: string, siteId: string): Site | null {
-  return (
-    getDb()
-      .select()
-      .from(sites)
-      .where(and(eq(sites.id, siteId), eq(sites.userId, userId)))
-      .get() ?? null
-  );
+  const db = getDb();
+  const site = db.select().from(sites).where(eq(sites.id, siteId)).get() ?? null;
+  if (!site) return null;
+  if (site.userId === userId) return site;
+  const member = db
+    .select({ id: orgMembers.id })
+    .from(orgMembers)
+    .where(and(eq(orgMembers.siteId, siteId), eq(orgMembers.userId, userId)))
+    .get();
+  return member ? site : null;
 }
 
 export function getSiteBySlug(slug: string): Site | null {
