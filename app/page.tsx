@@ -24,17 +24,12 @@ const FEATURE_ICONS = [Video, Palette, LayoutTemplate, Globe];
 
 export const dynamic = 'force-dynamic';
 
-// Guard: while true, the landing (/) always renders the coded marketing page and
-// can NEVER be flipped to the builder version by opening/saving in the builder.
-// Flip to false only when we deliberately want / to render from the builder doc.
-const LANDING_ALWAYS_MARKETING = true;
-
 export default function Home() {
   // If the landing has been opened in the visual builder, it becomes a normal
   // builder site (reserved slug) and renders through the same renderer as
   // /s/<slug> — fully editable (chrome, variants, effects). Until then, the
   // marketing page below is shown.
-  const landingSite = LANDING_ALWAYS_MARKETING ? null : getLandingSite();
+  const landingSite = getLandingSite();
   const builderDoc = landingSite ? parseDoc(landingSite.publishedDoc) : null;
   if (builderDoc) {
     const doc = rebaseDoc(builderDoc, '');

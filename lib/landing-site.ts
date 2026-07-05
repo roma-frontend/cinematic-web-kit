@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm';
 import { getDb, newId, users, sites, type Site } from '@/lib/db';
 import { makeNode, newId as newNodeId, type BuilderNode, type BuilderDoc, type BuilderPage, type NodeType } from '@/lib/builder/types';
 import { getLanding } from '@/lib/landing';
+import siteConfig from '@/data/site.json';
 
 // The landing page (/) is a normal builder site with a reserved slug, so it can
 // be edited with the full visual builder (all node types, variants, hover /
@@ -87,7 +88,7 @@ function seedLandingDoc(): BuilderDoc {
 
   return {
     brand: 'Cinematic Web Kit',
-    themeId: 'auto',
+    themeId: (siteConfig as { theme?: string }).theme || 'editorial-coffee',
     headerVariant: 'split',
     headerBehavior: 'sticky',
     footerVariant: 'columns',
