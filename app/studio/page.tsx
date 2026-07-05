@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LazyVideo } from '@/components/media/lazy-video';
-import { planFromBrief, composePrompt, type Section } from '@/lib/prompt-composer';
-import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight } from 'lucide-react';
+import { planFromBrief, composePrompt, type Section, type PlanItem } from '@/lib/prompt-composer';
+import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo } from 'lucide-react';
 
 type Status = 'idle' | 'running' | 'done' | 'error';
+type BatchItem = PlanItem & { state: 'pending' | 'running' | 'done' | 'error'; error?: string };
 
 const ease = [0.22, 1, 0.36, 1] as const;
 const fade = {
@@ -35,6 +36,40 @@ export default function StudioPage() {
   const [status, setStatus] = useState<Status>('idle');
   const [result, setResult] = useState<{ src: string; poster?: string; aspectRatio?: string; title?: string } | null>(null);
   const [error, setError] = useState('');
+
+  // Batch — whole-page plan
+  const [batch, setBatch] = useState<BatchItem[]>([]);
+  const [batchRunning, setBatchRunning] = useState(false);
+
+  async function runOne(body: { prompt: string; title: string; section: Section; aspect: string }) {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || data.detail || 'Generation failed');
+    return data.entry;
+  }
+
+  const planWholePage = () => {
+    const plan = planFromBrief(brief);
+    setBatch(plan.map((p) => ({ ...p, state: 'pending' as const })));
+  };
+
+  const runBatch = async () => {
+    setBatchRunning(true);
+    for (let i = 0; i < batch.length; i++) {
+      setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'running' } : it)));
+      try {
+        await runOne({ prompt: batch[i].prompt, title: batch[i].title, section: batch[i].section, aspect: batch[i].aspect });
+        setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'done' } : it)));
+      } catch (e) {
+        setBatch((b) => b.map((it, idx) => (idx === i ? { ...it, state: 'error', error: e instanceof Error ? e.message : 'error' } : it)));
+      }
+    }
+    setBatchRunning(false);
+  };
 
   const readFile = useCallback(async (file: File) => {
     const text = await file.text();
@@ -152,12 +187,59 @@ export default function StudioPage() {
                 <Upload className="h-3.5 w-3.5" /> Загрузить .md
               </button>
               <input ref={fileRef} type="file" accept=".md,.markdown,.txt" hidden onChange={(e) => e.target.files?.[0] && readFile(e.target.files[0])} />
-              <Button size="sm" onClick={generatePrompt} disabled={!brief.trim()} className="gap-1.5">
-                <Wand2 className="h-4 w-4" /> Сгенерировать промпт
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={planWholePage} disabled={!brief.trim()} className="gap-1.5">
+                  <ListVideo className="h-4 w-4" /> Собрать всю страницу
+                </Button>
+                <Button size="sm" onClick={generatePrompt} disabled={!brief.trim()} className="gap-1.5">
+                  <Wand2 className="h-4 w-4" /> Один промпт
+                </Button>
+              </div>
             </div>
           </div>
         </motion.section>
+
+        {/* Batch plan — whole page */}
+        <AnimatePresence>
+          {batch.length > 0 && (
+            <motion.section {...fade} className="mb-6">
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-xs text-primary">★</span>
+                План страницы — {batch.length} секц.
+              </label>
+              <div className="space-y-2 rounded-2xl border border-border bg-card/60 p-3 backdrop-blur">
+                {batch.map((it, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
+                  >
+                    <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">{it.section}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{it.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{it.prompt}</p>
+                    </div>
+                    <span className="shrink-0">
+                      {it.state === 'running' && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                      {it.state === 'done' && <Check className="h-4 w-4 text-green-500" />}
+                      {it.state === 'error' && <span className="text-xs text-red-500" title={it.error}>ошибка</span>}
+                      {it.state === 'pending' && <span className="text-xs text-muted-foreground/60">в очереди</span>}
+                    </span>
+                  </motion.div>
+                ))}
+                <div className="pt-1">
+                  <Button onClick={runBatch} disabled={batchRunning} className="w-full gap-2">
+                    {batchRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clapperboard className="h-4 w-4" />}
+                    {batchRunning ? 'Генерируем секции…' : 'Сгенерировать все секции'}
+                  </Button>
+                  <a href="/" className="mt-2 block text-center text-xs text-muted-foreground hover:text-foreground">После готовности — открыть главную →</a>
+                </div>
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
 
         {/* Step 2 — Generated prompt */}
         <AnimatePresence mode="wait">
