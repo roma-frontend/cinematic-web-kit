@@ -110,7 +110,7 @@ export function defaultProps(type: NodeType): Record<string, string> {
     case 'list':
       return { items: 'Первый пункт\nВторой пункт\nТретий пункт', ordered: 'false', marker: 'true' };
     case 'button':
-      return { text: 'Кнопка', href: '/site', variant: 'default', size: 'default', align: 'left' };
+      return { text: 'Кнопка', href: '/site', variant: 'default', size: 'default', align: 'left', type: 'link' };
     case 'image':
       return { src: '', alt: '', rounded: 'lg', ratio: '16/9' };
     case 'video':

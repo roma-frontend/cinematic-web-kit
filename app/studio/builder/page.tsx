@@ -19,7 +19,7 @@ import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
   NODE_LABELS, isContainer, makeNode, newId,
 } from '@/lib/builder/types';
-import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveRelative } from '@/lib/builder/tree';
+import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveRelative, insertAfter } from '@/lib/builder/tree';
 
 type Field = { k: string; label: string; kind?: 'text' | 'textarea'; opts?: string[] };
 
@@ -67,8 +67,9 @@ const FIELDS: Record<NodeType, Field[]> = {
   ],
   button: [
     { k: 'text', label: 'Текст' },
-    { k: 'href', label: 'Ссылка' },
-    { k: 'variant', label: 'Стиль', opts: ['default', 'outline', 'ghost'] },
+    { k: 'type', label: 'Тип', opts: ['link', 'submit', 'reset'] },
+    { k: 'href', label: 'Ссылка (для типа link)' },
+    { k: 'variant', label: 'Стиль', opts: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] },
     { k: 'size', label: 'Размер', opts: ['sm', 'default', 'lg'] },
     { k: 'align', label: 'Выравнивание', opts: ['left', 'center', 'right'] },
   ],
@@ -134,6 +135,7 @@ export default function BuilderEditor() {
   const [pageId, setPageId] = useState<string>((seed as unknown as BuilderDoc).pages[0]?.id ?? '');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [device, setDevice] = useState<keyof typeof DEVICE>('full');
+  const [tab, setTab] = useState<'pages' | 'blocks' | 'design'>('pages');
   const [previewKey, setPreviewKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -238,12 +240,36 @@ export default function BuilderEditor() {
     if (nid) setSelectedId(nid);
   };
 
-  // Drag-and-drop within the structure tree.
+  // Drag-and-drop within the structure tree — handles both moving existing
+  // nodes and dropping a NEW element dragged from the palette.
   const dragId = useRef<string | null>(null);
+  const paletteDrag = useRef<NodeType | null>(null);
   const onTreeDrop = (targetId: string) => {
+    const pType = paletteDrag.current;
     const from = dragId.current;
+    paletteDrag.current = null;
     dragId.current = null;
-    if (page && from) setBlocks(moveRelative(page.blocks, from, targetId));
+    if (!page) return;
+    if (pType) {
+      const target = findNode(page.blocks, targetId);
+      const node = makeNode(pType);
+      // Drop INTO the target if it's a container, else place right after it.
+      if (target && isContainer(target.type)) setBlocks(insertChild(page.blocks, targetId, node));
+      else setBlocks(insertAfter(page.blocks, targetId, node));
+      setSelectedId(node.id);
+      return;
+    }
+    if (from) setBlocks(moveRelative(page.blocks, from, targetId));
+  };
+  // Drop a palette element onto the empty page area (append to root).
+  const onRootDrop = () => {
+    const pType = paletteDrag.current;
+    paletteDrag.current = null;
+    dragId.current = null;
+    if (!page || !pType) return;
+    const node = makeNode(pType);
+    setBlocks([...page.blocks, node]);
+    setSelectedId(node.id);
   };
 
   // Image upload for the selected image node.
@@ -402,9 +428,17 @@ export default function BuilderEditor() {
         {msg && <div className="border-t border-border/60 bg-muted/40 px-4 py-1 text-center text-xs text-muted-foreground">{msg}</div>}
       </header>
 
-      <div className="mx-auto grid max-w-[120rem] gap-4 p-4 xl:grid-cols-[19rem_20rem_minmax(0,1fr)]">
-        {/* Column 1 — pages + palette + tree */}
-        <div className="space-y-4">
+      <div className="mx-auto grid max-w-[120rem] gap-4 p-4 xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          {/* Tabs */}
+          <div className="mb-3 grid grid-cols-3 gap-1 rounded-xl border border-border bg-card p-1">
+            {([['pages', 'Страницы'], ['blocks', 'Блоки'], ['design', 'Сайт']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setTab(id)} className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${tab === id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>{label}</button>
+            ))}
+          </div>
+
+          {/* TAB: Страницы */}
+          <div className={tab === 'pages' ? 'space-y-4' : 'hidden'}>
           {/* Generate page from brief */}
           <Card className="p-3">
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><Wand2 className="h-4 w-4 text-primary" /> Сгенерировать страницу</p>
@@ -460,14 +494,17 @@ export default function BuilderEditor() {
               <Textarea value={page.description ?? ''} onChange={(e) => renamePage('description', e.target.value)} rows={2} placeholder="SEO-описание (meta description)" />
             </Card>
           )}
+          </div>{/* end Страницы */}
 
+          {/* TAB: Блоки */}
+          <div className={tab === 'blocks' ? 'space-y-4' : 'hidden'}>
           {/* Palette */}
           <Card className="p-3">
             <p className="mb-1 text-sm font-semibold">Добавить элемент</p>
-            <p className="mb-2 text-xs text-muted-foreground">{selected && isContainer(selected.type) ? `Внутрь: ${NODE_LABELS[selected.type]}` : 'В конец страницы'}</p>
+            <p className="mb-2 text-xs text-muted-foreground">{selected && isContainer(selected.type) ? `Клик — внутрь: ${NODE_LABELS[selected.type]}` : 'Клик — в конец страницы'} · или перетащите на блок</p>
             <div className="grid grid-cols-2 gap-1.5">
               {PALETTE.map((t) => (
-                <Button key={t} size="sm" variant="outline" className="justify-start gap-1 text-xs" onClick={() => addNode(t)}>
+                <Button key={t} size="sm" variant="outline" draggable onDragStart={() => { paletteDrag.current = t; }} className="cursor-grab justify-start gap-1 text-xs active:cursor-grabbing" onClick={() => addNode(t)}>
                   <Plus className="h-3.5 w-3.5" /> {NODE_LABELS[t]}
                 </Button>
               ))}
@@ -475,8 +512,9 @@ export default function BuilderEditor() {
           </Card>
 
           {/* Tree */}
-          <Card className="p-3">
-            <p className="mb-2 text-sm font-semibold">Структура</p>
+          <Card className="p-3" onDragOver={(e) => e.preventDefault()} onDrop={onRootDrop}>
+            <p className="mb-1 text-sm font-semibold">Структура</p>
+            <p className="mb-2 text-xs text-muted-foreground">Перетащите элемент из палитры сюда или на нужный блок.</p>
             {page && page.blocks.length > 0 ? (
               <Tree nodes={page.blocks} depth={0} selectedId={selectedId} onSelect={setSelectedId}
                 onMove={(id, dir) => setBlocks(moveNode(page.blocks, id, dir))}
@@ -488,10 +526,8 @@ export default function BuilderEditor() {
               <p className="rounded-lg border border-dashed p-3 text-center text-xs text-muted-foreground">Пусто — добавьте элемент из палитры.</p>
             )}
           </Card>
-        </div>
 
-        {/* Column 2 — properties + site nav */}
-        <div className="space-y-4">
+          {/* Properties */}
           <Card className="p-3">
             <p className="mb-2 text-sm font-semibold">Свойства</p>
             {selected ? (
@@ -526,7 +562,10 @@ export default function BuilderEditor() {
               <p className="text-xs text-muted-foreground">Выберите элемент в структуре, чтобы редактировать.</p>
             )}
           </Card>
+          </div>{/* end Блоки */}
 
+          {/* TAB: Сайт */}
+          <div className={tab === 'design' ? 'space-y-4' : 'hidden'}>
           {/* Navigation editor */}
           <Card className="p-3">
             <div className="mb-2 flex items-center justify-between">
@@ -547,6 +586,7 @@ export default function BuilderEditor() {
               <Input value={doc.footer.text} onChange={(e) => setDoc((d) => ({ ...d, footer: { ...d.footer, text: e.target.value } }))} className="h-8" />
             </div>
           </Card>
+          </div>{/* end Сайт */}
         </div>
 
         {/* Column 3 — live preview */}

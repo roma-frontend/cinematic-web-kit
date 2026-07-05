@@ -146,15 +146,20 @@ export function RenderNode({ node }: { node: BuilderNode }) {
       );
 
     case 'button': {
-      const cls = cn(buttonVariants({ variant: (p.variant as 'default' | 'outline' | 'ghost') || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }));
+      type Variant = 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
+      const cls = cn(buttonVariants({ variant: (p.variant as Variant) || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }));
       const wrap = pick(TEXT_ALIGN, p.align, 'left');
-      return (
-        <div className={wrap}>
+      const inner =
+        p.type === 'submit' || p.type === 'reset' ? (
+          <button type={p.type} className={cls}>
+            {p.text}
+          </button>
+        ) : (
           <Link href={p.href || '#'} className={cls}>
             {p.text}
           </Link>
-        </div>
-      );
+        );
+      return <div className={wrap}>{inner}</div>;
     }
 
     case 'image':
