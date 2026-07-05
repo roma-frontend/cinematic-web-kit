@@ -132,8 +132,14 @@ export function approveOrgRequest(superadminId: string, requestId: string): { si
           createdAt: now, updatedAt: now, lastLoginAt: now,
         }).run();
       }
+      // No duplicate identities: a tenant member must NOT also exist as a
+      // platform user. Remove the platform account (owns nothing here) — their
+      // sessions/pending request cascade away. They now live only in site_users.
+      db.delete(users).where(eq(users.id, req.requesterId)).run();
     }
     siteId = req.targetSiteId;
+    // The org_request row cascaded away with the user; nothing more to update.
+    return { siteId };
   }
 
   db.update(orgRequests)
