@@ -23,6 +23,30 @@ const parsePairs = (s: string | undefined): [string, string][] =>
 const lines = (s: string | undefined): string[] =>
   (s ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
 
+// Finds the first descendant image in 'background' mode and returns it plus a
+// copy of the tree with that node pruned — used to hoist a hero image to fill
+// the whole section (full-bleed) regardless of how deeply it's nested.
+function extractBgImage(nodes: BuilderNode[]): { bg: BuilderNode | null; rest: BuilderNode[] } {
+  let bg: BuilderNode | null = null;
+  const walk = (list: BuilderNode[]): BuilderNode[] => {
+    const out: BuilderNode[] = [];
+    for (const n of list) {
+      if (!bg && n.type === 'image' && n.props?.imgMode === 'background' && n.props?.src) {
+        bg = n;
+        continue; // drop it from the flow
+      }
+      if (n.children && n.children.length) {
+        out.push({ ...n, children: walk(n.children) });
+      } else {
+        out.push(n);
+      }
+    }
+    return out;
+  };
+  const rest = walk(nodes);
+  return { bg, rest };
+}
+
 // Recursively renders a BuilderNode tree into responsive Tailwind markup.
 // Server component — the only client island is <BuilderForm>.
 
@@ -184,10 +208,9 @@ function renderInner(node: BuilderNode) {
   switch (node.type) {
     case 'section': {
       const gradient = p.bg === 'gradient';
-      // A child image in 'background' mode is hoisted to fill the whole section
-      // (full-bleed height+width) with the text rendered on top.
-      const bgChild = kids.find((k) => k.type === 'image' && k.props?.imgMode === 'background' && k.props?.src);
-      const sectionKids = bgChild ? kids.filter((k) => k !== bgChild) : kids;
+      // A descendant image in 'background' mode is hoisted to fill the whole
+      // section (full-bleed height+width) with the text rendered on top.
+      const { bg: bgChild, rest: sectionKids } = extractBgImage(kids);
       const bgImageSrc = p.bgImage || bgChild?.props?.src;
       const bgChildOverlay = bgChild?.props?.overlay;
       const hasMedia = !!(bgImageSrc || p.bgVideo);
