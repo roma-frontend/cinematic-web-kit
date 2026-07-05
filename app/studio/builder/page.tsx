@@ -314,7 +314,8 @@ function BuilderEditor() {
         if (d.doc?.pages?.length) {
           skipHistory.current = true; // the fetched doc is the baseline, not an undoable edit
           setDoc(d.doc);
-          setPageId(d.doc.pages[0].id);
+          // Open the home page (path '') by default, not just the first in the list.
+          setPageId((d.doc.pages.find((p) => p.path === '') ?? d.doc.pages[0]).id);
         }
         setSiteMeta(d.site);
       })
