@@ -23,7 +23,7 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: 'Ресурсы',
     links: [
-      { href: '/site', label: 'Опубликованный сайт' },
+      { href: '/dashboard/sites', label: 'Мои сайты' },
       { href: '/vitals', label: 'Web Vitals' },
     ],
   },
