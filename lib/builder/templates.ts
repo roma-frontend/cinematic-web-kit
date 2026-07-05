@@ -16,6 +16,19 @@ const card = (title: string, body: string, level = '3') =>
     mk('text', { text: body, align: 'left', muted: 'true' }),
   ]);
 
+// Bold, high-impact hero on a custom accent-colored background.
+const heroAccent = (title: string, sub: string, cta1: string, cta2: string, hex: string): BuilderNode =>
+  mk('section', { padding: 'lg', width: 'normal', bgColor: hex }, [
+    mk('stack', { gap: 'md', align: 'center' }, [
+      mk('heading', { text: title, level: '1', align: 'center', textColor: '#ffffff', fontSize: '4xl', fontWeight: 'bold', animate: 'slide-up' }),
+      mk('text', { text: sub, align: 'center', size: 'lg', textColor: '#ffffff' }),
+      mk('row', { gap: 'sm', align: 'center', justify: 'center', wrap: 'wrap' }, [
+        mk('button', { text: cta1, href: '/site/contact', size: 'lg', align: 'center', type: 'link', bgColor: '#ffffff', textColor: hex, radius: 'lg', hover: 'pulse' }),
+        mk('button', { text: cta2, href: '#', variant: 'outline', size: 'lg', align: 'center', type: 'link', textColor: '#ffffff', borderColor: '#ffffff', borderWidth: '1', hover: 'lift' }),
+      ]),
+    ]),
+  ]);
+
 export interface TemplateDef {
   id: string;
   label: string;
@@ -373,7 +386,7 @@ export const LANDINGS: TemplateDef[] = [
   {
     id: 'l-saas', label: 'SaaS-платформа', description: 'Продукт, возможности, тарифы, отзывы, FAQ.', suggestedPath: '', themeId: 'tech-saas',
     build: () => landingPage('SaaS-платформа', [
-      heroCenter('Автоматизируйте бизнес за минуты', 'Мощная платформа без кода — запускайте процессы и растите быстрее.', 'Начать бесплатно', 'Смотреть демо', 'primary'),
+      heroAccent('Автоматизируйте бизнес за минуты', 'Мощная платформа без кода — запускайте процессы и растите быстрее.', 'Начать бесплатно', 'Смотреть демо', '#4f46e5'),
       statsRow([['10K+', 'команд'], ['99.9%', 'аптайм'], ['4.9★', 'рейтинг']]),
       featureGrid('Возможности', '3', [['Автоматизация', 'Настройте сценарии за пару кликов.'], ['Интеграции', 'Подключайте любимые сервисы.'], ['Аналитика', 'Дашборды в реальном времени.']]),
       pricingSection('muted'),
@@ -395,7 +408,7 @@ export const LANDINGS: TemplateDef[] = [
   {
     id: 'l-startup', label: 'Стартап', description: 'Смелый неоновый лендинг для запуска.', suggestedPath: '', themeId: 'neon-night',
     build: () => landingPage('Стартап', [
-      heroCenter('Будущее уже здесь', 'Инновационный продукт, который меняет правила игры.', 'Присоединиться', 'Узнать больше', 'primary'),
+      heroAccent('Будущее уже здесь', 'Инновационный продукт, который меняет правила игры.', 'Присоединиться', 'Узнать больше', '#7c3aed'),
       featureGrid('Почему мы', '3', [['Быстро', 'Молниеносная скорость.'], ['Умно', 'ИИ под капотом.'], ['Безопасно', 'Данные под защитой.']]),
       statsRow([['1M+', 'скачиваний'], ['150', 'стран'], ['24/7', 'поддержка']], 'none'),
       faqSection('separated', 'muted'),
@@ -405,7 +418,7 @@ export const LANDINGS: TemplateDef[] = [
   {
     id: 'l-coffee', label: 'Кофейня', description: 'Тёплый редакторский стиль, меню и атмосфера.', suggestedPath: '', themeId: 'editorial-coffee',
     build: () => landingPage('Кофейня', [
-      heroCenter('Просыпайся медленно', 'Обжарка на месте, зёрна со всего мира и уютная атмосфера.', 'Забронировать стол', 'Меню', 'primary'),
+      heroAccent('Просыпайся медленно', 'Обжарка на месте, зёрна со всего мира и уютная атмосфера.', 'Забронировать стол', 'Меню', '#b45309'),
       featureGrid('Наше меню', '3', [['Эспрессо', 'Классика в идеальном балансе.'], ['Пуровер', 'Раскрываем вкус зерна.'], ['Латте', 'Нежная молочная пенка.']], 'none'),
       gallerySection('Атмосфера'),
       testimonialsSection('minimal', 'muted'),
@@ -415,7 +428,7 @@ export const LANDINGS: TemplateDef[] = [
   {
     id: 'l-fitness', label: 'Фитнес-клуб', description: 'Динамичный спортивный лендинг.', suggestedPath: '', themeId: 'sport-dynamic',
     build: () => landingPage('Фитнес-клуб', [
-      heroCenter('Стань сильнее каждый день', 'Современный зал, тренеры-профессионалы и программы под любые цели.', 'Пробная тренировка', 'Расписание', 'primary'),
+      heroAccent('Стань сильнее каждый день', 'Современный зал, тренеры-профессионалы и программы под любые цели.', 'Пробная тренировка', 'Расписание', '#dc2626'),
       featureGrid('Направления', '3', [['Силовые', 'Свободные веса и тренажёры.'], ['Кардио', 'Выносливость и жиросжигание.'], ['Групповые', 'Йога, бокс, кроссфит.']]),
       statsRow([['5000+', 'участников'], ['30', 'тренеров'], ['15', 'залов']]),
       pricingSection('none'),
@@ -425,7 +438,7 @@ export const LANDINGS: TemplateDef[] = [
   {
     id: 'l-course', label: 'Онлайн-курс', description: 'Образовательный лендинг с программой.', suggestedPath: '', themeId: 'modern-clean',
     build: () => landingPage('Онлайн-курс', [
-      heroCenter('Освойте профессию с нуля', 'Практический курс с наставником и реальными проектами в портфолио.', 'Записаться на курс', 'Программа', 'none'),
+      heroSplit('Освойте профессию с нуля', 'Практический курс с наставником и реальными проектами в портфолио.', 'Записаться на курс'),
       featureGrid('Чему вы научитесь', '3', [['Основы', 'Прочный фундамент с нуля.'], ['Практика', 'Реальные задачи и проекты.'], ['Карьера', 'Помощь с трудоустройством.']]),
       statsRow([['2000+', 'выпускников'], ['92%', 'трудоустройство'], ['4.8★', 'оценка']], 'muted'),
       faqSection('card', 'none'),
@@ -464,7 +477,7 @@ export const LANDINGS: TemplateDef[] = [
   {
     id: 'l-eco', label: 'Эко-продукт', description: 'Свежий природный лендинг для бренда.', suggestedPath: '', themeId: 'nature-fresh',
     build: () => landingPage('Эко-продукт', [
-      heroCenter('Забота о планете начинается с вас', 'Натуральные продукты без вреда для природы.', 'В магазин', 'О нас', 'primary'),
+      heroAccent('Забота о планете начинается с вас', 'Натуральные продукты без вреда для природы.', 'В магазин', 'О нас', '#16a34a'),
       featureGrid('Наши ценности', '3', [['Натурально', '100% органические компоненты.'], ['Этично', 'Без тестов на животных.'], ['Экологично', 'Перерабатываемая упаковка.']]),
       statsRow([['50K+', 'клиентов'], ['0%', 'пластика'], ['100%', 'натурально']], 'muted'),
       testimonialsSection('minimal', 'none'),
