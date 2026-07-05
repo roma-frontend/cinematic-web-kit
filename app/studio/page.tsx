@@ -28,6 +28,15 @@ const BLOCK_LABELS: Record<string, string> = {
 };
 const ALL_BLOCKS = Object.keys(BLOCK_LABELS);
 
+const STUDIO_TABS = [
+  { id: 'generate', label: 'Генерация', icon: Clapperboard },
+  { id: 'theme', label: 'Тема', icon: Palette },
+  { id: 'content', label: 'Контент', icon: Wand2 },
+  { id: 'layout', label: 'Композиция', icon: LayoutList },
+  { id: 'config', label: 'Конфигурация', icon: Upload },
+] as const;
+type StudioTab = (typeof STUDIO_TABS)[number]['id'];
+
 type Status = 'idle' | 'running' | 'done' | 'error';
 type BatchItem = PlanItem & { state: 'pending' | 'running' | 'done' | 'error'; error?: string };
 type LogLine = { line: string; stream: 'stdout' | 'stderr' };
@@ -99,6 +108,7 @@ export default function StudioPage() {
   const [brief, setBrief] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<StudioTab>('generate');
 
   // Step 2 — the generated prompt + section metadata
   const [prompt, setPrompt] = useState('');
@@ -454,7 +464,27 @@ export default function StudioPage() {
             сгенерирует и оптимизирует видео для секции сайта.
           </p>
         </motion.header>
+        {/* Tab bar */}
+        <div className="sticky top-0 z-20 -mx-5 mb-2 border-b border-border/60 bg-background/85 px-5 pb-px backdrop-blur-md">
+          <div className="flex gap-1 overflow-x-auto">
+            {STUDIO_TABS.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`relative flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2.5 text-sm font-medium transition-colors ${active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <Icon className="h-4 w-4" /> {t.label}
+                  {active && <motion.span layoutId="studio-tab" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {/* Step 1 — Brief */}
+        {tab === 'generate' && (
         <motion.section {...fade} transition={{ ...fade.transition, delay: 0.05 }} className="mb-6">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-xs text-primary">1</span>
@@ -503,8 +533,10 @@ export default function StudioPage() {
             </div>
           </Card>
         </motion.section>
+        )}
 
         {/* Site theme */}
+        {tab === 'theme' && (
         <motion.section {...fade} transition={{ ...fade.transition, delay: 0.08 }} className="mb-6">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <Palette className="h-4 w-4 text-primary" /> Тема сайта
@@ -528,8 +560,11 @@ export default function StudioPage() {
             {themeMsg && <span className="text-xs text-muted-foreground">{themeMsg}</span>}
           </Card>
         </motion.section>
+        )}
 
         {/* Content editor */}
+        {tab === 'content' && (
+        <>
         {content.length > 0 && (
           <motion.section {...fade} transition={{ ...fade.transition, delay: 0.085 }} className="mb-6">
             <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
@@ -572,8 +607,14 @@ export default function StudioPage() {
             </Card>
           </motion.section>
         )}
+        {content.length === 0 && (
+          <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Пока нет секций с контентом. Сгенерируй видео на вкладке «Генерация».</p>
+        )}
+        </>
+        )}
 
         {/* Page builder */}
+        {tab === 'layout' && (
         <motion.section {...fade} transition={{ ...fade.transition, delay: 0.09 }} className="mb-6">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <LayoutList className="h-4 w-4 text-primary" /> Конструктор страницы
@@ -623,8 +664,10 @@ export default function StudioPage() {
             </div>
           </Card>
         </motion.section>
+        )}
 
         {/* Site config export / import */}
+        {tab === 'config' && (
         <motion.section {...fade} transition={{ ...fade.transition, delay: 0.11 }} className="mb-6">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
             <Upload className="h-4 w-4 text-primary" /> Конфигурация сайта
@@ -640,8 +683,11 @@ export default function StudioPage() {
             {cfgMsg && <span className="text-xs text-muted-foreground">{cfgMsg}</span>}
           </Card>
         </motion.section>
+        )}
 
         {/* Batch plan — whole page */}
+        {tab === 'generate' && (
+        <>
         <AnimatePresence>
           {batch.length > 0 && (
             <motion.section {...fade} className="mb-6">
@@ -824,6 +870,8 @@ export default function StudioPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        </>
+        )}
           </div>
         </aside>
 
