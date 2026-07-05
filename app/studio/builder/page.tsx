@@ -1078,15 +1078,6 @@ function BuilderEditor() {
                 ))}
               </div>
             )}
-            <p className="mb-1 mt-3 text-sm font-semibold">Кнопки входа/регистрации</p>
-            <p className="mb-1.5 text-xs text-muted-foreground">Автоматические кнопки «Войти» и «Начать бесплатно» в шапке и футере, ведут на встроенные страницы входа/регистрации сайта (редактировать нельзя).</p>
-            <div className="flex gap-1.5">
-              {([['true', 'Показывать'], ['false', 'Скрыть']] as const).map(([v, label]) => (
-                <Button key={v} size="sm" variant={(doc.authButtons ?? 'true') === v ? 'default' : 'outline'} className="flex-1 text-xs" onClick={() => setDoc((d) => ({ ...d, authButtons: v }))}>
-                  {label}
-                </Button>
-              ))}
-            </div>
           </Card>
 
           {/* Navigation editor */}
