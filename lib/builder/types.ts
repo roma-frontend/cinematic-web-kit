@@ -102,13 +102,13 @@ export function defaultProps(type: NodeType): Record<string, string> {
     case 'grid':
       return { gap: 'md', columns: '3' };
     case 'card':
-      return { padding: 'md', bg: 'card', border: 'true', gap: 'sm' };
+      return { padding: 'md', bg: 'card', border: 'true', gap: 'sm', cardVariant: 'elevated' };
     case 'heading':
       return { text: 'Заголовок', level: '2', align: 'left' };
     case 'text':
       return { text: 'Немного описательного текста для вашего сайта.', align: 'left', muted: 'true' };
     case 'list':
-      return { items: 'Первый пункт\nВторой пункт\nТретий пункт', ordered: 'false', marker: 'true' };
+      return { items: 'Первый пункт\nВторой пункт\nТретий пункт', listVariant: 'bullet' };
     case 'button':
       return { text: 'Кнопка', href: '/site', variant: 'default', size: 'default', align: 'left', type: 'link' };
     case 'image':
@@ -122,13 +122,13 @@ export function defaultProps(type: NodeType): Record<string, string> {
     case 'form':
       return { formId: 'contact', submitText: 'Отправить', successMsg: 'Спасибо! Мы свяжемся с вами.' };
     case 'pricing':
-      return { plan: 'Pro', price: '990₽', period: '/мес', features: 'Всё из Base\nПриоритетная поддержка\nБез ограничений', cta: 'Выбрать', href: '/site/contact', featured: 'false' };
+      return { plan: 'Pro', price: '990₽', period: '/мес', features: 'Всё из Base\nПриоритетная поддержка\nБез ограничений', cta: 'Выбрать', href: '/site/contact', featured: 'false', priceVariant: 'card' };
     case 'testimonial':
-      return { quote: 'Отличный продукт — собрали сайт за вечер!', author: 'Анна Иванова', role: 'CEO, Acme' };
+      return { quote: 'Отличный продукт — собрали сайт за вечер!', author: 'Анна Иванова', role: 'CEO, Acme', quoteVariant: 'card' };
     case 'socials':
-      return { links: 'Telegram|https://t.me\nGitHub|https://github.com\nEmail|mailto:hi@example.com', align: 'left' };
+      return { links: 'Telegram|https://t.me\nGitHub|https://github.com\nEmail|mailto:hi@example.com', align: 'left', socialVariant: 'pills' };
     case 'faq':
-      return { items: 'Как это работает?::Собираете страницу из блоков в конструкторе.\nЕсть ли адаптив?::Да, всё адаптивно из коробки.', align: 'left' };
+      return { items: 'Как это работает?::Собираете страницу из блоков в конструкторе.\nЕсть ли адаптив?::Да, всё адаптивно из коробки.', align: 'left', faqVariant: 'bordered' };
     case 'tabs':
       return { items: 'Обзор::Краткое описание продукта.\nВозможности::Список ключевых функций.\nЦены::Информация о тарифах.' };
     case 'divider':

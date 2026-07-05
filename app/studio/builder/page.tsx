@@ -14,12 +14,12 @@ import {
 } from 'lucide-react';
 import seed from '@/data/builder.json';
 import { THEMES } from '@/lib/themes';
-import { TEMPLATES } from '@/lib/builder/templates';
+import { TEMPLATES, LANDINGS } from '@/lib/builder/templates';
 import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
   NODE_LABELS, isContainer, makeNode, newId,
 } from '@/lib/builder/types';
-import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveRelative, insertAfter, ancestorTypes } from '@/lib/builder/tree';
+import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveRelative, insertAfter, ancestorTypes, ancestorPath } from '@/lib/builder/tree';
 
 type Field = { k: string; label: string; kind?: 'text' | 'textarea'; opts?: string[] };
 
@@ -44,10 +44,9 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
   ],
   card: [
+    { k: 'cardVariant', label: 'Вариант', opts: ['elevated', 'outline', 'soft', 'plain'] },
     { k: 'padding', label: 'Внутр. отступ', opts: ['none', 'sm', 'md', 'lg'] },
-    { k: 'bg', label: 'Фон', opts: ['none', 'muted', 'card'] },
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
-    { k: 'border', label: 'Рамка', opts: ['true', 'false'] },
   ],
   heading: [
     { k: 'text', label: 'Текст', kind: 'textarea' },
@@ -62,8 +61,7 @@ const FIELDS: Record<NodeType, Field[]> = {
   ],
   list: [
     { k: 'items', label: 'Пункты (по строкам)', kind: 'textarea' },
-    { k: 'ordered', label: 'Нумерованный', opts: ['false', 'true'] },
-    { k: 'marker', label: 'Маркеры', opts: ['true', 'false'] },
+    { k: 'listVariant', label: 'Вариант', opts: ['bullet', 'check', 'arrow', 'numbered', 'plain'] },
   ],
   button: [
     { k: 'text', label: 'Текст' },
@@ -103,6 +101,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'successMsg', label: 'Сообщение об успехе' },
   ],
   pricing: [
+    { k: 'priceVariant', label: 'Вариант', opts: ['card', 'outline', 'minimal'] },
     { k: 'plan', label: 'Название плана' },
     { k: 'price', label: 'Цена' },
     { k: 'period', label: 'Период (напр. /мес)' },
@@ -112,15 +111,18 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'featured', label: 'Выделить', opts: ['false', 'true'] },
   ],
   testimonial: [
+    { k: 'quoteVariant', label: 'Вариант', opts: ['card', 'quote', 'minimal', 'centered'] },
     { k: 'quote', label: 'Цитата', kind: 'textarea' },
     { k: 'author', label: 'Автор' },
     { k: 'role', label: 'Должность / компания' },
   ],
   socials: [
+    { k: 'socialVariant', label: 'Вариант', opts: ['pills', 'buttons', 'underline', 'minimal'] },
     { k: 'links', label: 'Ссылки «Текст|URL» (по строкам)', kind: 'textarea' },
     { k: 'align', label: 'Выравнивание', opts: ['left', 'center', 'right'] },
   ],
   faq: [
+    { k: 'faqVariant', label: 'Вариант', opts: ['bordered', 'separated', 'card', 'plain'] },
     { k: 'items', label: 'Вопрос::Ответ (по строкам)', kind: 'textarea' },
     { k: 'align', label: 'Выравнивание', opts: ['left', 'center'] },
   ],
@@ -462,10 +464,11 @@ export default function BuilderEditor() {
     setSelectedId(null);
   };
   const addTemplate = (id: string) => {
-    const t = TEMPLATES.find((x) => x.id === id);
+    const t = [...LANDINGS, ...TEMPLATES].find((x) => x.id === id);
     if (!t) return;
     addPageDoc(t.build());
-    setMsg(`Добавлена страница «${t.label}». Не забудьте «Сохранить».`);
+    if (t.themeId) setDoc((d) => ({ ...d, themeId: t.themeId! }));
+    setMsg(`Добавлено: «${t.label}»${t.themeId ? ' (тема применена)' : ''}. Не забудьте «Сохранить».`);
   };
 
   // ---- nav / footer / brand ----
@@ -548,6 +551,20 @@ export default function BuilderEditor() {
 
           {/* TAB: Страницы */}
           <div className={tab === 'pages' ? 'space-y-4' : 'hidden'}>
+          {/* Ready-made landings */}
+          <Card className="p-3">
+            <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold"><LayoutTemplate className="h-4 w-4 text-primary" /> Готовые лендинги</p>
+            <p className="mb-2 text-xs text-muted-foreground">Выберите лендинг — добавится как страница с подходящей темой, дальше меняйте под себя.</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {LANDINGS.map((t) => (
+                <button key={t.id} onClick={() => addTemplate(t.id)} className="rounded-lg border border-border/60 p-2 text-left transition-colors hover:border-primary/60 hover:bg-muted/50">
+                  <span className="block text-xs font-semibold">{t.label}</span>
+                  <span className="block text-[10px] leading-tight text-muted-foreground">{t.description}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+
           {/* Generate page from brief */}
           <Card className="p-3">
             <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><Wand2 className="h-4 w-4 text-primary" /> Сгенерировать страницу</p>
@@ -559,7 +576,7 @@ export default function BuilderEditor() {
 
           {/* Ready-made templates */}
           <Card className="p-3">
-            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><LayoutGrid className="h-4 w-4 text-primary" /> Готовые страницы</p>
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><LayoutGrid className="h-4 w-4 text-primary" /> Отдельные страницы</p>
             <div className="space-y-1.5">
               {TEMPLATES.map((t) => (
                 <button key={t.id} onClick={() => addTemplate(t.id)} className="w-full rounded-lg border border-border/60 p-2 text-left transition-colors hover:border-primary/50 hover:bg-muted/50">
@@ -644,8 +661,18 @@ export default function BuilderEditor() {
             <p className="mb-2 text-sm font-semibold">Свойства</p>
             {selected ? (
               <div className="space-y-2.5">
-                <p className="text-xs text-muted-foreground">{NODE_LABELS[selected.type]}</p>
-                {FIELDS[selected.type].length === 0 && <p className="text-xs text-muted-foreground">Нет настроек.</p>}
+                {page && (
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                    {ancestorPath(page.blocks, selected.id).map((a) => (
+                      <span key={a.id} className="flex items-center gap-1">
+                        <button className="hover:text-foreground" onClick={() => setSelectedId(a.id)}>{NODE_LABELS[a.type as NodeType] ?? a.type}</button>
+                        <span>›</span>
+                      </span>
+                    ))}
+                    <span className="font-medium text-foreground">{NODE_LABELS[selected.type]}</span>
+                  </div>
+                )}
+                {FIELDS[selected.type].length === 0 && <p className="text-xs text-muted-foreground">Нет настроек контента.</p>}
                 {FIELDS[selected.type].map((f) => (
                   <div key={f.k}>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">{f.label}</label>

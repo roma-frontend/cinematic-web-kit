@@ -212,14 +212,21 @@ function renderInner(node: BuilderNode) {
         </div>
       );
 
-    case 'card':
+    case 'card': {
+      const cv = p.cardVariant || (p.border === 'false' ? 'plain' : 'elevated');
+      const cardBase =
+        cv === 'outline' ? 'border border-border'
+        : cv === 'soft' ? 'bg-muted/50'
+        : cv === 'plain' ? ''
+        : 'bg-card border border-border shadow-md'; // elevated
       return (
-        <div className={cn('flex flex-col', pick(GAP, p.gap, 'sm'), pick(PAD_BOX, p.padding, 'md'), p.bg === 'muted' ? 'bg-muted/50' : p.bg === 'none' ? '' : 'bg-card', p.border !== 'false' ? 'rounded-2xl border border-border' : '')}>
+        <div className={cn('flex flex-col rounded-2xl', pick(GAP, p.gap, 'sm'), pick(PAD_BOX, p.padding, 'md'), cardBase)}>
           {kids.map((c) => (
             <RenderNode key={c.id} node={c} />
           ))}
         </div>
       );
+    }
 
     case 'heading': {
       const Tag = (`h${p.level && ['1', '2', '3', '4'].includes(p.level) ? p.level : '2'}`) as 'h1' | 'h2' | 'h3' | 'h4';
@@ -288,13 +295,24 @@ function renderInner(node: BuilderNode) {
 
     case 'list': {
       const items = lines(p.items);
-      const Tag = p.ordered === 'true' ? 'ol' : 'ul';
+      const lv = p.listVariant || 'bullet';
+      if (lv === 'numbered') {
+        return (
+          <ol className="list-decimal space-y-1.5 pl-5 text-base leading-relaxed">
+            {items.map((it, i) => <li key={i}>{it}</li>)}
+          </ol>
+        );
+      }
+      const marker = lv === 'check' ? '✓' : lv === 'arrow' ? '→' : lv === 'plain' ? '' : '•';
       return (
-        <Tag className={cn('space-y-1.5 text-base leading-relaxed', p.marker !== 'false' ? (p.ordered === 'true' ? 'list-decimal pl-5' : 'list-disc pl-5') : 'list-none')}>
+        <ul className="space-y-1.5 text-base leading-relaxed">
           {items.map((it, i) => (
-            <li key={i}>{it}</li>
+            <li key={i} className="flex items-start gap-2">
+              {marker && <span className={cn('shrink-0', lv === 'check' ? 'text-primary' : 'text-muted-foreground')}>{marker}</span>}
+              <span>{it}</span>
+            </li>
           ))}
-        </Tag>
+        </ul>
       );
     }
 
@@ -317,8 +335,13 @@ function renderInner(node: BuilderNode) {
     case 'pricing': {
       const feats = lines(p.features);
       const featured = p.featured === 'true';
+      const pv = p.priceVariant || 'card';
+      const box =
+        pv === 'outline' ? 'border-2 border-border'
+        : pv === 'minimal' ? ''
+        : featured ? 'border border-primary bg-primary/5 shadow-lg' : 'border border-border bg-card'; // card
       return (
-        <div className={cn('flex flex-col gap-4 rounded-2xl border p-6', featured ? 'border-primary bg-primary/5 shadow-lg' : 'border-border bg-card')}>
+        <div className={cn('flex flex-col gap-4 rounded-2xl p-6', box, featured && pv !== 'card' && 'ring-2 ring-primary')}>
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{p.plan}</p>
             <p className="mt-1 text-4xl font-black">{p.price}<span className="text-base font-normal text-muted-foreground">{p.period}</span></p>
@@ -335,33 +358,64 @@ function renderInner(node: BuilderNode) {
       );
     }
 
-    case 'testimonial':
+    case 'testimonial': {
+      const tv = p.quoteVariant || 'card';
+      if (tv === 'quote') {
+        return (
+          <figure className="relative pl-8">
+            <span className="absolute left-0 top-0 font-serif text-5xl leading-none text-primary/40">“</span>
+            <blockquote className="text-xl leading-relaxed">{p.quote}</blockquote>
+            <figcaption className="mt-3 text-sm"><span className="font-semibold">{p.author}</span>{p.role ? <span className="text-muted-foreground"> · {p.role}</span> : null}</figcaption>
+          </figure>
+        );
+      }
+      if (tv === 'minimal') {
+        return (
+          <figure className="flex flex-col gap-2">
+            <blockquote className="leading-relaxed">“{p.quote}”</blockquote>
+            <figcaption className="text-sm text-muted-foreground">{p.author}{p.role ? `, ${p.role}` : ''}</figcaption>
+          </figure>
+        );
+      }
+      if (tv === 'centered') {
+        return (
+          <figure className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
+            <blockquote className="text-xl leading-relaxed">“{p.quote}”</blockquote>
+            <figcaption className="text-sm"><span className="font-semibold">{p.author}</span>{p.role ? <span className="text-muted-foreground"> · {p.role}</span> : null}</figcaption>
+          </figure>
+        );
+      }
       return (
         <figure className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
           <blockquote className="text-lg leading-relaxed">“{p.quote}”</blockquote>
-          <figcaption className="text-sm">
-            <span className="font-semibold">{p.author}</span>
-            {p.role ? <span className="text-muted-foreground"> · {p.role}</span> : null}
-          </figcaption>
+          <figcaption className="text-sm"><span className="font-semibold">{p.author}</span>{p.role ? <span className="text-muted-foreground"> · {p.role}</span> : null}</figcaption>
         </figure>
       );
+    }
 
     case 'socials': {
       const links = lines(p.links).map((l) => {
         const [label, href] = l.split('|');
         return { label: (label ?? '').trim(), href: (href ?? '#').trim() };
       });
+      const sv = p.socialVariant || 'pills';
+      const justify = pick(TEXT_ALIGN, p.align, 'left') === 'text-center' ? 'justify-center' : pick(TEXT_ALIGN, p.align, 'left') === 'text-right' ? 'justify-end' : 'justify-start';
+      const cls =
+        sv === 'buttons' ? cn(buttonVariants({ variant: 'outline', size: 'sm' }))
+        : sv === 'pills' ? 'rounded-full border border-border px-4 py-1.5 text-sm font-medium transition-colors hover:bg-primary hover:text-primary-foreground'
+        : sv === 'underline' ? 'text-sm font-medium underline-offset-4 hover:underline'
+        : 'text-sm font-medium text-muted-foreground hover:text-foreground'; // minimal
       return (
-        <div className={cn('flex flex-wrap gap-2', pick(TEXT_ALIGN, p.align, 'left') === 'text-center' ? 'justify-center' : pick(TEXT_ALIGN, p.align, 'left') === 'text-right' ? 'justify-end' : 'justify-start')}>
+        <div className={cn('flex flex-wrap gap-2', justify)}>
           {links.map((l, i) => (
-            <Link key={i} href={l.href} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>{l.label}</Link>
+            <Link key={i} href={l.href} className={cls}>{l.label}</Link>
           ))}
         </div>
       );
     }
 
     case 'faq':
-      return <Accordion items={parsePairs(p.items)} />;
+      return <Accordion items={parsePairs(p.items)} variant={p.faqVariant || 'bordered'} />;
 
     case 'tabs':
       return <Tabs items={parsePairs(p.items)} />;

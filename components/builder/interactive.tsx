@@ -6,12 +6,22 @@ import { cn } from '@/lib/utils';
 
 // Interactive builder elements. Items are pre-parsed [title, body] pairs.
 
-export function Accordion({ items }: { items: [string, string][] }) {
+export function Accordion({ items, variant = 'bordered' }: { items: [string, string][]; variant?: string }) {
   const [open, setOpen] = useState<number | null>(0);
+  const wrap =
+    variant === 'separated' ? 'flex flex-col gap-2'
+    : variant === 'card' ? 'flex flex-col gap-2'
+    : variant === 'plain' ? 'flex flex-col'
+    : 'divide-y divide-border rounded-xl border border-border'; // bordered
+  const itemCls =
+    variant === 'separated' ? 'rounded-xl border border-border'
+    : variant === 'card' ? 'rounded-xl bg-card shadow-sm'
+    : variant === 'plain' ? 'border-b border-border/60'
+    : '';
   return (
-    <div className="divide-y divide-border rounded-xl border border-border">
+    <div className={wrap}>
       {items.map(([q, a], i) => (
-        <div key={i}>
+        <div key={i} className={itemCls}>
           <button
             className="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-sm font-medium"
             onClick={() => setOpen((o) => (o === i ? null : i))}

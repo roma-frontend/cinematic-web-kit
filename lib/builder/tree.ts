@@ -105,6 +105,23 @@ export function ancestorTypes(nodes: BuilderNode[], id: string): string[] {
   return result;
 }
 
+// Ancestors of `id` from root down to the direct parent (for breadcrumbs).
+export function ancestorPath(nodes: BuilderNode[], id: string): { id: string; type: string }[] {
+  let result: { id: string; type: string }[] = [];
+  const walk = (list: BuilderNode[], trail: { id: string; type: string }[]): boolean => {
+    for (const n of list) {
+      if (n.id === id) {
+        result = trail;
+        return true;
+      }
+      if (n.children && walk(n.children, [...trail, { id: n.id, type: n.type }])) return true;
+    }
+    return false;
+  };
+  walk(nodes, []);
+  return result;
+}
+
 
 export function isDescendant(node: BuilderNode, id: string): boolean {
   if (node.id === id) return true;
