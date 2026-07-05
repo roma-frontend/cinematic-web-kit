@@ -12,6 +12,7 @@
 //
 // Sections: hero | background | card
 
+import './load-env.mjs'; // load .env/.env.local before lib.mjs reads process.env
 import path from 'node:path';
 import { generateVideo, download, optimize, importToData, toPublicUrl, slugify, RAW_DIR } from './lib.mjs';
 

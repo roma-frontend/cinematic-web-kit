@@ -47,6 +47,9 @@ export async function resolveFfmpeg() {
 export async function generateVideo({ prompt, negativePrompt, model, aspectRatio = '16:9', duration, apiKey }) {
   const key = apiKey || process.env.MUAPI_KEY;
   if (!key) throw new Error('MUAPI_KEY is not set. Export your muapi.ai API key first (see .env.example).');
+  if (!/^[\x20-\x7E]+$/.test(key)) {
+    throw new Error('MUAPI_KEY contains non-ASCII characters — it looks corrupted (bad shell paste?). Re-set it in .env.local.');
+  }
   if (!prompt) throw new Error('A --prompt is required to generate a video (or use --from <file>).');
 
   const endpoint = model || DEFAULT_VIDEO_ENDPOINT;
