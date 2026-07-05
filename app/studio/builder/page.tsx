@@ -849,7 +849,7 @@ export default function BuilderEditor() {
 
         {/* Live preview canvas */}
         <div
-          className={fullscreen ? 'fixed inset-0 z-50 flex flex-col bg-muted/20' : 'flex shrink-0 flex-col border-l border-border/60 bg-muted/20'}
+          className={fullscreen ? 'fixed inset-x-0 bottom-0 top-14 z-30 flex flex-col bg-muted/20' : 'flex shrink-0 flex-col border-l border-border/60 bg-muted/20'}
           style={fullscreen ? undefined : { width: previewWidth }}
         >
           <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs text-muted-foreground">
