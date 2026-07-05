@@ -2,6 +2,7 @@ import 'server-only';
 import { asc, eq } from 'drizzle-orm';
 import { getDb, newId, users, sites, type Site } from '@/lib/db';
 import { makeNode, newId as newNodeId, type BuilderNode, type BuilderDoc, type BuilderPage, type NodeType } from '@/lib/builder/types';
+import { getLanding } from '@/lib/landing';
 
 // The landing page (/) is a normal builder site with a reserved slug, so it can
 // be edited with the full visual builder (all node types, variants, hover /
@@ -16,86 +17,68 @@ const mk = (type: NodeType, props: Record<string, string> = {}, children?: Build
   return node;
 };
 
-const featCard = (title: string, body: string): BuilderNode =>
-  mk('card', { padding: 'md', cardVariant: 'elevated', gap: 'sm', animate: 'slide-up', hover: 'lift' }, [
-    mk('heading', { text: title, level: '3', align: 'left' }),
-    mk('text', { text: body, align: 'left', muted: 'true' }),
-  ]);
-
 function seedLandingDoc(): BuilderDoc {
   const year = new Date().getFullYear();
+  const L = getLanding(); // same copy as the marketing landing, so it matches
   const home: BuilderPage = {
     id: newNodeId('page'),
     path: '',
     title: 'Главная',
-    description: 'ИИ-платформа для сайтов: генерация видео, авто-темы, визуальный конструктор и публикация.',
+    description: L.hero.subtitle,
     blocks: [
-      // Hero
-      mk('section', { padding: 'lg', bg: 'none', width: 'normal', minH: 'half' }, [
+      // Hero — mirrors the marketing hero
+      mk('section', { padding: 'lg', bg: 'none', width: 'normal' }, [
         mk('stack', { gap: 'md', align: 'center' }, [
-          mk('text', { text: 'ИИ-платформа для сайтов', align: 'center', muted: 'true', size: 'sm' }),
-          mk('heading', { text: 'Соберите и опубликуйте сайт с помощью ИИ', level: '1', align: 'center', animate: 'slide-up' }),
-          mk('text', { text: 'Опишите идею — платформа сгенерирует видео и тему, соберёт страницы в визуальном конструкторе и опубликует сайт на вашем поддомене. Без кода и дизайнеров.', align: 'center', size: 'lg', animate: 'fade' }),
+          mk('text', { text: L.hero.badge, align: 'center', muted: 'true', size: 'sm' }),
+          mk('heading', { text: L.hero.title, level: '1', align: 'center', animate: 'slide-up' }),
+          mk('text', { text: L.hero.subtitle, align: 'center', size: 'lg', animate: 'fade' }),
           mk('row', { gap: 'sm', align: 'center', justify: 'center', wrap: 'wrap' }, [
-            mk('button', { text: 'Начать бесплатно', href: '/register', variant: 'default', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
-            mk('button', { text: 'Открыть Студию', href: '/studio', variant: 'outline', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
+            mk('button', { text: L.hero.ctaPrimaryLabel, href: L.hero.ctaPrimaryHref, variant: 'default', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
+            mk('button', { text: L.hero.ctaSecondaryLabel, href: L.hero.ctaSecondaryHref, variant: 'outline', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
           ]),
-          mk('text', { text: 'Без карты · старт за пару минут', align: 'center', muted: 'true', size: 'sm' }),
+          mk('text', { text: L.hero.note, align: 'center', muted: 'true', size: 'sm' }),
         ]),
       ]),
-      // How it works
+      // How it works — numbered cards
       mk('section', { padding: 'lg', bg: 'none', width: 'wide' }, [
-        mk('heading', { text: 'Как это работает', level: '2', align: 'center', animate: 'fade' }),
-        mk('text', { text: 'Три шага от идеи до опубликованного сайта.', align: 'center', muted: 'true' }),
+        mk('heading', { text: L.steps.title, level: '2', align: 'center', animate: 'fade' }),
+        mk('text', { text: L.steps.subtitle, align: 'center', muted: 'true' }),
         mk('spacer', { height: 'md' }),
-        mk('grid', { gap: 'md', columns: '3', stagger: 'true' }, [
+        mk('grid', { gap: 'md', columns: '3', stagger: 'true' }, L.steps.items.map((s) =>
           mk('card', { cardVariant: 'outline', padding: 'md', gap: 'sm', animate: 'slide-up', hover: 'lift' }, [
-            mk('heading', { text: '01', level: '1', align: 'left', textColor: 'primary' }),
-            mk('heading', { text: 'Опишите идею', level: '3', align: 'left' }),
-            mk('text', { text: 'Напишите бриф — Студия соберёт кинематографический промпт, сгенерирует ИИ-видео и подберёт тему под ваш продукт.', align: 'left', muted: 'true' }),
+            mk('heading', { text: s.n, level: '1', align: 'left', textColor: 'primary' }),
+            mk('heading', { text: s.title, level: '3', align: 'left' }),
+            mk('text', { text: s.text, align: 'left', muted: 'true' }),
           ]),
-          mk('card', { cardVariant: 'outline', padding: 'md', gap: 'sm', animate: 'slide-up', hover: 'lift' }, [
-            mk('heading', { text: '02', level: '1', align: 'left', textColor: 'primary' }),
-            mk('heading', { text: 'Соберите страницы', level: '3', align: 'left' }),
-            mk('text', { text: 'Визуальный конструктор с drag-and-drop, живым предпросмотром и готовыми лендингами. Никакого кода.', align: 'left', muted: 'true' }),
-          ]),
-          mk('card', { cardVariant: 'outline', padding: 'md', gap: 'sm', animate: 'slide-up', hover: 'lift' }, [
-            mk('heading', { text: '03', level: '1', align: 'left', textColor: 'primary' }),
-            mk('heading', { text: 'Опубликуйте', level: '3', align: 'left' }),
-            mk('text', { text: 'Один клик — и сайт живёт на вашем поддомене. Меняйте контент в любой момент, обновления сразу онлайн.', align: 'left', muted: 'true' }),
-          ]),
-        ]),
+        )),
       ]),
-      // Features
+      // Features — 4 cards
       mk('section', { padding: 'lg', bg: 'muted', width: 'wide' }, [
-        mk('heading', { text: 'Возможности', level: '2', align: 'center', animate: 'fade' }),
-        mk('text', { text: 'Всё для запуска красивого сайта — в одном месте.', align: 'center', muted: 'true' }),
+        mk('heading', { text: L.features.title, level: '2', align: 'center', animate: 'fade' }),
+        mk('text', { text: L.features.subtitle, align: 'center', muted: 'true' }),
         mk('spacer', { height: 'md' }),
-        mk('grid', { gap: 'md', columns: '4', stagger: 'true' }, [
-          featCard('ИИ-видео', 'Кинематографические ролики из текстового промпта, автоматически оптимизированные в .webm с постером.'),
-          featCard('Авто-темы', 'Движок подбирает палитру, шрифты, радиусы и характер анимаций под содержание вашего сайта.'),
-          featCard('Визуальный конструктор', 'Многостраничный редактор: секции, стили, варианты блоков, undo/redo, адаптив под мобильные.'),
-          featCard('Публикация на поддомене', 'Собственный адрес вида your-brand.site, мгновенные обновления и живой предпросмотр.'),
-        ]),
+        mk('grid', { gap: 'md', columns: '4', stagger: 'true' }, L.features.items.map((f) =>
+          mk('card', { padding: 'md', cardVariant: 'elevated', gap: 'sm', animate: 'slide-up', hover: 'lift' }, [
+            mk('heading', { text: f.title, level: '3', align: 'left' }),
+            mk('text', { text: f.text, align: 'left', muted: 'true' }),
+          ]),
+        )),
       ]),
-      // Testimonials
+      // Themes teaser
       mk('section', { padding: 'lg', bg: 'none', width: 'wide' }, [
-        mk('heading', { text: 'Нам доверяют', level: '2', align: 'center' }),
-        mk('spacer', { height: 'md' }),
-        mk('grid', { gap: 'md', columns: '3' }, [
-          mk('testimonial', { quote: 'Собрали и запустили сайт за один вечер. Невероятно удобно!', author: 'Анна Петрова', role: 'CEO, Acme', quoteVariant: 'card' }),
-          mk('testimonial', { quote: 'ИИ-видео и авто-темы экономят кучу времени.', author: 'Иван Смирнов', role: 'Founder', quoteVariant: 'card' }),
-          mk('testimonial', { quote: 'Публикация в один клик — это магия.', author: 'Мария Кузнецова', role: 'Product', quoteVariant: 'card' }),
-        ]),
+        mk('heading', { text: L.themesTeaser.title, level: '2', align: 'center' }),
+        mk('text', { text: L.themesTeaser.subtitle, align: 'center', muted: 'true' }),
+        mk('spacer', { height: 'sm' }),
+        mk('button', { text: 'Все темы', href: '/themes', variant: 'outline', size: 'default', align: 'center', type: 'link', hover: 'lift' }),
       ]),
       // Final CTA
-      mk('section', { padding: 'lg', bg: 'card', width: 'normal', minH: 'none' }, [
+      mk('section', { padding: 'lg', bg: 'card', width: 'normal' }, [
         mk('stack', { gap: 'sm', align: 'center' }, [
-          mk('heading', { text: 'Запустите свой сайт уже сегодня', level: '2', align: 'center' }),
-          mk('text', { text: 'Опишите идею — остальное сделает платформа. Публикация на поддомене в один клик.', align: 'center', muted: 'true' }),
+          mk('heading', { text: L.finalCta.title, level: '2', align: 'center' }),
+          mk('text', { text: L.finalCta.subtitle, align: 'center', muted: 'true' }),
           mk('row', { gap: 'sm', align: 'center', justify: 'center', wrap: 'wrap' }, [
-            mk('button', { text: 'Начать бесплатно', href: '/register', variant: 'default', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
-            mk('button', { text: 'Открыть конструктор', href: '/studio/builder', variant: 'outline', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
+            mk('button', { text: L.finalCta.ctaPrimaryLabel, href: L.finalCta.ctaPrimaryHref, variant: 'default', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
+            mk('button', { text: L.finalCta.ctaSecondaryLabel, href: L.finalCta.ctaSecondaryHref, variant: 'outline', size: 'lg', align: 'center', type: 'link', hover: 'lift' }),
           ]),
         ]),
       ]),
@@ -132,8 +115,9 @@ export function getLandingSite(): Site | null {
   return getDb().select().from(sites).where(eq(sites.slug, LANDING_SLUG)).get() ?? null;
 }
 
-/** Get the landing site, creating a seeded DRAFT one on first call (not
- *  published — / keeps showing marketing until the editor hits "Опубликовать").
+/** Get the landing site, creating a seeded (published) one on first call — a
+ *  faithful copy of the marketing landing, so opening it in the builder shows
+ *  the real landing and every save keeps / in sync.
  *  Returns null only if there is no user yet to own it. */
 export function getOrCreateLandingSite(): Site | null {
   const db = getDb();
@@ -150,8 +134,8 @@ export function getOrCreateLandingSite(): Site | null {
     name: 'Лендинг (главная)',
     slug: LANDING_SLUG,
     draftDoc: json,
-    publishedDoc: null, // NOT published — / keeps showing the marketing page
-    publishedAt: null,  // until the editor explicitly hits "Опубликовать"
+    publishedDoc: json, // published on create so "Открыть" shows the real landing
+    publishedAt: now,    // and every save/autosave keeps / in sync
     createdAt: now,
     updatedAt: now,
   };
