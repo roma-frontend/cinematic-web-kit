@@ -9,10 +9,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Film, LayoutDashboard, Globe, Inbox, UserCircle, Users, LayoutList,
-  LogOut, Menu, X, ExternalLink, Crown, ShieldCheck, Plus,
+  LogOut, Menu, X, ExternalLink, Crown, ShieldCheck, Plus, Search,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { CommandPalette, type Command } from '@/components/dashboard/command-palette';
 
 export type Role = 'customer' | 'admin' | 'superadmin';
 export interface ShellUser { name: string; email: string; role: Role }
@@ -50,6 +51,15 @@ export function DashboardShell({ user, banner, children }: { user: ShellUser; ba
     router.push('/login');
     router.refresh();
   };
+
+  const commands: Command[] = [
+    ...visible.map((i) => ({ label: i.label, hint: 'Раздел', icon: i.icon, run: () => router.push(i.href) })),
+    { label: 'Создать новый сайт', hint: 'Действие', icon: Plus, run: () => router.push('/dashboard/sites') },
+    { label: 'Открыть сайт', hint: 'Ссылка', icon: ExternalLink, run: () => window.open('/', '_blank') },
+    { label: 'Студия', hint: 'Переход', icon: Film, run: () => router.push('/studio') },
+    { label: 'Конструктор', hint: 'Переход', icon: Film, run: () => router.push('/studio/builder') },
+    { label: 'Выйти из аккаунта', hint: 'Действие', icon: LogOut, run: logout },
+  ];
 
   const SidebarBody = (
     <>
@@ -124,7 +134,7 @@ export function DashboardShell({ user, banner, children }: { user: ShellUser; ba
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
-      {/* Desktop sidebar */}
+      <CommandPalette commands={commands} />      {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border/60 bg-muted/30 lg:flex">
         {SidebarBody}
       </aside>
@@ -155,6 +165,13 @@ export function DashboardShell({ user, banner, children }: { user: ShellUser; ba
           <span className="text-sm font-semibold tracking-tight">
             {visible.find((i) => active(i.href))?.label ?? 'Дашборд'}
           </span>
+          <button
+            onClick={() => window.dispatchEvent(new Event('cwk:open-palette'))}
+            className="ml-2 hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted md:flex"
+          >
+            <Search className="h-3.5 w-3.5" /> Поиск команд
+            <kbd className="rounded border border-border bg-background px-1 text-[10px]">⌘K</kbd>
+          </button>
           <div className="ml-auto flex items-center gap-2">
             <Link href="/dashboard/sites">
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Новый сайт</span></Button>

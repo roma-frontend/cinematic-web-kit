@@ -373,6 +373,40 @@ const gallerySection = (title: string): BuilderNode =>
     mk('grid', { gap: 'md', columns: '3' }, [1, 2, 3, 4, 5, 6].map((i) => mk('image', { src: '', alt: `Работа ${i}`, rounded: 'lg', ratio: '4/3' }))),
   ]);
 
+// Minimal first page for a freshly created tenant site: enough to publish
+// right away — hero with the brand name, three feature cards and a lead form.
+export const starterPage = (brand: string): BuilderPage => ({
+  id: newId('page'),
+  path: '',
+  title: 'Главная',
+  description: `${brand} — официальный сайт.`,
+  blocks: [
+    mk('section', { padding: 'lg', bg: 'primary', width: 'normal' }, [
+      mk('stack', { gap: 'md', align: 'center' }, [
+        mk('heading', { text: brand, level: '1', align: 'center', animate: 'slide-up' }),
+        mk('text', { text: 'Добро пожаловать! Эта страница создана автоматически — откройте конструктор и соберите сайт из готовых секций и лендингов.', align: 'center', size: 'lg' }),
+      ]),
+    ]),
+    mk('section', { padding: 'lg', bg: 'none', width: 'normal' }, [
+      mk('grid', { columns: '3', gap: 'md', stagger: 'true' }, [
+        card('Быстрый старт', 'Замените этот текст на описание вашего продукта или услуги.'),
+        card('Готовые секции', 'Добавляйте тарифы, отзывы, FAQ и галереи в пару кликов.'),
+        card('Свой домен', 'Привяжите собственный домен в настройках сайта.'),
+      ]),
+    ]),
+    mk('section', { padding: 'lg', bg: 'muted', width: 'narrow' }, [
+      mk('stack', { gap: 'md', align: 'stretch' }, [
+        mk('heading', { text: 'Оставьте заявку', level: '2', align: 'center' }),
+        mk('form', { formId: 'contact', submitText: 'Отправить', successMsg: 'Спасибо! Мы свяжемся с вами.' }, [
+          mk('input', { name: 'name', label: 'Имя', placeholder: 'Ваше имя', type: 'text', required: 'true' }),
+          mk('input', { name: 'phone', label: 'Телефон', placeholder: '+7 900 000-00-00', type: 'tel', required: 'true' }),
+          mk('textarea', { name: 'message', label: 'Сообщение', placeholder: 'Чем можем помочь?' }),
+        ]),
+      ]),
+    ]),
+  ],
+});
+
 const landingPage = (title: string, blocks: BuilderNode[], description: string): BuilderPage => ({
   id: newId('page'),
   path: '',

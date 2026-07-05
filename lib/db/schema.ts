@@ -69,6 +69,9 @@ export const domains = sqliteTable(
   (t) => [uniqueIndex('domains_hostname_idx').on(t.hostname), index('domains_site_idx').on(t.siteId)],
 );
 
+export type User = typeof users.$inferSelect;
+export type Role = 'customer' | 'admin' | 'superadmin';
+
 export const submissions = sqliteTable(
   'submissions',
   {
@@ -83,9 +86,23 @@ export const submissions = sqliteTable(
   (t) => [index('submissions_site_idx').on(t.siteId)],
 );
 
-export type User = typeof users.$inferSelect;
-export type Role = 'customer' | 'admin' | 'superadmin';
+// Superadmin audit trail: who did what to whom. Actor fields are denormalized
+// so the record survives the actor being deleted.
+export const audit = sqliteTable(
+  'audit',
+  {
+    id: text('id').primaryKey(),
+    actorId: text('actor_id').notNull(),
+    actorEmail: text('actor_email').notNull().default(''),
+    action: text('action').notNull(),
+    target: text('target').notNull().default(''),
+    detail: text('detail').notNull().default(''),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('audit_created_idx').on(t.createdAt)],
+);
 export type Session = typeof sessions.$inferSelect;
 export type Site = typeof sites.$inferSelect;
 export type Domain = typeof domains.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
+export type Audit = typeof audit.$inferSelect;

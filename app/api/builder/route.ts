@@ -1,15 +1,39 @@
 import { NextResponse } from 'next/server';
-import { loadDoc, saveDoc } from '@/lib/builder/store';
+import { getCurrentUser } from '@/lib/auth';
+import { getSiteForUser, parseDoc, saveDraft } from '@/lib/sites';
 import type { BuilderDoc } from '@/lib/builder/types';
+import { DEFAULT_DOC } from '@/lib/builder/types';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
-  const doc = await loadDoc();
-  return NextResponse.json(doc);
+// Tenant-scoped builder document API: ?site=<id> is required and the site
+// must belong to the signed-in user. GET returns the draft doc + site meta,
+// POST overwrites the draft (publishing is a separate endpoint).
+
+async function resolveSite(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) return { error: NextResponse.json({ error: 'Требуется вход.' }, { status: 401 }) };
+  const siteId = new URL(request.url).searchParams.get('site');
+  if (!siteId) return { error: NextResponse.json({ error: 'Не указан сайт (?site=).' }, { status: 400 }) };
+  const site = getSiteForUser(user.id, siteId);
+  if (!site) return { error: NextResponse.json({ error: 'Сайт не найден.' }, { status: 404 }) };
+  return { site };
+}
+
+export async function GET(request: Request) {
+  const { site, error } = await resolveSite(request);
+  if (error) return error;
+  const doc = parseDoc(site.draftDoc) ?? { ...structuredClone(DEFAULT_DOC), brand: site.name };
+  return NextResponse.json({
+    doc,
+    site: { id: site.id, name: site.name, slug: site.slug, published: Boolean(site.publishedDoc) },
+  });
 }
 
 export async function POST(request: Request) {
+  const { site, error } = await resolveSite(request);
+  if (error) return error;
+
   let doc: BuilderDoc;
   try {
     doc = await request.json();
@@ -31,7 +55,7 @@ export async function POST(request: Request) {
     paths.add(p.path);
   }
   try {
-    await saveDoc(doc);
+    saveDraft(site, doc);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'write failed' }, { status: 500 });
   }

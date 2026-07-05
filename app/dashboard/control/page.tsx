@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
 import { platformStats, systemInfo, recentActivity, listSessions, listUsers, listAllSites } from '@/lib/admin';
+import { listAudit } from '@/lib/audit';
 import { ControlCenter } from '@/components/dashboard/control-center';
 
 export const metadata = { title: 'Центр контроля — Cinematic Kit' };
@@ -20,6 +21,7 @@ export default async function ControlPage() {
       sessions={listSessions(120)}
       users={listUsers()}
       sites={listAllSites()}
+      audit={listAudit(120)}
     />
   );
 }

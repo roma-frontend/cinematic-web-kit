@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Users, Globe, Rocket, Inbox, Activity, Monitor, Database, ShieldCheck, Crown,
   UserCircle, LogIn, Trash2, Loader2, Ban, KeyRound, UserPlus, FilePlus2, Send,
-  CheckCircle2, Clock, ExternalLink, CircleDashed,
+  CheckCircle2, Clock, ExternalLink, CircleDashed, ScrollText, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader, StatCard } from '@/components/dashboard/ui';
@@ -19,6 +19,7 @@ interface ActivityEvent { kind: 'user' | 'site' | 'publish' | 'submission'; at: 
 interface SessionRow { id: string; userId: string; userName: string; userEmail: string; role: Role; createdAt: string; expiresAt: string; active: boolean }
 interface UserRow { id: string; email: string; name: string; role: Role; createdAt: string; siteCount: number }
 interface SiteRow { id: string; name: string; slug: string; published: boolean; ownerName: string; ownerEmail: string; updatedAt: string }
+interface AuditRow { id: string; actorEmail: string; action: string; target: string; detail: string; createdAt: string }
 
 const ROLE_META: Record<Role, { label: string; cls: string; Icon: React.ComponentType<{ className?: string }> }> = {
   superadmin: { label: 'Суперадмин', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', Icon: Crown },
@@ -31,6 +32,7 @@ const TABS = [
   { id: 'sessions', label: 'Сессии', Icon: KeyRound },
   { id: 'users', label: 'Пользователи', Icon: Users },
   { id: 'sites', label: 'Сайты', Icon: Globe },
+  { id: 'audit', label: 'Аудит', Icon: ScrollText },
 ] as const;
 type TabId = typeof TABS[number]['id'];
 
@@ -39,8 +41,8 @@ function Dot({ ok }: { ok: boolean }) {
 }
 const when = (iso: string) => new Date(iso).toLocaleString('ru-RU');
 
-export function ControlCenter({ meId, stats, system, activity, sessions, users, sites }: {
-  meId: string; stats: Stats; system: System; activity: ActivityEvent[]; sessions: SessionRow[]; users: UserRow[]; sites: SiteRow[];
+export function ControlCenter({ meId, stats, system, activity, sessions, users, sites, audit }: {
+  meId: string; stats: Stats; system: System; activity: ActivityEvent[]; sessions: SessionRow[]; users: UserRow[]; sites: SiteRow[]; audit: AuditRow[];
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<TabId>('monitor');
@@ -94,6 +96,7 @@ export function ControlCenter({ meId, stats, system, activity, sessions, users, 
       <PageHeader
         title={<span className="inline-flex items-center gap-2"><Crown className="h-6 w-6 text-amber-500" /> Центр контроля</span>}
         description="Полный мониторинг и управление платформой. Доступно только суперадмину."
+        action={<a href="/api/admin/export-db"><Button variant="outline" className="gap-1.5"><Download className="h-4 w-4" /> Экспорт БД</Button></a>}
       />
 
       {msg && <p className="mb-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-500" role="alert">{msg}</p>}
@@ -264,6 +267,31 @@ export function ControlCenter({ meId, stats, system, activity, sessions, users, 
                       </Button>
                     </div>
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {tab === 'audit' && (
+        <div className="overflow-hidden rounded-2xl border border-border/60">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr><th className="px-4 py-3">Действие</th><th className="px-4 py-3">Кто</th><th className="hidden px-4 py-3 sm:table-cell">Объект / детали</th><th className="px-4 py-3">Когда</th></tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {audit.length === 0 && (
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Записей аудита пока нет.</td></tr>
+              )}
+              {audit.map((a) => (
+                <tr key={a.id} className="hover:bg-muted/20">
+                  <td className="px-4 py-3"><span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs font-semibold">{a.action}</span></td>
+                  <td className="px-4 py-3 text-muted-foreground">{a.actorEmail}</td>
+                  <td className="hidden px-4 py-3 sm:table-cell">
+                    <span className="font-medium">{a.target}</span>
+                    {a.detail && <span className="text-muted-foreground"> · {a.detail}</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{when(a.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

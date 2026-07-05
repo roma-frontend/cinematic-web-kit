@@ -22,7 +22,8 @@ export function BuilderForm({
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus('busy');
-    const data = Object.fromEntries(new FormData(e.currentTarget).entries());
+    const form = e.currentTarget; // currentTarget is nulled after the handler yields
+    const data = Object.fromEntries(new FormData(form).entries());
     try {
       const res = await fetch('/api/form', {
         method: 'POST',
@@ -30,7 +31,7 @@ export function BuilderForm({
         body: JSON.stringify({ formId, ...data }),
       });
       setStatus(res.ok ? 'done' : 'error');
-      if (res.ok) e.currentTarget.reset();
+      if (res.ok) form.reset();
     } catch {
       setStatus('error');
     }

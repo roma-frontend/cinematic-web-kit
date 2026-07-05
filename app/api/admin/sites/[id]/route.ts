@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
 import { deleteSiteById, unpublishSiteById } from '@/lib/admin';
+import { recordAudit } from '@/lib/audit';
 import { getDb, sites } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
@@ -19,6 +20,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { id } = await params;
   if (!siteExists(id)) return NextResponse.json({ error: 'Сайт не найден.' }, { status: 404 });
   deleteSiteById(id);
+  recordAudit({ id: me.id, email: me.email }, 'site.delete', id);
   return NextResponse.json({ ok: true, id });
 }
 
@@ -34,6 +36,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   if (body.action === 'unpublish') {
     unpublishSiteById(id);
+    recordAudit({ id: me.id, email: me.email }, 'site.unpublish', id);
     return NextResponse.json({ ok: true, id, published: false });
   }
   return NextResponse.json({ error: 'Неизвестное действие.' }, { status: 400 });

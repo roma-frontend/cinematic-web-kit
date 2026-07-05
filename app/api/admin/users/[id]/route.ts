@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
 import { getUserById, setUserRole, deleteUser, countSuperadmins } from '@/lib/admin';
+import { recordAudit } from '@/lib/audit';
 import type { Role } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -30,6 +31,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   setUserRole(id, role);
+  recordAudit({ id: me.id, email: me.email }, 'role.change', target.email, `${target.role} → ${role}`);
   return NextResponse.json({ ok: true, id, role });
 }
 
@@ -49,5 +51,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   // FK cascade removes their sessions, sites and (via site) submissions.
   deleteUser(id);
+  recordAudit({ id: me.id, email: me.email }, 'user.delete', target.email);
   return NextResponse.json({ ok: true, id });
 }

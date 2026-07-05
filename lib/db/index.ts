@@ -62,6 +62,17 @@ CREATE TABLE IF NOT EXISTS submissions (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS submissions_site_idx ON submissions (site_id);
+
+CREATE TABLE IF NOT EXISTS audit (
+  id TEXT PRIMARY KEY,
+  actor_id TEXT NOT NULL,
+  actor_email TEXT NOT NULL DEFAULT '',
+  action TEXT NOT NULL,
+  target TEXT NOT NULL DEFAULT '',
+  detail TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS audit_created_idx ON audit (created_at);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;

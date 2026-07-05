@@ -5,6 +5,7 @@ import {
   SESSION_COOKIE, ADMIN_RETURN_COOKIE,
 } from '@/lib/auth';
 import { getUserById } from '@/lib/admin';
+import { recordAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -31,5 +32,6 @@ export async function POST(request: Request) {
     jar.set(ADMIN_RETURN_COOKIE, myToken, { httpOnly: true, sameSite: 'lax', secure, path: '/' });
   }
   jar.set(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', secure, path: '/', expires: expiresAt });
+  recordAudit({ id: me.id, email: me.email }, 'impersonate', target.email, `${me.email} → ${target.email}`);
   return NextResponse.json({ ok: true, as: { id: target.id, name: target.name, email: target.email } });
 }

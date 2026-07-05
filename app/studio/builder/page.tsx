@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ArrowUp, ArrowDown, X, Plus, Save, Loader2, Monitor, Tablet, Smartphone,
   ExternalLink, Trash2, FileText, LayoutTemplate, ChevronRight, Copy, Upload, Wand2, Palette,
-  Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2, Sun, Moon,
+  Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2, Sun, Moon, Rocket,
 } from 'lucide-react';
 import seed from '@/data/builder.json';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
@@ -191,7 +192,26 @@ const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
 ];
 const DEVICE = { full: '100%', tablet: '768px', mobile: '390px' } as const;
 
-export default function BuilderEditor() {
+// useSearchParams requires a Suspense boundary at the page level.
+export default function BuilderEditorPage() {
+  return (
+    <Suspense>
+      <BuilderEditor />
+    </Suspense>
+  );
+}
+
+interface SiteMeta {
+  id: string;
+  name: string;
+  slug: string;
+  published: boolean;
+}
+
+function BuilderEditor() {
+  const router = useRouter();
+  const siteId = useSearchParams().get('site');
+  const [siteMeta, setSiteMeta] = useState<SiteMeta | null>(null);
   const [doc, setDoc] = useState<BuilderDoc>(seed as unknown as BuilderDoc);
   const [pageId, setPageId] = useState<string>((seed as unknown as BuilderDoc).pages[0]?.id ?? '');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -222,22 +242,42 @@ export default function BuilderEditor() {
   };
   const [previewKey, setPreviewKey] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [msg, setMsg] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newPath, setNewPath] = useState('');
 
-  // Load current server state on mount.
+  // Load the tenant's draft doc. The builder always works on a concrete site
+  // (?site=<id>); without it we send the user to the dashboard to pick one.
   useEffect(() => {
-    fetch('/api/builder')
-      .then((r) => r.json())
-      .then((d: BuilderDoc) => {
-        if (d?.pages?.length) {
-          setDoc(d);
-          setPageId(d.pages[0].id);
+    if (!siteId) {
+      router.replace('/dashboard');
+      return;
+    }
+    fetch(`/api/builder?site=${encodeURIComponent(siteId)}`)
+      .then(async (r) => {
+        if (r.status === 401) {
+          router.replace(`/login?next=${encodeURIComponent(`/studio/builder?site=${siteId}`)}`);
+          return null;
         }
+        if (!r.ok) {
+          router.replace('/dashboard');
+          return null;
+        }
+        return r.json() as Promise<{ doc: BuilderDoc; site: SiteMeta }>;
       })
-      .catch(() => {});
-  }, []);
+      .then((d) => {
+        if (!d) return;
+        if (d.doc?.pages?.length) {
+          skipHistory.current = true; // the fetched doc is the baseline, not an undoable edit
+          setDoc(d.doc);
+          setPageId(d.doc.pages[0].id);
+        }
+        setSiteMeta(d.site);
+      })
+      .catch(() => setMsg('Не удалось загрузить сайт.'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteId, router]);
 
   // ---- undo / redo history ----
   const past = useRef<BuilderDoc[]>([]);
@@ -257,6 +297,7 @@ export default function BuilderEditor() {
       future.current = [];
       prevDoc.current = doc;
       setHistTick((t) => t + 1);
+      setDirty(true);
     }
   }, [doc]);
   const undo = () => {
@@ -266,6 +307,7 @@ export default function BuilderEditor() {
     skipHistory.current = true;
     setDoc(p);
     setHistTick((t) => t + 1);
+    setDirty(true);
   };
   const redo = () => {
     const n = future.current.pop();
@@ -274,6 +316,7 @@ export default function BuilderEditor() {
     skipHistory.current = true;
     setDoc(n);
     setHistTick((t) => t + 1);
+    setDirty(true);
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -494,20 +537,50 @@ export default function BuilderEditor() {
   const addNavLink = () => setDoc((d) => ({ ...d, nav: [...d.nav, { label: 'Пункт', href: '/site' }] }));
   const removeNavLink = (i: number) => setDoc((d) => ({ ...d, nav: d.nav.filter((_, j) => j !== i) }));
 
+  // Save the draft to the tenant site. Always sends the latest doc (via
+  // stateRef) and only clears `dirty` if no edit happened while the request
+  // was in flight. Returns true on success so publish can chain on top of it.
+  // savingRef holds the in-flight request: manual save/publish waits it out
+  // and saves again; autosave bails and gets rescheduled via saveTick.
+  const savingRef = useRef<Promise<boolean> | null>(null);
+  const [saveTick, setSaveTick] = useState(0);
+  const saveDraft = (auto = false): Promise<boolean> => {
+    if (!siteId) return Promise.resolve(false);
+    if (savingRef.current) {
+      if (auto) return Promise.resolve(false);
+      return savingRef.current.then(() => saveDraft(auto), () => saveDraft(auto));
+    }
+    const run = async (): Promise<boolean> => {
+      const sentDoc = stateRef.current.doc;
+      try {
+        const res = await fetch(`/api/builder?site=${encodeURIComponent(siteId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sentDoc),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (stateRef.current.doc === sentDoc) setDirty(false);
+          setMsg(auto ? 'Автосохранено' : `Сохранено · страниц: ${data.pages}`);
+          if (!auto) setPreviewKey((k) => k + 1);
+          return true;
+        }
+        setMsg(data.error || 'Ошибка');
+        return false;
+      } finally {
+        savingRef.current = null;
+        setSaveTick((t) => t + 1); // reschedule autosave if edits arrived mid-request
+      }
+    };
+    savingRef.current = run();
+    return savingRef.current;
+  };
+
   const save = async () => {
     setBusy(true);
     setMsg('');
     try {
-      const res = await fetch('/api/builder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(doc),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMsg(`Сохранено · страниц: ${data.pages}`);
-        setPreviewKey((k) => k + 1);
-      } else setMsg(data.error || 'Ошибка');
+      await saveDraft();
     } catch {
       setMsg('Ошибка сохранения');
     } finally {
@@ -515,14 +588,59 @@ export default function BuilderEditor() {
     }
   };
 
-  const previewSrc = `/site${page?.path ? `/${page.path}` : ''}`;
+  // Debounced autosave: edits land in the DB after 2s of inactivity, so
+  // closing the tab can't lose more than the last couple of seconds of work.
+  useEffect(() => {
+    if (!dirty || !siteMeta) return;
+    const t = setTimeout(() => {
+      saveDraft(true).catch(() => setMsg('Автосохранение не удалось — проверьте сеть.'));
+    }, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, doc, siteMeta, saveTick]);
+
+  // Warn before leaving with unsaved edits (e.g. autosave hasn't fired yet).
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
+
+  const [pubBusy, setPubBusy] = useState(false);
+  const publish = async () => {
+    if (!siteId) return;
+    setPubBusy(true);
+    setMsg('');
+    try {
+      if (!(await saveDraft())) return; // publish snapshots the draft — save it first
+      const res = await fetch(`/api/sites/${siteId}/publish`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSiteMeta((m) => (m ? { ...m, published: true } : m));
+        setMsg(`Опубликовано — сайт доступен по /s/${siteMeta?.slug ?? ''}`);
+      } else setMsg(data.error || 'Ошибка публикации');
+    } catch {
+      setMsg('Ошибка публикации');
+    } finally {
+      setPubBusy(false);
+    }
+  };
+
+  // Owner draft preview on the tenant route ('?draft=1' shows unsaved-published work).
+  const previewSrc = siteMeta
+    ? `/s/${siteMeta.slug}${page?.path ? `/${page.path}` : ''}?draft=1`
+    : '/dashboard';
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-background">
       {/* Toolbar */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-3 px-4">
-          <Link href="/studio" className="flex items-center gap-2 font-bold tracking-tight">
+          <Link href="/dashboard" className="flex items-center gap-2 font-bold tracking-tight" title="К списку сайтов">
             <LayoutTemplate className="h-5 w-5 text-primary" /> Конструктор
           </Link>
           <div className="mx-2 h-6 w-px bg-border" />
@@ -550,8 +668,13 @@ export default function BuilderEditor() {
           <Link href={previewSrc} target="_blank"><Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-4 w-4" /> Открыть</Button></Link>
           <button onClick={undo} disabled={!canUndo} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Отменить" title="Отменить (Ctrl+Z)"><Undo2 className="h-4 w-4" /></button>
           <button onClick={redo} disabled={!canRedo} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Повторить" title="Повторить (Ctrl+Shift+Z)"><Redo2 className="h-4 w-4" /></button>
-          <Button size="sm" onClick={save} disabled={busy} className="gap-1.5">
+          <Button size="sm" onClick={save} disabled={busy || pubBusy} className="relative gap-1.5" title={dirty ? 'Есть несохранённые изменения (автосохранение через пару секунд)' : 'Всё сохранено'}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Сохранить
+            {dirty && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-background bg-amber-500" aria-label="Несохранённые изменения" />}
+          </Button>
+          <Button size="sm" variant={siteMeta?.published ? 'outline' : 'default'} onClick={publish} disabled={busy || pubBusy} className="gap-1.5" title="Сохранить черновик и опубликовать">
+            {pubBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+            {siteMeta?.published ? 'Обновить' : 'Опубликовать'}
           </Button>
         </div>
         {msg && <div className="border-t border-border/60 bg-muted/40 px-4 py-1 text-center text-xs text-muted-foreground">{msg}</div>}
