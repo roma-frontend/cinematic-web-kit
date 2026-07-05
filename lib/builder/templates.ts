@@ -317,9 +317,9 @@ const heroCenter = (title: string, sub: string, cta1: string, cta2: string, bg =
 
 const featureGrid = (title: string, cols: string, items: [string, string][], bg = 'none'): BuilderNode =>
   mk('section', { padding: 'lg', bg, width: 'wide' }, [
-    mk('heading', { text: title, level: '2', align: 'center' }),
+    mk('heading', { text: title, level: '2', align: 'center', animate: 'fade' }),
     mk('spacer', { height: 'md' }),
-    mk('grid', { gap: 'md', columns: cols }, items.map(([h, t]) => card(h, t))),
+    mk('grid', { gap: 'md', columns: cols, stagger: 'true' }, items.map(([h, t]) => card(h, t))),
   ]);
 
 const statsRow = (items: [string, string][], bg = 'muted'): BuilderNode =>
@@ -387,8 +387,10 @@ export const LANDINGS: TemplateDef[] = [
     id: 'l-saas', label: 'SaaS-платформа', description: 'Продукт, возможности, тарифы, отзывы, FAQ.', suggestedPath: '', themeId: 'tech-saas',
     build: () => landingPage('SaaS-платформа', [
       heroAccent('Автоматизируйте бизнес за минуты', 'Мощная платформа без кода — запускайте процессы и растите быстрее.', 'Начать бесплатно', 'Смотреть демо', '#4f46e5'),
+      logosSection(),
       statsRow([['10K+', 'команд'], ['99.9%', 'аптайм'], ['4.9★', 'рейтинг']]),
       featureGrid('Возможности', '3', [['Автоматизация', 'Настройте сценарии за пару кликов.'], ['Интеграции', 'Подключайте любимые сервисы.'], ['Аналитика', 'Дашборды в реальном времени.']]),
+      stepsSection(),
       pricingSection('muted'),
       testimonialsSection('card'),
       faqSection('bordered'),
@@ -411,6 +413,7 @@ export const LANDINGS: TemplateDef[] = [
       heroAccent('Будущее уже здесь', 'Инновационный продукт, который меняет правила игры.', 'Присоединиться', 'Узнать больше', '#7c3aed'),
       featureGrid('Почему мы', '3', [['Быстро', 'Молниеносная скорость.'], ['Умно', 'ИИ под капотом.'], ['Безопасно', 'Данные под защитой.']]),
       statsRow([['1M+', 'скачиваний'], ['150', 'стран'], ['24/7', 'поддержка']], 'none'),
+      stepsSection(),
       faqSection('separated', 'muted'),
       ctaSection('Успей первым', 'Получить доступ'),
     ], 'Неоновый лендинг стартапа.'),
@@ -460,6 +463,7 @@ export const LANDINGS: TemplateDef[] = [
     build: () => landingPage('Ресторан', [
       heroImage('Высокая кухня и безупречный сервис', 'Авторское меню от шефа в атмосфере изысканности.', 'Забронировать'),
       featureGrid('Наши блюда', '3', [['Закуски', 'Тонкие сочетания вкусов.'], ['Основные', 'Авторская подача.'], ['Десерты', 'Произведения искусства.']], 'none'),
+      statsRow([['15', 'лет'], ['120', 'блюд'], ['50K+', 'гостей']], 'none'),
       gallerySection('Интерьер и блюда'),
       testimonialsSection('centered', 'muted'),
       ctaSection('Забронируйте столик', 'Резерв стола'),

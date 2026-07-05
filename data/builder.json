@@ -1,6 +1,6 @@
 {
   "brand": "Nova Studio",
-  "themeId": "luxury-dark",
+  "themeId": "editorial-coffee",
   "nav": [
     {
       "label": "Главная",
@@ -390,6 +390,3598 @@
           ]
         }
       ]
+    },
+    {
+      "id": "page-mr7t0eg3-2390",
+      "path": "home",
+      "title": "Фитнес-клуб",
+      "description": "Спортивный лендинг фитнес-клуба.",
+      "blocks": [
+        {
+          "id": "section-mr7t0eg3-2359",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "primary",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t0eg3-2358",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t0eg3-2353",
+                  "type": "heading",
+                  "props": {
+                    "text": "Стань сильнее каждый день",
+                    "level": "1",
+                    "align": "center",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t0eg3-2354",
+                  "type": "text",
+                  "props": {
+                    "text": "Современный зал, тренеры-профессионалы и программы под любые цели.",
+                    "align": "center",
+                    "muted": "false",
+                    "size": "lg",
+                    "animate": "fade"
+                  }
+                },
+                {
+                  "id": "row-mr7t0eg3-2357",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t0eg3-2355",
+                      "type": "button",
+                      "props": {
+                        "text": "Пробная тренировка",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t0eg3-2356",
+                      "type": "button",
+                      "props": {
+                        "text": "Расписание",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t0eg3-2372",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t0eg3-2360",
+              "type": "heading",
+              "props": {
+                "text": "Направления",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t0eg3-2361",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t0eg3-2371",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t0eg3-2364",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t0eg3-2362",
+                      "type": "heading",
+                      "props": {
+                        "text": "Силовые",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t0eg3-2363",
+                      "type": "text",
+                      "props": {
+                        "text": "Свободные веса и тренажёры.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t0eg3-2367",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t0eg3-2365",
+                      "type": "heading",
+                      "props": {
+                        "text": "Кардио",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t0eg3-2366",
+                      "type": "text",
+                      "props": {
+                        "text": "Выносливость и жиросжигание.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t0eg3-2370",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t0eg3-2368",
+                      "type": "heading",
+                      "props": {
+                        "text": "Групповые",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t0eg3-2369",
+                      "type": "text",
+                      "props": {
+                        "text": "Йога, бокс, кроссфит.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t0eg3-2377",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t0eg3-2376",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t0eg3-2373",
+                  "type": "counter",
+                  "props": {
+                    "value": "5000+",
+                    "label": "участников",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t0eg3-2374",
+                  "type": "counter",
+                  "props": {
+                    "value": "30",
+                    "label": "тренеров",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t0eg3-2375",
+                  "type": "counter",
+                  "props": {
+                    "value": "15",
+                    "label": "залов",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t0eg3-2384",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t0eg3-2378",
+              "type": "heading",
+              "props": {
+                "text": "Тарифы",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t0eg3-2379",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t0eg3-2383",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "pricing-mr7t0eg3-2380",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Start",
+                    "price": "0₽",
+                    "period": "",
+                    "features": "Базовый набор\nДо 1 проекта\nСообщество",
+                    "cta": "Начать",
+                    "href": "/site/contact",
+                    "featured": "false",
+                    "priceVariant": "outline"
+                  }
+                },
+                {
+                  "id": "pricing-mr7t0eg3-2381",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Pro",
+                    "price": "990₽",
+                    "period": "/мес",
+                    "features": "Всё в Start\nБез ограничений\nПоддержка 24/7",
+                    "cta": "Выбрать",
+                    "href": "/site/contact",
+                    "featured": "true",
+                    "priceVariant": "card"
+                  }
+                },
+                {
+                  "id": "pricing-mr7t0eg3-2382",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Team",
+                    "price": "2990₽",
+                    "period": "/мес",
+                    "features": "Всё в Pro\nКоманда\nSLA",
+                    "cta": "Связаться",
+                    "href": "/site/contact",
+                    "featured": "false",
+                    "priceVariant": "outline"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t0eg3-2388",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t0eg3-2387",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t0eg3-2385",
+                  "type": "heading",
+                  "props": {
+                    "text": "Первая тренировка бесплатно",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t0eg3-2386",
+                  "type": "button",
+                  "props": {
+                    "text": "Записаться",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t1xcw-2425",
+      "path": "home-2",
+      "title": "Стартап",
+      "description": "Неоновый лендинг стартапа.",
+      "blocks": [
+        {
+          "id": "section-mr7t1xcw-2397",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "primary",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t1xcw-2396",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t1xcw-2391",
+                  "type": "heading",
+                  "props": {
+                    "text": "Будущее уже здесь",
+                    "level": "1",
+                    "align": "center",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t1xcw-2392",
+                  "type": "text",
+                  "props": {
+                    "text": "Инновационный продукт, который меняет правила игры.",
+                    "align": "center",
+                    "muted": "false",
+                    "size": "lg",
+                    "animate": "fade"
+                  }
+                },
+                {
+                  "id": "row-mr7t1xcw-2395",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t1xcw-2393",
+                      "type": "button",
+                      "props": {
+                        "text": "Присоединиться",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t1xcw-2394",
+                      "type": "button",
+                      "props": {
+                        "text": "Узнать больше",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t1xcw-2410",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t1xcw-2398",
+              "type": "heading",
+              "props": {
+                "text": "Почему мы",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t1xcw-2399",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t1xcw-2409",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t1xcw-2402",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t1xcw-2400",
+                      "type": "heading",
+                      "props": {
+                        "text": "Быстро",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t1xcw-2401",
+                      "type": "text",
+                      "props": {
+                        "text": "Молниеносная скорость.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t1xcw-2405",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t1xcw-2403",
+                      "type": "heading",
+                      "props": {
+                        "text": "Умно",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t1xcw-2404",
+                      "type": "text",
+                      "props": {
+                        "text": "ИИ под капотом.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t1xcw-2408",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t1xcw-2406",
+                      "type": "heading",
+                      "props": {
+                        "text": "Безопасно",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t1xcw-2407",
+                      "type": "text",
+                      "props": {
+                        "text": "Данные под защитой.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t1xcw-2415",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t1xcw-2414",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t1xcw-2411",
+                  "type": "counter",
+                  "props": {
+                    "value": "1M+",
+                    "label": "скачиваний",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t1xcw-2412",
+                  "type": "counter",
+                  "props": {
+                    "value": "150",
+                    "label": "стран",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t1xcw-2413",
+                  "type": "counter",
+                  "props": {
+                    "value": "24/7",
+                    "label": "поддержка",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t1xcw-2419",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t1xcw-2416",
+              "type": "heading",
+              "props": {
+                "text": "Частые вопросы",
+                "level": "2",
+                "align": "left"
+              }
+            },
+            {
+              "id": "spacer-mr7t1xcw-2417",
+              "type": "spacer",
+              "props": {
+                "height": "sm"
+              }
+            },
+            {
+              "id": "faq-mr7t1xcw-2418",
+              "type": "faq",
+              "props": {
+                "items": "Сколько стоит?::Есть бесплатный тариф и платные планы.\nМожно отменить?::Да, в любой момент.\nНужен ли код?::Нет, всё визуально.",
+                "align": "left",
+                "faqVariant": "separated"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t1xcw-2423",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t1xcw-2422",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t1xcw-2420",
+                  "type": "heading",
+                  "props": {
+                    "text": "Успей первым",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t1xcw-2421",
+                  "type": "button",
+                  "props": {
+                    "text": "Получить доступ",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t2873-2470",
+      "path": "home-3",
+      "title": "Digital-агентство",
+      "description": "Лендинг digital-агентства.",
+      "blocks": [
+        {
+          "id": "section-mr7t2872-2434",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t2872-2433",
+              "type": "grid",
+              "props": {
+                "gap": "lg",
+                "columns": "2"
+              },
+              "children": [
+                {
+                  "id": "stack-mr7t2872-2431",
+                  "type": "stack",
+                  "props": {
+                    "gap": "md",
+                    "align": "start"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t2872-2426",
+                      "type": "heading",
+                      "props": {
+                        "text": "Создаём цифровые продукты, которые продают",
+                        "level": "1",
+                        "align": "left",
+                        "animate": "slide-up"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t2872-2427",
+                      "type": "text",
+                      "props": {
+                        "text": "Дизайн, разработка и маркетинг под ключ для вашего бренда.",
+                        "align": "left",
+                        "muted": "true",
+                        "size": "lg",
+                        "animate": "fade"
+                      }
+                    },
+                    {
+                      "id": "row-mr7t2872-2430",
+                      "type": "row",
+                      "props": {
+                        "gap": "sm",
+                        "align": "center",
+                        "justify": "start",
+                        "wrap": "wrap"
+                      },
+                      "children": [
+                        {
+                          "id": "button-mr7t2872-2428",
+                          "type": "button",
+                          "props": {
+                            "text": "Обсудить проект",
+                            "href": "/site/contact",
+                            "variant": "default",
+                            "size": "lg",
+                            "align": "left",
+                            "type": "link",
+                            "hover": "lift"
+                          }
+                        },
+                        {
+                          "id": "button-mr7t2872-2429",
+                          "type": "button",
+                          "props": {
+                            "text": "Подробнее",
+                            "href": "#",
+                            "variant": "outline",
+                            "size": "lg",
+                            "align": "left",
+                            "type": "link",
+                            "hover": "lift"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "image-mr7t2872-2432",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Иллюстрация",
+                    "rounded": "xl",
+                    "ratio": "4/3",
+                    "animate": "zoom",
+                    "shadow": "xl"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t2872-2447",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t2872-2435",
+              "type": "heading",
+              "props": {
+                "text": "Услуги",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t2872-2436",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t2872-2446",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t2872-2439",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t2872-2437",
+                      "type": "heading",
+                      "props": {
+                        "text": "Брендинг",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t2872-2438",
+                      "type": "text",
+                      "props": {
+                        "text": "Логотип, стиль, гайдлайны.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t2872-2442",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t2872-2440",
+                      "type": "heading",
+                      "props": {
+                        "text": "Веб-разработка",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t2872-2441",
+                      "type": "text",
+                      "props": {
+                        "text": "Сайты и приложения.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t2872-2445",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t2872-2443",
+                      "type": "heading",
+                      "props": {
+                        "text": "Маркетинг",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t2872-2444",
+                      "type": "text",
+                      "props": {
+                        "text": "Реклама и аналитика.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t2872-2457",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t2872-2448",
+              "type": "heading",
+              "props": {
+                "text": "Избранные работы",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t2872-2449",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t2872-2456",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "image-mr7t2872-2450",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 1",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t2872-2451",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 2",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t2872-2452",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 3",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t2872-2453",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 4",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t2872-2454",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 5",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t2872-2455",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 6",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t2872-2464",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t2872-2458",
+              "type": "heading",
+              "props": {
+                "text": "Нам доверяют",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t2872-2459",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t2872-2463",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "testimonial-mr7t2872-2460",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Лучшее решение на рынке. Рекомендую!",
+                    "author": "Анна П.",
+                    "role": "CEO",
+                    "quoteVariant": "quote"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t2872-2461",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Внедрили за день, результат сразу.",
+                    "author": "Иван С.",
+                    "role": "CTO",
+                    "quoteVariant": "quote"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t2872-2462",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Поддержка отвечает мгновенно.",
+                    "author": "Мария К.",
+                    "role": "PM",
+                    "quoteVariant": "quote"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t2872-2468",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t2872-2467",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t2872-2465",
+                  "type": "heading",
+                  "props": {
+                    "text": "Начнём ваш проект?",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t2872-2466",
+                  "type": "button",
+                  "props": {
+                    "text": "Оставить заявку",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t32r3-2519",
+      "path": "home-4",
+      "title": "SaaS-платформа",
+      "description": "SaaS-лендинг: возможности, тарифы, отзывы.",
+      "blocks": [
+        {
+          "id": "section-mr7t32r3-2477",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "primary",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t32r3-2476",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t32r3-2471",
+                  "type": "heading",
+                  "props": {
+                    "text": "Автоматизируйте бизнес за минуты",
+                    "level": "1",
+                    "align": "center",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t32r3-2472",
+                  "type": "text",
+                  "props": {
+                    "text": "Мощная платформа без кода — запускайте процессы и растите быстрее.",
+                    "align": "center",
+                    "muted": "false",
+                    "size": "lg",
+                    "animate": "fade"
+                  }
+                },
+                {
+                  "id": "row-mr7t32r3-2475",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t32r3-2473",
+                      "type": "button",
+                      "props": {
+                        "text": "Начать бесплатно",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t32r3-2474",
+                      "type": "button",
+                      "props": {
+                        "text": "Смотреть демо",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t32r3-2482",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t32r3-2481",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t32r3-2478",
+                  "type": "counter",
+                  "props": {
+                    "value": "10K+",
+                    "label": "команд",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t32r3-2479",
+                  "type": "counter",
+                  "props": {
+                    "value": "99.9%",
+                    "label": "аптайм",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t32r3-2480",
+                  "type": "counter",
+                  "props": {
+                    "value": "4.9★",
+                    "label": "рейтинг",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t32r3-2495",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t32r3-2483",
+              "type": "heading",
+              "props": {
+                "text": "Возможности",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t32r3-2484",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t32r3-2494",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t32r3-2487",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t32r3-2485",
+                      "type": "heading",
+                      "props": {
+                        "text": "Автоматизация",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t32r3-2486",
+                      "type": "text",
+                      "props": {
+                        "text": "Настройте сценарии за пару кликов.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t32r3-2490",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t32r3-2488",
+                      "type": "heading",
+                      "props": {
+                        "text": "Интеграции",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t32r3-2489",
+                      "type": "text",
+                      "props": {
+                        "text": "Подключайте любимые сервисы.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t32r3-2493",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t32r3-2491",
+                      "type": "heading",
+                      "props": {
+                        "text": "Аналитика",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t32r3-2492",
+                      "type": "text",
+                      "props": {
+                        "text": "Дашборды в реальном времени.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t32r3-2502",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t32r3-2496",
+              "type": "heading",
+              "props": {
+                "text": "Тарифы",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t32r3-2497",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t32r3-2501",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "pricing-mr7t32r3-2498",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Start",
+                    "price": "0₽",
+                    "period": "",
+                    "features": "Базовый набор\nДо 1 проекта\nСообщество",
+                    "cta": "Начать",
+                    "href": "/site/contact",
+                    "featured": "false",
+                    "priceVariant": "outline"
+                  }
+                },
+                {
+                  "id": "pricing-mr7t32r3-2499",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Pro",
+                    "price": "990₽",
+                    "period": "/мес",
+                    "features": "Всё в Start\nБез ограничений\nПоддержка 24/7",
+                    "cta": "Выбрать",
+                    "href": "/site/contact",
+                    "featured": "true",
+                    "priceVariant": "card"
+                  }
+                },
+                {
+                  "id": "pricing-mr7t32r3-2500",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Team",
+                    "price": "2990₽",
+                    "period": "/мес",
+                    "features": "Всё в Pro\nКоманда\nSLA",
+                    "cta": "Связаться",
+                    "href": "/site/contact",
+                    "featured": "false",
+                    "priceVariant": "outline"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t32r3-2509",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t32r3-2503",
+              "type": "heading",
+              "props": {
+                "text": "Нам доверяют",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t32r3-2504",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t32r3-2508",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "testimonial-mr7t32r3-2505",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Лучшее решение на рынке. Рекомендую!",
+                    "author": "Анна П.",
+                    "role": "CEO",
+                    "quoteVariant": "card"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t32r3-2506",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Внедрили за день, результат сразу.",
+                    "author": "Иван С.",
+                    "role": "CTO",
+                    "quoteVariant": "card"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t32r3-2507",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Поддержка отвечает мгновенно.",
+                    "author": "Мария К.",
+                    "role": "PM",
+                    "quoteVariant": "card"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t32r3-2513",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t32r3-2510",
+              "type": "heading",
+              "props": {
+                "text": "Частые вопросы",
+                "level": "2",
+                "align": "left"
+              }
+            },
+            {
+              "id": "spacer-mr7t32r3-2511",
+              "type": "spacer",
+              "props": {
+                "height": "sm"
+              }
+            },
+            {
+              "id": "faq-mr7t32r3-2512",
+              "type": "faq",
+              "props": {
+                "items": "Сколько стоит?::Есть бесплатный тариф и платные планы.\nМожно отменить?::Да, в любой момент.\nНужен ли код?::Нет, всё визуально.",
+                "align": "left",
+                "faqVariant": "bordered"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t32r3-2517",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t32r3-2516",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t32r3-2514",
+                  "type": "heading",
+                  "props": {
+                    "text": "Готовы попробовать?",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t32r3-2515",
+                  "type": "button",
+                  "props": {
+                    "text": "Создать аккаунт",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t33dl-2554",
+      "path": "home-5",
+      "title": "Стартап",
+      "description": "Неоновый лендинг стартапа.",
+      "blocks": [
+        {
+          "id": "section-mr7t33dl-2526",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "primary",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t33dl-2525",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t33dl-2520",
+                  "type": "heading",
+                  "props": {
+                    "text": "Будущее уже здесь",
+                    "level": "1",
+                    "align": "center",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t33dl-2521",
+                  "type": "text",
+                  "props": {
+                    "text": "Инновационный продукт, который меняет правила игры.",
+                    "align": "center",
+                    "muted": "false",
+                    "size": "lg",
+                    "animate": "fade"
+                  }
+                },
+                {
+                  "id": "row-mr7t33dl-2524",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t33dl-2522",
+                      "type": "button",
+                      "props": {
+                        "text": "Присоединиться",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t33dl-2523",
+                      "type": "button",
+                      "props": {
+                        "text": "Узнать больше",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t33dl-2539",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t33dl-2527",
+              "type": "heading",
+              "props": {
+                "text": "Почему мы",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t33dl-2528",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t33dl-2538",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t33dl-2531",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t33dl-2529",
+                      "type": "heading",
+                      "props": {
+                        "text": "Быстро",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t33dl-2530",
+                      "type": "text",
+                      "props": {
+                        "text": "Молниеносная скорость.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t33dl-2534",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t33dl-2532",
+                      "type": "heading",
+                      "props": {
+                        "text": "Умно",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t33dl-2533",
+                      "type": "text",
+                      "props": {
+                        "text": "ИИ под капотом.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t33dl-2537",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t33dl-2535",
+                      "type": "heading",
+                      "props": {
+                        "text": "Безопасно",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t33dl-2536",
+                      "type": "text",
+                      "props": {
+                        "text": "Данные под защитой.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t33dl-2544",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t33dl-2543",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t33dl-2540",
+                  "type": "counter",
+                  "props": {
+                    "value": "1M+",
+                    "label": "скачиваний",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t33dl-2541",
+                  "type": "counter",
+                  "props": {
+                    "value": "150",
+                    "label": "стран",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t33dl-2542",
+                  "type": "counter",
+                  "props": {
+                    "value": "24/7",
+                    "label": "поддержка",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t33dl-2548",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t33dl-2545",
+              "type": "heading",
+              "props": {
+                "text": "Частые вопросы",
+                "level": "2",
+                "align": "left"
+              }
+            },
+            {
+              "id": "spacer-mr7t33dl-2546",
+              "type": "spacer",
+              "props": {
+                "height": "sm"
+              }
+            },
+            {
+              "id": "faq-mr7t33dl-2547",
+              "type": "faq",
+              "props": {
+                "items": "Сколько стоит?::Есть бесплатный тариф и платные планы.\nМожно отменить?::Да, в любой момент.\nНужен ли код?::Нет, всё визуально.",
+                "align": "left",
+                "faqVariant": "separated"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t33dl-2552",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t33dl-2551",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t33dl-2549",
+                  "type": "heading",
+                  "props": {
+                    "text": "Успей первым",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t33dl-2550",
+                  "type": "button",
+                  "props": {
+                    "text": "Получить доступ",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t43gl-2589",
+      "path": "home-6",
+      "title": "Онлайн-курс",
+      "description": "Лендинг онлайн-курса.",
+      "blocks": [
+        {
+          "id": "section-mr7t43gl-2561",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t43gl-2560",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t43gl-2555",
+                  "type": "heading",
+                  "props": {
+                    "text": "Освойте профессию с нуля",
+                    "level": "1",
+                    "align": "center",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t43gl-2556",
+                  "type": "text",
+                  "props": {
+                    "text": "Практический курс с наставником и реальными проектами в портфолио.",
+                    "align": "center",
+                    "muted": "false",
+                    "size": "lg",
+                    "animate": "fade"
+                  }
+                },
+                {
+                  "id": "row-mr7t43gl-2559",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t43gl-2557",
+                      "type": "button",
+                      "props": {
+                        "text": "Записаться на курс",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t43gl-2558",
+                      "type": "button",
+                      "props": {
+                        "text": "Программа",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t43gl-2574",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t43gl-2562",
+              "type": "heading",
+              "props": {
+                "text": "Чему вы научитесь",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t43gl-2563",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t43gl-2573",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t43gl-2566",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t43gl-2564",
+                      "type": "heading",
+                      "props": {
+                        "text": "Основы",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t43gl-2565",
+                      "type": "text",
+                      "props": {
+                        "text": "Прочный фундамент с нуля.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t43gl-2569",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t43gl-2567",
+                      "type": "heading",
+                      "props": {
+                        "text": "Практика",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t43gl-2568",
+                      "type": "text",
+                      "props": {
+                        "text": "Реальные задачи и проекты.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t43gl-2572",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t43gl-2570",
+                      "type": "heading",
+                      "props": {
+                        "text": "Карьера",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t43gl-2571",
+                      "type": "text",
+                      "props": {
+                        "text": "Помощь с трудоустройством.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t43gl-2579",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t43gl-2578",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t43gl-2575",
+                  "type": "counter",
+                  "props": {
+                    "value": "2000+",
+                    "label": "выпускников",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t43gl-2576",
+                  "type": "counter",
+                  "props": {
+                    "value": "92%",
+                    "label": "трудоустройство",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t43gl-2577",
+                  "type": "counter",
+                  "props": {
+                    "value": "4.8★",
+                    "label": "оценка",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t43gl-2583",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t43gl-2580",
+              "type": "heading",
+              "props": {
+                "text": "Частые вопросы",
+                "level": "2",
+                "align": "left"
+              }
+            },
+            {
+              "id": "spacer-mr7t43gl-2581",
+              "type": "spacer",
+              "props": {
+                "height": "sm"
+              }
+            },
+            {
+              "id": "faq-mr7t43gl-2582",
+              "type": "faq",
+              "props": {
+                "items": "Сколько стоит?::Есть бесплатный тариф и платные планы.\nМожно отменить?::Да, в любой момент.\nНужен ли код?::Нет, всё визуально.",
+                "align": "left",
+                "faqVariant": "card"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t43gl-2587",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t43gl-2586",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t43gl-2584",
+                  "type": "heading",
+                  "props": {
+                    "text": "Старт ближайшего потока",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t43gl-2585",
+                  "type": "button",
+                  "props": {
+                    "text": "Оставить заявку",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t5cc4-8119",
+      "path": "home-7",
+      "title": "Эко-продукт",
+      "description": "Эко-лендинг натурального бренда.",
+      "blocks": [
+        {
+          "id": "section-mr7t5cc4-8088",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal",
+            "bgColor": "#16a34a"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t5cc4-8087",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t5cc4-8082",
+                  "type": "heading",
+                  "props": {
+                    "text": "Забота о планете начинается с вас",
+                    "level": "1",
+                    "align": "center",
+                    "textColor": "#ffffff",
+                    "fontSize": "4xl",
+                    "fontWeight": "bold",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t5cc4-8083",
+                  "type": "text",
+                  "props": {
+                    "text": "Натуральные продукты без вреда для природы.",
+                    "align": "center",
+                    "muted": "true",
+                    "size": "lg",
+                    "textColor": "#ffffff"
+                  }
+                },
+                {
+                  "id": "row-mr7t5cc4-8086",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t5cc4-8084",
+                      "type": "button",
+                      "props": {
+                        "text": "В магазин",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "bgColor": "#ffffff",
+                        "textColor": "#16a34a",
+                        "radius": "lg",
+                        "hover": "pulse"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t5cc4-8085",
+                      "type": "button",
+                      "props": {
+                        "text": "О нас",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "textColor": "#ffffff",
+                        "borderColor": "#ffffff",
+                        "borderWidth": "1",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t5cc4-8101",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t5cc4-8089",
+              "type": "heading",
+              "props": {
+                "text": "Наши ценности",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t5cc4-8090",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t5cc4-8100",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t5cc4-8093",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t5cc4-8091",
+                      "type": "heading",
+                      "props": {
+                        "text": "Натурально",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t5cc4-8092",
+                      "type": "text",
+                      "props": {
+                        "text": "100% органические компоненты.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t5cc4-8096",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t5cc4-8094",
+                      "type": "heading",
+                      "props": {
+                        "text": "Этично",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t5cc4-8095",
+                      "type": "text",
+                      "props": {
+                        "text": "Без тестов на животных.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t5cc4-8099",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t5cc4-8097",
+                      "type": "heading",
+                      "props": {
+                        "text": "Экологично",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t5cc4-8098",
+                      "type": "text",
+                      "props": {
+                        "text": "Перерабатываемая упаковка.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t5cc4-8106",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t5cc4-8105",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t5cc4-8102",
+                  "type": "counter",
+                  "props": {
+                    "value": "50K+",
+                    "label": "клиентов",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t5cc4-8103",
+                  "type": "counter",
+                  "props": {
+                    "value": "0%",
+                    "label": "пластика",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t5cc4-8104",
+                  "type": "counter",
+                  "props": {
+                    "value": "100%",
+                    "label": "натурально",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t5cc4-8113",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t5cc4-8107",
+              "type": "heading",
+              "props": {
+                "text": "Нам доверяют",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t5cc4-8108",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t5cc4-8112",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "testimonial-mr7t5cc4-8109",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Лучшее решение на рынке. Рекомендую!",
+                    "author": "Анна П.",
+                    "role": "CEO",
+                    "quoteVariant": "minimal"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t5cc4-8110",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Внедрили за день, результат сразу.",
+                    "author": "Иван С.",
+                    "role": "CTO",
+                    "quoteVariant": "minimal"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t5cc4-8111",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Поддержка отвечает мгновенно.",
+                    "author": "Мария К.",
+                    "role": "PM",
+                    "quoteVariant": "minimal"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t5cc4-8117",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t5cc4-8116",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t5cc4-8114",
+                  "type": "heading",
+                  "props": {
+                    "text": "Присоединяйтесь к движению",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t5cc4-8115",
+                  "type": "button",
+                  "props": {
+                    "text": "Начать покупки",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t6ak8-8154",
+      "path": "home-8",
+      "title": "Стартап",
+      "description": "Неоновый лендинг стартапа.",
+      "blocks": [
+        {
+          "id": "section-mr7t6ak8-8126",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal",
+            "bgColor": "#7c3aed"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t6ak8-8125",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t6ak8-8120",
+                  "type": "heading",
+                  "props": {
+                    "text": "Будущее уже здесь",
+                    "level": "1",
+                    "align": "center",
+                    "textColor": "#ffffff",
+                    "fontSize": "4xl",
+                    "fontWeight": "bold",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t6ak8-8121",
+                  "type": "text",
+                  "props": {
+                    "text": "Инновационный продукт, который меняет правила игры.",
+                    "align": "center",
+                    "muted": "true",
+                    "size": "lg",
+                    "textColor": "#ffffff"
+                  }
+                },
+                {
+                  "id": "row-mr7t6ak8-8124",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t6ak8-8122",
+                      "type": "button",
+                      "props": {
+                        "text": "Присоединиться",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "bgColor": "#ffffff",
+                        "textColor": "#7c3aed",
+                        "radius": "lg",
+                        "hover": "pulse"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t6ak8-8123",
+                      "type": "button",
+                      "props": {
+                        "text": "Узнать больше",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "textColor": "#ffffff",
+                        "borderColor": "#ffffff",
+                        "borderWidth": "1",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t6ak8-8139",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t6ak8-8127",
+              "type": "heading",
+              "props": {
+                "text": "Почему мы",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t6ak8-8128",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t6ak8-8138",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t6ak8-8131",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t6ak8-8129",
+                      "type": "heading",
+                      "props": {
+                        "text": "Быстро",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t6ak8-8130",
+                      "type": "text",
+                      "props": {
+                        "text": "Молниеносная скорость.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t6ak8-8134",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t6ak8-8132",
+                      "type": "heading",
+                      "props": {
+                        "text": "Умно",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t6ak8-8133",
+                      "type": "text",
+                      "props": {
+                        "text": "ИИ под капотом.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t6ak8-8137",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t6ak8-8135",
+                      "type": "heading",
+                      "props": {
+                        "text": "Безопасно",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t6ak8-8136",
+                      "type": "text",
+                      "props": {
+                        "text": "Данные под защитой.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t6ak8-8144",
+          "type": "section",
+          "props": {
+            "padding": "md",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "grid-mr7t6ak8-8143",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "counter-mr7t6ak8-8140",
+                  "type": "counter",
+                  "props": {
+                    "value": "1M+",
+                    "label": "скачиваний",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t6ak8-8141",
+                  "type": "counter",
+                  "props": {
+                    "value": "150",
+                    "label": "стран",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "counter-mr7t6ak8-8142",
+                  "type": "counter",
+                  "props": {
+                    "value": "24/7",
+                    "label": "поддержка",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t6ak8-8148",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t6ak8-8145",
+              "type": "heading",
+              "props": {
+                "text": "Частые вопросы",
+                "level": "2",
+                "align": "left"
+              }
+            },
+            {
+              "id": "spacer-mr7t6ak8-8146",
+              "type": "spacer",
+              "props": {
+                "height": "sm"
+              }
+            },
+            {
+              "id": "faq-mr7t6ak8-8147",
+              "type": "faq",
+              "props": {
+                "items": "Сколько стоит?::Есть бесплатный тариф и платные планы.\nМожно отменить?::Да, в любой момент.\nНужен ли код?::Нет, всё визуально.",
+                "align": "left",
+                "faqVariant": "separated"
+              }
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t6ak8-8152",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t6ak8-8151",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t6ak8-8149",
+                  "type": "heading",
+                  "props": {
+                    "text": "Успей первым",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t6ak8-8150",
+                  "type": "button",
+                  "props": {
+                    "text": "Получить доступ",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "page-mr7t7kci-8197",
+      "path": "home-9",
+      "title": "Кофейня",
+      "description": "Лендинг кофейни.",
+      "blocks": [
+        {
+          "id": "section-mr7t7kci-8161",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal",
+            "bgColor": "#b45309"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t7kci-8160",
+              "type": "stack",
+              "props": {
+                "gap": "md",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t7kci-8155",
+                  "type": "heading",
+                  "props": {
+                    "text": "Просыпайся медленно",
+                    "level": "1",
+                    "align": "center",
+                    "textColor": "#ffffff",
+                    "fontSize": "4xl",
+                    "fontWeight": "bold",
+                    "animate": "slide-up"
+                  }
+                },
+                {
+                  "id": "text-mr7t7kci-8156",
+                  "type": "text",
+                  "props": {
+                    "text": "Обжарка на месте, зёрна со всего мира и уютная атмосфера.",
+                    "align": "center",
+                    "muted": "true",
+                    "size": "lg",
+                    "textColor": "#ffffff"
+                  }
+                },
+                {
+                  "id": "row-mr7t7kci-8159",
+                  "type": "row",
+                  "props": {
+                    "gap": "sm",
+                    "align": "center",
+                    "justify": "center",
+                    "wrap": "wrap"
+                  },
+                  "children": [
+                    {
+                      "id": "button-mr7t7kci-8157",
+                      "type": "button",
+                      "props": {
+                        "text": "Забронировать стол",
+                        "href": "/site/contact",
+                        "variant": "default",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "bgColor": "#ffffff",
+                        "textColor": "#b45309",
+                        "radius": "lg",
+                        "hover": "pulse"
+                      }
+                    },
+                    {
+                      "id": "button-mr7t7kci-8158",
+                      "type": "button",
+                      "props": {
+                        "text": "Меню",
+                        "href": "#",
+                        "variant": "outline",
+                        "size": "lg",
+                        "align": "center",
+                        "type": "link",
+                        "textColor": "#ffffff",
+                        "borderColor": "#ffffff",
+                        "borderWidth": "1",
+                        "hover": "lift"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t7kci-8174",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t7kci-8162",
+              "type": "heading",
+              "props": {
+                "text": "Наше меню",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t7kci-8163",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t7kci-8173",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "card-mr7t7kci-8166",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t7kci-8164",
+                      "type": "heading",
+                      "props": {
+                        "text": "Эспрессо",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t7kci-8165",
+                      "type": "text",
+                      "props": {
+                        "text": "Классика в идеальном балансе.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t7kci-8169",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t7kci-8167",
+                      "type": "heading",
+                      "props": {
+                        "text": "Пуровер",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t7kci-8168",
+                      "type": "text",
+                      "props": {
+                        "text": "Раскрываем вкус зерна.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "card-mr7t7kci-8172",
+                  "type": "card",
+                  "props": {
+                    "padding": "md",
+                    "bg": "card",
+                    "border": "true",
+                    "gap": "sm",
+                    "cardVariant": "elevated",
+                    "animate": "slide-up",
+                    "hover": "lift"
+                  },
+                  "children": [
+                    {
+                      "id": "heading-mr7t7kci-8170",
+                      "type": "heading",
+                      "props": {
+                        "text": "Латте",
+                        "level": "3",
+                        "align": "left"
+                      }
+                    },
+                    {
+                      "id": "text-mr7t7kci-8171",
+                      "type": "text",
+                      "props": {
+                        "text": "Нежная молочная пенка.",
+                        "align": "left",
+                        "muted": "true"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t7kci-8184",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t7kci-8175",
+              "type": "heading",
+              "props": {
+                "text": "Атмосфера",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t7kci-8176",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t7kci-8183",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "image-mr7t7kci-8177",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 1",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t7kci-8178",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 2",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t7kci-8179",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 3",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t7kci-8180",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 4",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t7kci-8181",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 5",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                },
+                {
+                  "id": "image-mr7t7kci-8182",
+                  "type": "image",
+                  "props": {
+                    "src": "",
+                    "alt": "Работа 6",
+                    "rounded": "lg",
+                    "ratio": "4/3"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t7kci-8191",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "heading-mr7t7kci-8185",
+              "type": "heading",
+              "props": {
+                "text": "Нам доверяют",
+                "level": "2",
+                "align": "center"
+              }
+            },
+            {
+              "id": "spacer-mr7t7kci-8186",
+              "type": "spacer",
+              "props": {
+                "height": "md"
+              }
+            },
+            {
+              "id": "grid-mr7t7kci-8190",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3"
+              },
+              "children": [
+                {
+                  "id": "testimonial-mr7t7kci-8187",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Лучшее решение на рынке. Рекомендую!",
+                    "author": "Анна П.",
+                    "role": "CEO",
+                    "quoteVariant": "minimal"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t7kci-8188",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Внедрили за день, результат сразу.",
+                    "author": "Иван С.",
+                    "role": "CTO",
+                    "quoteVariant": "minimal"
+                  }
+                },
+                {
+                  "id": "testimonial-mr7t7kci-8189",
+                  "type": "testimonial",
+                  "props": {
+                    "quote": "Поддержка отвечает мгновенно.",
+                    "author": "Мария К.",
+                    "role": "PM",
+                    "quoteVariant": "minimal"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-mr7t7kci-8195",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "card",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "stack-mr7t7kci-8194",
+              "type": "stack",
+              "props": {
+                "gap": "sm",
+                "align": "center"
+              },
+              "children": [
+                {
+                  "id": "heading-mr7t7kci-8192",
+                  "type": "heading",
+                  "props": {
+                    "text": "Ждём вас в гости",
+                    "level": "2",
+                    "align": "center"
+                  }
+                },
+                {
+                  "id": "button-mr7t7kci-8193",
+                  "type": "button",
+                  "props": {
+                    "text": "Как нас найти",
+                    "href": "/site/contact",
+                    "variant": "default",
+                    "size": "lg",
+                    "align": "center",
+                    "type": "link"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
-  ]
+  ],
+  "footerVariant": "columns",
+  "headerBehavior": "transparent",
+  "headerVariant": "split"
 }
