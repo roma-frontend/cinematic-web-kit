@@ -8,6 +8,8 @@ import {
   OG_LOCALE,
   localeAlternates,
   KEYWORDS,
+  siteJsonLd,
+  tenantJsonLd,
 } from '@/lib/seo';
 
 describe('seo constants', () => {
@@ -42,5 +44,25 @@ describe('subdomainUrl', () => {
 describe('localeAlternates', () => {
   it('is a no-op until localized routes exist', () => {
     expect(localeAlternates('/')).toBeUndefined();
+  });
+});
+
+describe('JSON-LD', () => {
+  it('siteJsonLd exposes Organization + WebSite graph', () => {
+    const ld = siteJsonLd() as { '@graph': { '@type': string }[] };
+    const types = ld['@graph'].map((n) => n['@type']);
+    expect(types).toContain('Organization');
+    expect(types).toContain('WebSite');
+  });
+
+  it('tenantJsonLd builds a WebSite node with optional description', () => {
+    const withDesc = tenantJsonLd('Coffee', 'https://coffee.example.com', 'Best beans') as Record<string, unknown>;
+    expect(withDesc['@type']).toBe('WebSite');
+    expect(withDesc.name).toBe('Coffee');
+    expect(withDesc.url).toBe('https://coffee.example.com');
+    expect(withDesc.description).toBe('Best beans');
+
+    const noDesc = tenantJsonLd('Shop', 'https://shop.example.com') as Record<string, unknown>;
+    expect('description' in noDesc).toBe(false);
   });
 });

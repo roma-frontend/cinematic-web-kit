@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth';
 import { getSiteBySlug, parseDoc, rebaseDoc, APP_HOST } from '@/lib/sites';
-import { subdomainUrl } from '@/lib/seo';
+import { subdomainUrl, tenantJsonLd } from '@/lib/seo';
 import { SiteRenderer, SiteAuthPage, AUTH_PATHS, findPageByPath } from '@/components/builder/site-renderer';
 
 export const dynamic = 'force-dynamic';
@@ -77,5 +77,17 @@ export default async function TenantSitePage({ params, searchParams }: Props) {
   }
   const page = findPageByPath(resolved.doc, parts);
   if (!page) notFound();
-  return <SiteRenderer doc={resolved.doc} page={page} edit={edit === '1' && draft === '1'} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            tenantJsonLd(resolved.doc.brand, subdomainUrl(resolved.site.slug, parts.join('/')), page.description),
+          ),
+        }}
+      />
+      <SiteRenderer doc={resolved.doc} page={page} edit={edit === '1' && draft === '1'} />
+    </>
+  );
 }

@@ -56,3 +56,41 @@ export function subdomainUrl(slug: string, path = ''): string {
 export function localeAlternates(_path = '/'): Metadata['alternates'] {
   return undefined;
 }
+
+// ── Structured data (JSON-LD) ───────────────────────────────────────────────
+/** WebSite graph for a published tenant site. */
+export function tenantJsonLd(brand: string, url: string, description?: string): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: brand,
+    url,
+    ...(description ? { description } : {}),
+  };
+}
+
+/** Organization + WebSite graph for the marketing site. */
+export function siteJsonLd(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${APP_URL}/#organization`,
+        name: SITE_NAME,
+        url: APP_URL,
+        logo: `${APP_URL}/icon.svg`,
+        description: DEFAULT_DESCRIPTION,
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${APP_URL}/#website`,
+        name: SITE_NAME,
+        url: APP_URL,
+        description: DEFAULT_DESCRIPTION,
+        inLanguage: LOCALES.map((l) => (l === 'ru' ? 'ru-RU' : 'en-US')),
+        publisher: { '@id': `${APP_URL}/#organization` },
+      },
+    ],
+  };
+}

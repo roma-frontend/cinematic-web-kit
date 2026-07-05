@@ -10,6 +10,7 @@ import {
   APP_URL,
   OG_LOCALE,
   DEFAULT_LOCALE,
+  siteJsonLd,
 } from '@/lib/seo';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' });
@@ -61,6 +62,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }}
+        />
+      </head>
       <body className={`${inter.variable} ${playfair.variable} ${montserrat.variable} font-sans antialiased`}>
         <ThemeProvider disableTransitionOnChange attribute="class" defaultTheme="dark" enableSystem>
           {children}

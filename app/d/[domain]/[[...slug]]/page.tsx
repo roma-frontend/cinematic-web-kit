@@ -5,6 +5,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getSiteByHostname, parseDoc, rebaseDoc } from '@/lib/sites';
+import { tenantJsonLd } from '@/lib/seo';
 import { SiteRenderer, SiteAuthPage, AUTH_PATHS, findPageByPath } from '@/components/builder/site-renderer';
 
 export const dynamic = 'force-dynamic';
@@ -51,5 +52,17 @@ export default async function CustomDomainPage({ params }: Props) {
   }
   const page = findPageByPath(resolved.doc, parts);
   if (!page) notFound();
-  return <SiteRenderer doc={resolved.doc} page={page} />;
+  const hostname = decodeURIComponent(domain).toLowerCase();
+  const canonical = `https://${hostname}${parts.length ? `/${parts.join('/')}` : ''}`;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(tenantJsonLd(resolved.doc.brand, canonical, page.description)),
+        }}
+      />
+      <SiteRenderer doc={resolved.doc} page={page} />
+    </>
+  );
 }
