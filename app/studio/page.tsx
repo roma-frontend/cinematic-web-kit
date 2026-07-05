@@ -14,7 +14,7 @@ import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Sect
 import { THEMES, getTheme } from '@/lib/themes';
 import siteConfig from '@/data/site.json';
 import mediaData from '@/data/media.json';
-import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette, ArrowUp, ArrowDown, X, Plus, Eye, RotateCcw, LayoutList } from 'lucide-react';
+import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette, ArrowUp, ArrowDown, X, Plus, Eye, RotateCcw, LayoutList, Monitor, Tablet, Smartphone } from 'lucide-react';
 
 const BLOCK_LABELS: Record<string, string> = {
   hero: 'Герой',
@@ -36,6 +36,9 @@ const STUDIO_TABS = [
   { id: 'config', label: 'Конфигурация', icon: Upload },
 ] as const;
 type StudioTab = (typeof STUDIO_TABS)[number]['id'];
+
+const DEVICE = { full: '100%', tablet: '820px', mobile: '390px' } as const;
+type Device = keyof typeof DEVICE;
 
 type Status = 'idle' | 'running' | 'done' | 'error';
 type BatchItem = PlanItem & { state: 'pending' | 'running' | 'done' | 'error'; error?: string };
@@ -109,6 +112,9 @@ export default function StudioPage() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<StudioTab>('generate');
+  const [device, setDevice] = useState<Device>('full');
+  const [paneWidth, setPaneWidth] = useState(704); // px width of the right preview pane
+  const draggingPane = useRef(false);
 
   // Step 2 — the generated prompt + section metadata
   const [prompt, setPrompt] = useState('');
@@ -325,6 +331,18 @@ export default function StudioPage() {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [logs]);
 
+  // Drag-to-resize the right preview pane.
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!draggingPane.current) return;
+      setPaneWidth(Math.min(1200, Math.max(360, window.innerWidth - e.clientX)));
+    };
+    const onUp = () => { draggingPane.current = false; document.body.style.userSelect = ''; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, []);
+
   async function runOne(body: GenBody) {
     return streamGenerate({ negative: NEGATIVE_PROMPT, ...body }, appendLog);
   }
@@ -450,19 +468,13 @@ export default function StudioPage() {
 
       <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
         {/* Left tools panel — scrollable */}
-        <aside className="min-w-0 flex-1 overflow-auto">
-          <div className="mx-auto max-w-3xl space-y-6 px-5 py-8">
-        <motion.header {...fade} className="mb-2">
-          <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <aside className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-3xl space-y-5 px-5 py-6">
+        <motion.header {...fade} className="flex items-center gap-2.5">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Cinematic Studio
           </span>
-          <h1 className="text-balance text-3xl font-black tracking-tight sm:text-4xl">
-            Опишите идею — получите кино
-          </h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Напишите бриф или перетащите <code>.md</code>. Студия соберёт кинематографический промпт,
-            сгенерирует и оптимизирует видео для секции сайта.
-          </p>
+          <span className="text-sm text-muted-foreground">{STUDIO_TABS.find((t) => t.id === tab)?.label}</span>
         </motion.header>
         {/* Tab bar */}
         <div className="sticky top-0 z-20 -mx-5 mb-2 border-b border-border/60 bg-background/85 px-5 pb-px backdrop-blur-md">
@@ -876,11 +888,26 @@ export default function StudioPage() {
         </aside>
 
         {/* Live preview — sticky right pane, matches builder */}
-        <div className="hidden shrink-0 flex-col border-l border-border/60 bg-muted/20 xl:flex xl:w-[44rem]">
+        <div className="relative hidden shrink-0 flex-col border-l border-border/60 bg-muted/20 xl:flex" style={{ width: paneWidth }}>
+          {/* drag handle */}
+          <div
+            onMouseDown={() => { draggingPane.current = true; document.body.style.userSelect = 'none'; }}
+            className="absolute left-0 top-0 z-20 h-full w-1.5 -translate-x-1/2 cursor-col-resize hover:bg-primary/40"
+            title="Потяни, чтобы изменить ширину панели"
+          />
           <div className="flex items-center gap-2 border-b border-border/60 px-4 py-2 text-xs text-muted-foreground">
             <Eye className="h-4 w-4 text-primary" />
-            <span className="truncate">Предпросмотр сайта — /</span>
-            <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">главная</span>
+            <span className="truncate">Предпросмотр — /</span>
+            <div className="ml-2 flex items-center gap-0.5 rounded-lg border border-border p-0.5">
+              {(['full', 'tablet', 'mobile'] as const).map((dv) => {
+                const Icon = dv === 'full' ? Monitor : dv === 'tablet' ? Tablet : Smartphone;
+                return (
+                  <button key={dv} onClick={() => setDevice(dv)} className={`rounded-md p-1.5 ${device === dv ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`} aria-label={dv} title={dv}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </button>
+                );
+              })}
+            </div>
             <div className="ml-auto flex items-center gap-1">
               <Link href="/" target="_blank" className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted">Открыть</Link>
               <button onClick={() => setPreviewKey((k) => k + 1)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted">
@@ -888,8 +915,10 @@ export default function StudioPage() {
               </button>
             </div>
           </div>
-          <div className="min-h-0 flex-1 p-4">
-            <iframe key={previewKey} src="/" title="Предпросмотр сайта" className="h-full w-full rounded-xl border border-border bg-background shadow-2xl" />
+          <div className="min-h-0 flex-1 overflow-auto p-4">
+            <div className="mx-auto h-full transition-[width] duration-300" style={{ width: DEVICE[device] }}>
+              <iframe key={previewKey} src="/" title="Предпросмотр сайта" className="h-full w-full rounded-xl border border-border bg-background shadow-2xl" />
+            </div>
           </div>
         </div>
       </div>
