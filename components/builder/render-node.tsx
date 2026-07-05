@@ -180,20 +180,34 @@ function renderInner(node: BuilderNode) {
       const gradStyle = gradient
         ? { backgroundImage: 'linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 45%, #000))', color: 'var(--primary-foreground)' }
         : undefined;
+      // Background display modes for an image/video behind the section content.
+      const bgMode = p.bgMode || 'cover';
+      const mediaFilter =
+        bgMode === 'blur' ? 'blur(14px) saturate(1.15) brightness(0.9)'
+        : bgMode === 'duotone' ? 'grayscale(1) contrast(1.05)'
+        : undefined;
+      const mediaClass = cn('absolute inset-0 h-full w-full object-cover', bgMode === 'blur' && 'scale-110');
+      const overlayBg: Record<string, string> = {
+        cover: 'rgba(0,0,0,0.5)',
+        blur: 'rgba(0,0,0,0.45)',
+        overlay: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.15) 100%)',
+        tint: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 65%, transparent), color-mix(in oklch, var(--primary) 30%, #000))',
+        duotone: 'color-mix(in oklch, var(--primary) 45%, transparent)',
+      };
       return (
         <section className={cn('relative overflow-hidden', pick(PAD, p.padding, 'lg'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
           {p.bgVideo ? (
             // eslint-disable-next-line jsx-a11y/media-has-caption
-            <video className="absolute inset-0 h-full w-full object-cover" src={p.bgVideo} autoPlay muted loop playsInline />
+            <video className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgVideo} autoPlay muted loop playsInline />
           ) : p.bgImage ? (
             p.parallax === 'true' ? (
               <ParallaxBg src={p.bgImage} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="absolute inset-0 h-full w-full object-cover" src={p.bgImage} alt="" />
+              <img className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgImage} alt="" />
             )
           ) : null}
-          {hasMedia && <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.5)' }} />}
+          {hasMedia && <div className="absolute inset-0" style={{ background: overlayBg[bgMode] ?? overlayBg.cover }} />}
           <div className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), hasMedia && 'text-white')}>
             {kids.map((c) => (
               <RenderNode key={c.id} node={c} />
@@ -285,19 +299,70 @@ function renderInner(node: BuilderNode) {
     }
 
     case 'image':
-      return p.src ? (
+    case 'image': {
+      if (!p.src) {
+        return (
+          <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+            Изображение
+          </div>
+        );
+      }
+      const roundedCls = p.rounded === 'full' ? 'rounded-full' : p.rounded === 'none' ? '' : 'rounded-xl';
+      const ratioStyle = p.ratio ? { aspectRatio: p.ratio.replace('/', ' / ') } : undefined;
+      const mode = p.imgMode || 'inline';
+
+      // Glow: a blurred copy sits behind for a soft, modern halo.
+      if (mode === 'glow') {
+        return (
+          <div className="relative w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.src} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-105 object-cover opacity-60 blur-2xl" style={ratioStyle} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.src} alt={p.alt || ''} className={cn('relative w-full object-cover shadow-2xl', roundedCls)} style={ratioStyle} />
+          </div>
+        );
+      }
+      // Overlay: dark gradient across the image (good for captions/legibility).
+      if (mode === 'overlay') {
+        return (
+          <div className={cn('relative w-full overflow-hidden', roundedCls)} style={ratioStyle}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.src} alt={p.alt || ''} className="h-full w-full object-cover" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0.1) 60%)' }} />
+          </div>
+        );
+      }
+      // Duotone: brand-tinted grayscale for a cohesive editorial look.
+      if (mode === 'duotone') {
+        return (
+          <div className={cn('relative w-full overflow-hidden', roundedCls)} style={ratioStyle}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.src} alt={p.alt || ''} className="h-full w-full object-cover" style={{ filter: 'grayscale(1) contrast(1.05)' }} />
+            <div className="absolute inset-0 mix-blend-color" style={{ background: 'var(--primary)' }} />
+          </div>
+        );
+      }
+      // Framed: card-style with padding, border and shadow (polaroid feel).
+      if (mode === 'framed') {
+        return (
+          <div className="w-full rounded-2xl border border-border bg-card p-2 shadow-xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={p.src} alt={p.alt || ''} className={cn('w-full object-cover', roundedCls)} style={ratioStyle} />
+          </div>
+        );
+      }
+      // cover: tall banner that fills its slot; inline (default): natural flow.
+      const coverStyle = mode === 'cover' ? { aspectRatio: (p.ratio || '16/6').replace('/', ' / ') } : ratioStyle;
+      return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={p.src}
           alt={p.alt || ''}
-          className={cn('w-full object-cover', p.rounded === 'full' ? 'rounded-full' : p.rounded === 'none' ? '' : 'rounded-xl')}
-          style={p.ratio ? { aspectRatio: p.ratio.replace('/', ' / ') } : undefined}
+          className={cn('w-full object-cover', roundedCls, mode === 'cover' && 'shadow-lg')}
+          style={coverStyle}
         />
-      ) : (
-        <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-          Изображение
-        </div>
       );
+    }
 
     case 'input':
     case 'textarea':

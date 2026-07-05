@@ -33,6 +33,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'bg', label: 'Фон', opts: ['none', 'muted', 'card', 'primary', 'gradient'] },
     { k: 'width', label: 'Ширина', opts: ['narrow', 'normal', 'wide'] },
     { k: 'bgImage', label: 'Фоновая картинка (URL)' },
+    { k: 'bgMode', label: 'Режим фона', opts: ['cover', 'blur', 'overlay', 'tint', 'duotone'] },
     { k: 'bgVideo', label: 'Фоновое видео (URL .mp4)' },
     { k: 'parallax', label: 'Параллакс фона', opts: ['false', 'true'] },
   ],
@@ -89,6 +90,7 @@ const FIELDS: Record<NodeType, Field[]> = {
   image: [
     { k: 'src', label: 'URL картинки' },
     { k: 'alt', label: 'Alt-текст' },
+    { k: 'imgMode', label: 'Режим показа', opts: ['inline', 'cover', 'glow', 'overlay', 'duotone', 'framed'] },
     { k: 'rounded', label: 'Скругление', opts: ['none', 'lg', 'full'] },
     { k: 'ratio', label: 'Пропорции (напр. 16/9)' },
   ],
