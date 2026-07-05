@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ArrowUp, ArrowDown, X, Plus, Save, Loader2, Check, Monitor, Tablet, Smartphone,
   ExternalLink, Trash2, FileText, LayoutTemplate, ChevronRight, Copy, Upload, Wand2, Palette,
+  Undo2, Redo2, LayoutGrid,
 } from 'lucide-react';
 import seed from '@/data/builder.json';
 import { THEMES } from '@/lib/themes';
+import { TEMPLATES } from '@/lib/builder/templates';
 import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
   NODE_LABELS, isContainer, makeNode, newId,
@@ -151,6 +153,62 @@ export default function BuilderEditor() {
       .catch(() => {});
   }, []);
 
+  // ---- undo / redo history ----
+  const past = useRef<BuilderDoc[]>([]);
+  const future = useRef<BuilderDoc[]>([]);
+  const skipHistory = useRef(true); // skip the very first (mount) doc
+  const prevDoc = useRef<BuilderDoc>(doc);
+  const [histTick, setHistTick] = useState(0);
+  useEffect(() => {
+    if (skipHistory.current) {
+      skipHistory.current = false;
+      prevDoc.current = doc;
+      return;
+    }
+    if (prevDoc.current !== doc) {
+      past.current.push(prevDoc.current);
+      if (past.current.length > 60) past.current.shift();
+      future.current = [];
+      prevDoc.current = doc;
+      setHistTick((t) => t + 1);
+    }
+  }, [doc]);
+  const undo = () => {
+    const p = past.current.pop();
+    if (!p) return;
+    future.current.push(doc);
+    skipHistory.current = true;
+    setDoc(p);
+    setHistTick((t) => t + 1);
+  };
+  const redo = () => {
+    const n = future.current.pop();
+    if (!n) return;
+    past.current.push(doc);
+    skipHistory.current = true;
+    setDoc(n);
+    setHistTick((t) => t + 1);
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      } else if (e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc]);
+  const canUndo = past.current.length > 0;
+  const canRedo = future.current.length > 0;
+  void histTick;
+
   const page: BuilderPage | undefined = useMemo(
     () => doc.pages.find((p) => p.id === pageId) ?? doc.pages[0],
     [doc, pageId],
@@ -223,16 +281,7 @@ export default function BuilderEditor() {
       });
       const data = await res.json();
       if (res.ok && data.page) {
-        let np: BuilderPage = data.page;
-        // ensure unique path
-        let base = np.path || np.title.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'page';
-        let path = base;
-        let i = 2;
-        while (doc.pages.some((p) => p.path === path)) path = `${base}-${i++}`;
-        np = { ...np, id: newId('page'), path };
-        setDoc((d) => ({ ...d, pages: [...d.pages, np] }));
-        setPageId(np.id);
-        setSelectedId(null);
+        addPageDoc(data.page as BuilderPage);
         setBrief('');
         setMsg(`Страница создана (${data.source === 'llm' ? 'LLM' : 'шаблон'}). Не забудьте «Сохранить».`);
       } else setMsg(data.error || 'Ошибка генерации');
@@ -262,8 +311,27 @@ export default function BuilderEditor() {
     setDoc((d) => ({ ...d, pages: d.pages.filter((p) => p.id !== id) }));
     if (pageId === id) setPageId(doc.pages.find((p) => p.id !== id)?.id ?? '');
   };
-  const renamePage = (field: 'title' | 'path', val: string) =>
+  const renamePage = (field: 'title' | 'path' | 'description', val: string) =>
     setDoc((d) => ({ ...d, pages: d.pages.map((p) => (p.id === page?.id ? { ...p, [field]: field === 'path' ? val.replace(/^\/+|\/+$/g, '') : val } : p)) }));
+
+  // Adds a page, ensuring its path is unique; selects it.
+  const addPageDoc = (np: BuilderPage): void => {
+    let base = np.path ?? '';
+    if (base === '' && doc.pages.some((p) => p.path === '')) base = 'home';
+    let path = base;
+    let i = 2;
+    while (doc.pages.some((p) => p.path === path)) path = `${base || 'page'}-${i++}`;
+    const created: BuilderPage = { ...np, id: newId('page'), path };
+    setDoc((d) => ({ ...d, pages: [...d.pages, created] }));
+    setPageId(created.id);
+    setSelectedId(null);
+  };
+  const addTemplate = (id: string) => {
+    const t = TEMPLATES.find((x) => x.id === id);
+    if (!t) return;
+    addPageDoc(t.build());
+    setMsg(`Добавлена страница «${t.label}». Не забудьте «Сохранить».`);
+  };
 
   // ---- nav / footer / brand ----
   const setNavLink = (i: number, key: 'label' | 'href', val: string) =>
@@ -325,6 +393,8 @@ export default function BuilderEditor() {
             })}
           </div>
           <Link href={previewSrc} target="_blank"><Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-4 w-4" /> Открыть</Button></Link>
+          <button onClick={undo} disabled={!canUndo} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Отменить" title="Отменить (Ctrl+Z)"><Undo2 className="h-4 w-4" /></button>
+          <button onClick={redo} disabled={!canRedo} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Повторить" title="Повторить (Ctrl+Shift+Z)"><Redo2 className="h-4 w-4" /></button>
           <Button size="sm" onClick={save} disabled={busy} className="gap-1.5">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Сохранить
           </Button>
@@ -342,6 +412,19 @@ export default function BuilderEditor() {
             <Button size="sm" onClick={generatePage} disabled={genBusy || !brief.trim()} className="w-full gap-1.5">
               {genBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />} Создать по брифу
             </Button>
+          </Card>
+
+          {/* Ready-made templates */}
+          <Card className="p-3">
+            <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><LayoutGrid className="h-4 w-4 text-primary" /> Готовые страницы</p>
+            <div className="space-y-1.5">
+              {TEMPLATES.map((t) => (
+                <button key={t.id} onClick={() => addTemplate(t.id)} className="w-full rounded-lg border border-border/60 p-2 text-left transition-colors hover:border-primary/50 hover:bg-muted/50">
+                  <span className="flex items-center justify-between text-sm font-medium">{t.label}<Plus className="h-3.5 w-3.5 text-muted-foreground" /></span>
+                  <span className="text-xs text-muted-foreground">{t.description}</span>
+                </button>
+              ))}
+            </div>
           </Card>
 
           {/* Pages */}
@@ -374,6 +457,7 @@ export default function BuilderEditor() {
               <p className="text-sm font-semibold">Страница</p>
               <Input value={page.title} onChange={(e) => renamePage('title', e.target.value)} placeholder="Заголовок" className="h-8" />
               <Input value={page.path} onChange={(e) => renamePage('path', e.target.value)} placeholder="путь (пусто = главная)" className="h-8" />
+              <Textarea value={page.description ?? ''} onChange={(e) => renamePage('description', e.target.value)} rows={2} placeholder="SEO-описание (meta description)" />
             </Card>
           )}
 

@@ -1,6 +1,6 @@
 {
   "brand": "Nova Studio",
-  "themeId": "editorial-coffee",
+  "themeId": "sport-dynamic",
   "nav": [
     {
       "label": "Главная",
@@ -238,6 +238,30 @@
             "width": "wide"
           },
           "children": []
+        },
+        {
+          "id": "section-mr7pl2vr-1",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "pricing-mr7plia0-2",
+              "type": "pricing",
+              "props": {
+                "plan": "Pro",
+                "price": "990₽",
+                "period": "/мес",
+                "features": "Всё из Base\nПриоритетная поддержка\nБез ограничений",
+                "cta": "Выбрать",
+                "href": "/site/contact",
+                "featured": "false"
+              }
+            }
+          ]
         }
       ]
     },

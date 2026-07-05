@@ -11,7 +11,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
   const { slug } = await params;
   const doc = await loadDoc();
   const { page } = findPage(doc, slug ?? []);
-  return { title: page ? `${page.title} — ${doc.brand}` : doc.brand };
+  return {
+    title: page ? `${page.title} — ${doc.brand}` : doc.brand,
+    description: page?.description || undefined,
+  };
 }
 
 export default async function SitePage({ params }: { params: Promise<{ slug?: string[] }> }) {

@@ -43,6 +43,7 @@ export interface BuilderPage {
   id: string;
   path: string; // '' = home (/site), 'about' = /site/about
   title: string;
+  description?: string; // SEO meta description
   blocks: BuilderNode[];
 }
 
