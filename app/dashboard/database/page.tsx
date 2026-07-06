@@ -4,8 +4,13 @@ import { listTables } from '@/lib/db-admin';
 import { PageHeader } from '@/components/dashboard/ui';
 import { DbBrowser } from '@/components/dashboard/db-browser';
 import { StoragePanel } from '@/components/dashboard/storage-panel';
+import { getLocale } from '@/lib/i18n';
+import { staffDict } from '@/lib/staff-dict';
 
-export const metadata = { title: 'База данных — Cinematic Kit' };
+export async function generateMetadata() {
+  const t = staffDict(await getLocale());
+  return { title: `${t.dbMetaTitle} — Cinematic Kit` };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function DatabasePage() {
@@ -13,9 +18,11 @@ export default async function DatabasePage() {
   if (!me) redirect('/login?next=/dashboard/database');
   if (!isSuperadmin(me)) redirect('/dashboard');
 
+  const t = staffDict(await getLocale());
+
   return (
     <>
-      <PageHeader title="База данных" description="Просмотр и редактирование таблиц. Изменения применяются немедленно — будьте внимательны." />
+      <PageHeader title={t.dbTitle} description={t.dbSubtitle} />
       <StoragePanel />
       <DbBrowser tables={listTables()} />
     </>
