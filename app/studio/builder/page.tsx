@@ -12,9 +12,11 @@ import {
   ArrowUp, ArrowDown, X, Plus, Save, Loader2, Monitor, Tablet, Smartphone,
   ExternalLink, Trash2, FileText, LayoutTemplate, ChevronRight, Copy, Upload, Wand2, Palette,
   Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2, Sun, Moon, Rocket, Home,
+  ClipboardPaste, CopyPlus, Keyboard,
 } from 'lucide-react';
 import seed from '@/data/builder.json';
 import { usePrefs, setPref } from '@/hooks/use-user-prefs';
+import { useMounted } from '@/hooks/use-mounted';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
 import { RenderNode } from '@/components/builder/render-node';
 import { RevealDisabled } from '@/components/builder/reveal';
@@ -24,7 +26,7 @@ import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
   NODE_LABELS, isContainer, makeNode, newId,
 } from '@/lib/builder/types';
-import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveTo, insertAfter, ancestorTypes, ancestorPath } from '@/lib/builder/tree';
+import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveTo, insertAfter, ancestorTypes, ancestorPath, cloneWithNewIds } from '@/lib/builder/tree';
 
 type Field = { k: string; label: string; kind?: 'text' | 'textarea'; opts?: string[] };
 
@@ -33,6 +35,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'padding', label: 'Отступы', opts: ['none', 'sm', 'md', 'lg'] },
     { k: 'minH', label: 'Мин. высота', opts: ['none', 'half', 'screen'] },
     { k: 'bg', label: 'Фон', opts: ['none', 'muted', 'card', 'primary', 'gradient'] },
+    { k: 'fx', label: 'Спецэффект фона', opts: ['none', 'aurora', 'grid', 'dots'] },
     { k: 'width', label: 'Ширина', opts: ['narrow', 'normal', 'wide'] },
     { k: 'bgImage', label: 'Фоновая картинка (URL)' },
     { k: 'bgMode', label: 'Режим фона', opts: ['cover', 'blur', 'overlay', 'tint', 'duotone'] },
@@ -57,7 +60,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'stagger', label: 'Появление по очереди', opts: ['false', 'true'] },
   ],
   card: [
-    { k: 'cardVariant', label: 'Вариант', opts: ['elevated', 'outline', 'soft', 'plain'] },
+    { k: 'cardVariant', label: 'Вариант', opts: ['elevated', 'outline', 'soft', 'glass', 'plain'] },
     { k: 'padding', label: 'Внутр. отступ', opts: ['none', 'sm', 'md', 'lg'] },
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
   ],
@@ -65,12 +68,14 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'text', label: 'Текст', kind: 'textarea' },
     { k: 'level', label: 'Уровень', opts: ['1', '2', '3', '4'] },
     { k: 'align', label: 'Выравнивание', opts: ['left', 'center', 'right'] },
+    { k: 'gradient', label: 'Градиентный текст', opts: ['false', 'true'] },
   ],
   text: [
     { k: 'text', label: 'Текст', kind: 'textarea' },
     { k: 'size', label: 'Размер', opts: ['sm', 'base', 'lg'] },
     { k: 'align', label: 'Выравнивание', opts: ['left', 'center', 'right'] },
     { k: 'muted', label: 'Приглушить', opts: ['true', 'false'] },
+    { k: 'gradient', label: 'Градиентный текст', opts: ['false', 'true'] },
   ],
   list: [
     { k: 'items', label: 'Пункты (по строкам)', kind: 'textarea' },
@@ -88,6 +93,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'variant', label: 'Стиль', opts: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] },
     { k: 'size', label: 'Размер', opts: ['sm', 'default', 'lg'] },
     { k: 'align', label: 'Выравнивание', opts: ['left', 'center', 'right'] },
+    { k: 'shimmer', label: 'Блик (shimmer)', opts: ['false', 'true'] },
   ],
   image: [
     { k: 'src', label: 'URL картинки' },
@@ -286,7 +292,7 @@ function BuilderEditor() {
   const [dirty, setDirty] = useState(false);
   // Mirror `dirty` into a ref so unmount/unload flush handlers see the latest.
   const dirtyRef = useRef(false);
-  dirtyRef.current = dirty;
+  useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
   const [msg, setMsg] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newPath, setNewPath] = useState('');
@@ -302,6 +308,9 @@ function BuilderEditor() {
     chromeApplied.current = true;
     const c = prefs[`builder:${siteId}`] as Record<string, unknown> | undefined;
     if (!c || typeof c !== 'object') return;
+    // One-shot hydration of several interactive states from the async prefs
+    // snapshot — the guard above makes it run exactly once, no cascade risk.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (c.tab === 'pages' || c.tab === 'blocks' || c.tab === 'design') setTab(c.tab);
     if (typeof c.device === 'string' && c.device in DEVICE) setDevice(c.device as keyof typeof DEVICE);
     if (typeof c.previewWidth === 'number') setPreviewWidth(Math.min(1100, Math.max(300, c.previewWidth)));
@@ -345,17 +354,38 @@ function BuilderEditor() {
         setSiteMeta(d.site);
       })
       .catch(() => setMsg('Не удалось загрузить сайт.'));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [siteId, router]);
 
   // ---- undo / redo history ----
+  // Imperative ref-based history: the doc-watcher effect records each change.
+  // canUndo/canRedo live in state (histCaps) so render never reads the refs.
   const past = useRef<BuilderDoc[]>([]);
   const future = useRef<BuilderDoc[]>([]);
   const skipHistory = useRef(true); // skip the very first (mount) doc
   const prevDoc = useRef<BuilderDoc>(doc);
-  const [histTick, setHistTick] = useState(0);
+  const [histCaps, setHistCaps] = useState({ undo: false, redo: false });
+  const undo = () => {
+    const p = past.current.pop();
+    if (!p) return;
+    future.current.push(doc);
+    skipHistory.current = true;
+    setDoc(p);
+    setHistCaps({ undo: past.current.length > 0, redo: true });
+    setDirty(true);
+  };
+  const redo = () => {
+    const n = future.current.pop();
+    if (!n) return;
+    past.current.push(doc);
+    skipHistory.current = true;
+    setDoc(n);
+    setHistCaps({ undo: true, redo: future.current.length > 0 });
+    setDirty(true);
+  };
   useEffect(() => {
     if (skipHistory.current) {
+      // eslint-disable-next-line react-hooks/immutability -- bookkeeping refs owned by this effect
       skipHistory.current = false;
       prevDoc.current = doc;
       return;
@@ -365,52 +395,21 @@ function BuilderEditor() {
       if (past.current.length > 60) past.current.shift();
       future.current = [];
       prevDoc.current = doc;
-      setHistTick((t) => t + 1);
+      setHistCaps({ undo: true, redo: false });
       setDirty(true);
     }
   }, [doc]);
-  const undo = () => {
-    const p = past.current.pop();
-    if (!p) return;
-    future.current.push(doc);
-    skipHistory.current = true;
-    setDoc(p);
-    setHistTick((t) => t + 1);
-    setDirty(true);
-  };
-  const redo = () => {
-    const n = future.current.pop();
-    if (!n) return;
-    past.current.push(doc);
-    skipHistory.current = true;
-    setDoc(n);
-    setHistTick((t) => t + 1);
-    setDirty(true);
-  };
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
-      if (e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-      } else if (e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        redo();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doc]);
-  const canUndo = past.current.length > 0;
-  const canRedo = future.current.length > 0;
-  void histTick;
+  const canUndo = histCaps.undo;
+  const canRedo = histCaps.redo;
 
   // Click-to-select coming from the live preview iframe (edit mode).
   const previewRef = useRef<HTMLIFrameElement>(null);
   const stateRef = useRef({ doc, pageId, selectedId, previewDark, siteSlug: siteMeta?.slug, siteId: siteMeta?.id });
-  stateRef.current = { doc, pageId, selectedId, previewDark, siteSlug: siteMeta?.slug, siteId: siteMeta?.id };
+  // Mirrored in an effect (declared before the pushing effect below, so the
+  // snapshot is always fresh by the time postPreview fires).
+  useEffect(() => {
+    stateRef.current = { doc, pageId, selectedId, previewDark, siteSlug: siteMeta?.slug, siteId: siteMeta?.id };
+  }, [doc, pageId, selectedId, previewDark, siteMeta]);
   const postPreview = useCallback(() => {
     previewRef.current?.contentWindow?.postMessage({ source: 'builder-editor', ...stateRef.current }, '*');
   }, []);
@@ -495,6 +494,31 @@ function BuilderEditor() {
     if (nid) setSelectedId(nid);
   };
 
+  // Clipboard for blocks (copy/cut/paste a whole subtree across pages).
+  const clipboard = useRef<BuilderNode | null>(null);
+  const [hasClip, setHasClip] = useState(false);
+  const [showKeys, setShowKeys] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
+  const copyNode = (id: string) => {
+    const n = page ? findNode(page.blocks, id) : null;
+    if (!n) return;
+    clipboard.current = cloneWithNewIds(n); // pre-freshened snapshot, independent of edits
+    setHasClip(true);
+    setMsg('Блок скопирован — Ctrl+V, чтобы вставить.');
+  };
+  const pasteNode = () => {
+    if (!page || !clipboard.current) return;
+    const node = cloneWithNewIds(clipboard.current); // fresh ids on every paste
+    if (selected && isContainer(selected.type)) setBlocks((b) => insertChild(b, selected.id, node));
+    else if (selectedId) setBlocks((b) => insertAfter(b, selectedId, node));
+    else setBlocks((b) => [...b, node]);
+    setSelectedId(node.id);
+  };
+  const deleteNode = (id: string) => {
+    setBlocks((b) => removeNode(b, id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
   // Drag-and-drop within the structure tree.
   const dragId = useRef<string | null>(null);
   const paletteDrag = useRef<NodeType | null>(null);
@@ -512,6 +536,25 @@ function BuilderEditor() {
   // Image upload for the selected image node.
   const uploadRef = useRef<HTMLInputElement>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
+  // Logo upload (writes to doc.logoUrl instead of a node).
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const uploadLogo = async (file: File) => {
+    setLogoBusy(true);
+    setMsg('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok) setDoc((d) => ({ ...d, logoUrl: data.url, brandMode: d.brandMode === 'text' || !d.brandMode ? 'both' : d.brandMode }));
+      else setMsg(data.error || 'Ошибка загрузки');
+    } catch {
+      setMsg('Ошибка загрузки');
+    } finally {
+      setLogoBusy(false);
+    }
+  };
   const uploadImage = async (file: File, nodeId: string) => {
     setUploadBusy(true);
     setMsg('');
@@ -611,6 +654,41 @@ function BuilderEditor() {
     const t = [...LANDINGS, ...TEMPLATES].find((x) => x.id === id);
     if (!t) return;
     const built = t.build();
+    const chrome = {
+      ...(t.themeId ? { themeId: t.themeId } : {}),
+      ...(t.asideVariant ? { asideVariant: t.asideVariant } : {}),
+      ...(t.headerVariant ? { headerVariant: t.headerVariant } : {}),
+      ...(t.headerBehavior ? { headerBehavior: t.headerBehavior } : {}),
+      ...(t.footerVariant ? { footerVariant: t.footerVariant } : {}),
+    };
+
+    // Full-site scaffold: a landing with matching sub-pages sets up the WHOLE
+    // site in one click — home + About/Portfolio/Contact in the landing's own
+    // design language — and wires the header menu + footer links to them.
+    // Sub-pages are upserted by path (existing ones are re-styled, not
+    // duplicated); everything is one undoable step (Ctrl+Z reverts it all).
+    if (t.subpages) {
+      const subs = t.subpages();
+      const homeId = doc.pages.find((p) => p.path === '')?.id ?? built.id;
+      setDoc((d) => {
+        const hasHome = d.pages.some((p) => p.path === '');
+        let pages: BuilderPage[] = hasHome
+          ? d.pages.map((p) => (p.path === '' ? { ...p, title: built.title, description: built.description, blocks: built.blocks } : p))
+          : [built, ...d.pages];
+        for (const s of subs) {
+          pages = pages.some((p) => p.path === s.path)
+            ? pages.map((p) => (p.path === s.path ? { ...p, title: s.title, description: s.description, blocks: s.blocks } : p))
+            : [...pages, s];
+        }
+        const nav = [{ label: 'Главная', href: '/site' }, ...pages.filter((p) => p.path !== '').map((p) => ({ label: p.title, href: `/site/${p.path}` }))];
+        const footerLinks = pages.filter((p) => p.path === 'about' || p.path === 'contact').map((p) => ({ label: p.title, href: `/site/${p.path}` }));
+        return { ...d, pages, nav, footer: { ...d.footer, links: footerLinks.length ? footerLinks : d.footer.links }, ...chrome };
+      });
+      setPageId(homeId);
+      setSelectedId(null);
+      setMsg(`Сайт собран в стиле «${t.label}»: Главная + О нас + Портфолио + Контакты. Тема, меню и подвал применены. Ctrl+Z отменит.`);
+      return;
+    }
 
     // If the current home page (path '') is still the untouched auto-generated
     // starter, replace it in place so the landing becomes the site root
@@ -623,8 +701,7 @@ function BuilderEditor() {
         pages: d.pages.map((p) =>
           p.path === '' ? { ...p, title: built.title, description: built.description, blocks: built.blocks } : p,
         ),
-        ...(t.themeId ? { themeId: t.themeId } : {}),
-        ...(t.asideVariant ? { asideVariant: t.asideVariant } : {}),
+        ...chrome,
       }));
       setPageId(home.id);
       setSelectedId(null);
@@ -635,6 +712,9 @@ function BuilderEditor() {
     const created = addPageDoc(built);
     if (t.themeId) setDoc((d) => ({ ...d, themeId: t.themeId! }));
     if (t.asideVariant) setDoc((d) => ({ ...d, asideVariant: t.asideVariant! }));
+    if (t.headerVariant) setDoc((d) => ({ ...d, headerVariant: t.headerVariant! }));
+    if (t.headerBehavior) setDoc((d) => ({ ...d, headerBehavior: t.headerBehavior! }));
+    if (t.footerVariant) setDoc((d) => ({ ...d, footerVariant: t.footerVariant! }));
     setMsg(created.path === ''
       ? `«${t.label}» добавлен как главная страница${t.themeId ? ' (тема применена)' : ''}.`
       : `«${t.label}» — новая страница /${created.path}${t.themeId ? ' (тема применена)' : ''}. Посетители по-прежнему увидят текущую главную — чтобы показать эту страницу первой, нажмите домик в списке страниц.`);
@@ -650,7 +730,19 @@ function BuilderEditor() {
 
   // ---- nav / footer / brand ----
   const setNavLink = (i: number, key: 'label' | 'href', val: string) =>
-    setDoc((d) => ({ ...d, nav: d.nav.map((l, j) => (j === i ? { ...l, [key]: val } : l)) }));
+    setDoc((d) => {
+      let v = val;
+      if (key === 'href') {
+        const bare = v.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+        // If the author typed a bare "/portfolio" that matches an existing page,
+        // rewrite it to the "/site/..." base so it rebases to /s/<slug>/... at
+        // render time and keeps the visitor inside this organization's site.
+        if (v.startsWith('/') && !v.startsWith('/site') && !v.startsWith('http') && d.pages.some((p) => p.path === bare)) {
+          v = bare ? `/site/${bare}` : '/site';
+        }
+      }
+      return { ...d, nav: d.nav.map((l, j) => (j === i ? { ...l, [key]: v } : l)) };
+    });
   const addNavLink = () => setDoc((d) => ({ ...d, nav: [...d.nav, { label: 'Пункт', href: '/site' }] }));
   const removeNavLink = (i: number) => setDoc((d) => ({ ...d, nav: d.nav.filter((_, j) => j !== i) }));
 
@@ -705,6 +797,31 @@ function BuilderEditor() {
       setBusy(false);
     }
   };
+
+  // Keyboard shortcuts. Declared after save/duplicate/copy/paste/delete so the
+  // handler references only already-initialized bindings.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+      const mod = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      // These work even while a field is focused.
+      if (mod && k === 's') { e.preventDefault(); void save(); return; }
+      if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+      if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+      // The rest are canvas shortcuts — skip them while editing text in a field.
+      if (typing) return;
+      if (mod && k === 'd' && selectedId) { e.preventDefault(); duplicate(selectedId); return; }
+      if (mod && k === 'c' && selectedId) { e.preventDefault(); copyNode(selectedId); return; }
+      if (mod && k === 'v' && clipboard.current) { e.preventDefault(); pasteNode(); return; }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); deleteNode(selectedId); return; }
+      if (e.key === 'Escape' && selectedId) { e.preventDefault(); setSelectedId(null); return; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc, selectedId]);
 
   // Debounced autosave: edits land in the DB after 2s of inactivity, so
   // closing the tab can't lose more than the last couple of seconds of work.
@@ -820,6 +937,29 @@ function BuilderEditor() {
             })}
           </div>
           <Link href={previewSrc} target="_blank"><Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-4 w-4" /> Открыть</Button></Link>
+          <div className="relative">
+            <button onClick={() => setShowKeys((v) => !v)} className={`rounded-md p-1.5 ${showKeys ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'}`} aria-label="Горячие клавиши" title="Горячие клавиши"><Keyboard className="h-4 w-4" /></button>
+            {showKeys && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowKeys(false)} aria-hidden />
+                <div className="absolute right-0 top-9 z-50 w-64 rounded-xl border border-border bg-card p-3 text-xs shadow-xl">
+                  <p className="mb-2 font-semibold text-foreground">Горячие клавиши</p>
+                  <ul className="space-y-1.5 text-muted-foreground">
+                    {([
+                      ['Сохранить', 'Ctrl S'], ['Отменить', 'Ctrl Z'], ['Повторить', 'Ctrl ⇧ Z'],
+                      ['Дублировать блок', 'Ctrl D'], ['Копировать блок', 'Ctrl C'], ['Вставить блок', 'Ctrl V'],
+                      ['Удалить блок', 'Delete'], ['Снять выделение', 'Esc'],
+                    ] as [string, string][]).map(([label, keys]) => (
+                      <li key={label} className="flex items-center justify-between gap-2">
+                        <span>{label}</span>
+                        <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-foreground">{keys}</kbd>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+          </div>
           <button onClick={undo} disabled={!canUndo} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Отменить" title="Отменить (Ctrl+Z)"><Undo2 className="h-4 w-4" /></button>
           <button onClick={redo} disabled={!canRedo} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label="Повторить" title="Повторить (Ctrl+Shift+Z)"><Redo2 className="h-4 w-4" /></button>
           <Button size="sm" onClick={save} disabled={busy || pubBusy} className="relative gap-1.5" title={dirty ? 'Есть несохранённые изменения (автосохранение через пару секунд)' : 'Всё сохранено'}>
@@ -896,7 +1036,7 @@ function BuilderEditor() {
               {doc.pages.map((p) => (
                 <div key={p.id} className={`group flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm ${p.id === page?.id ? 'bg-primary/10 text-foreground' : 'hover:bg-muted'}`}>
                   <button className="min-w-0 flex-1 truncate text-left" onClick={() => { setPageId(p.id); setSelectedId(null); }}>
-                    {p.title} <span className="text-xs text-muted-foreground">/{p.path}</span>
+                    {p.title} <span className="text-xs text-muted-foreground">{siteMeta ? `/s/${siteMeta.slug}${p.path ? `/${p.path}` : ''}` : `/${p.path}`}</span>
                   </button>
                   {p.path === '' ? (
                     <span title="Главная страница — открывается по адресу сайта" className="shrink-0 text-primary"><Home className="h-3.5 w-3.5" /></span>
@@ -915,6 +1055,11 @@ function BuilderEditor() {
                 <Input value={newPath} onChange={(e) => setNewPath(e.target.value)} placeholder="путь (напр. pricing)" className="h-8" />
                 <Button size="sm" onClick={addPage} className="shrink-0 gap-1"><Plus className="h-4 w-4" /></Button>
               </div>
+              {siteMeta && (
+                <p className="text-xs text-muted-foreground">
+                  Адрес: <span className="font-mono">/s/{siteMeta.slug}/{newPath.trim().replace(/^\/+|\/+$/g, '') || '…'}</span>
+                </p>
+              )}
             </div>
           </Card>
           </>)}
@@ -926,6 +1071,11 @@ function BuilderEditor() {
               <Input value={page.title} onChange={(e) => renamePage('title', e.target.value)} placeholder="Заголовок" className="h-8" />
               {!isLanding && (
                 <Input value={page.path} onChange={(e) => renamePage('path', e.target.value)} placeholder="путь (пусто = главная)" className="h-8" />
+              )}
+              {!isLanding && siteMeta && (
+                <p className="text-xs text-muted-foreground">
+                  Адрес: <span className="font-mono">/s/{siteMeta.slug}{page.path ? `/${page.path}` : ''}</span>
+                </p>
               )}
               <Textarea value={page.description ?? ''} onChange={(e) => renamePage('description', e.target.value)} rows={2} placeholder="SEO-описание (meta description)" />
             </Card>
@@ -939,8 +1089,9 @@ function BuilderEditor() {
           <Card className="p-3">
             <p className="mb-1 text-sm font-semibold">Добавить элемент</p>
             <p className="mb-2 text-xs text-muted-foreground">{selected && isContainer(selected.type) ? `Клик — внутрь: ${NODE_LABELS[selected.type]}` : 'Клик — в конец страницы'} · или перетащите на блок</p>
+            <Input value={paletteQuery} onChange={(e) => setPaletteQuery(e.target.value)} placeholder="Поиск элемента…" className="mb-2 h-8" />
             <div className="grid grid-cols-2 gap-1.5">
-              {PALETTE.map((t) => (
+              {PALETTE.filter((t) => NODE_LABELS[t].toLowerCase().includes(paletteQuery.trim().toLowerCase())).map((t) => (
                 <Button key={t} size="sm" variant="outline" draggable onDragStart={(e) => { paletteDrag.current = t; e.dataTransfer.setData('text/builder-type', t); e.dataTransfer.effectAllowed = 'copy'; }} className="cursor-grab justify-start gap-1 text-xs active:cursor-grabbing" onClick={() => addNode(t)}>
                   <Plus className="h-3.5 w-3.5" /> {NODE_LABELS[t]}
                 </Button>
@@ -996,6 +1147,16 @@ function BuilderEditor() {
                     <span className="font-medium text-foreground">{NODE_LABELS[selected.type]}</span>
                   </div>
                 )}
+                <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+                  <button onClick={() => duplicate(selected.id)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Дублировать (Ctrl+D)" aria-label="Дублировать"><CopyPlus className="h-4 w-4" /></button>
+                  <button onClick={() => copyNode(selected.id)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Копировать (Ctrl+C)" aria-label="Копировать"><Copy className="h-4 w-4" /></button>
+                  <button onClick={pasteNode} disabled={!hasClip} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30" title="Вставить (Ctrl+V)" aria-label="Вставить"><ClipboardPaste className="h-4 w-4" /></button>
+                  <span className="mx-0.5 h-4 w-px bg-border" />
+                  <button onClick={() => setBlocks((b) => moveNode(b, selected.id, -1))} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Выше" aria-label="Выше"><ArrowUp className="h-4 w-4" /></button>
+                  <button onClick={() => setBlocks((b) => moveNode(b, selected.id, 1))} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Ниже" aria-label="Ниже"><ArrowDown className="h-4 w-4" /></button>
+                  <span className="mx-0.5 h-4 w-px bg-border" />
+                  <button onClick={() => deleteNode(selected.id)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-red-500" title="Удалить (Delete)" aria-label="Удалить"><Trash2 className="h-4 w-4" /></button>
+                </div>
                 {FIELDS[selected.type].length === 0 && <p className="text-xs text-muted-foreground">Нет настроек контента.</p>}
                 {FIELDS[selected.type].map((f) => (
                   <div key={f.k}>
@@ -1083,6 +1244,43 @@ function BuilderEditor() {
           <div className={tab === 'design' ? 'space-y-4' : 'hidden'}>
           {/* Chrome variants */}
           <Card className="p-3">
+            <p className="mb-2 text-sm font-semibold">Логотип</p>
+            <div className="mb-2 flex gap-1.5">
+              {(['text', 'logo', 'both'] as const).map((m) => (
+                <Button key={m} size="sm" variant={(doc.brandMode || (doc.logoUrl ? 'both' : 'text')) === m ? 'default' : 'outline'} className="h-7 flex-1 text-xs" onClick={() => setDoc((d) => ({ ...d, brandMode: m }))}>
+                  {m === 'text' ? 'Текст' : m === 'logo' ? 'Лого' : 'Лого + текст'}
+                </Button>
+              ))}
+            </div>
+            <div className="flex gap-1.5">
+              <Input value={doc.logoUrl ?? ''} onChange={(e) => setDoc((d) => ({ ...d, logoUrl: e.target.value }))} placeholder="URL логотипа" className="h-8" />
+              <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); e.currentTarget.value = ''; }} />
+              <Button size="sm" variant="outline" className="shrink-0 gap-1" disabled={logoBusy} onClick={() => logoInputRef.current?.click()} title="Загрузить логотип">
+                {logoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              </Button>
+            </div>
+            {doc.logoUrl && (
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Высота, px</label>
+                  <Input value={doc.logoHeight ?? ''} onChange={(e) => setDoc((d) => ({ ...d, logoHeight: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="32" className="h-8" inputMode="numeric" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Макс. ширина, px</label>
+                  <Input value={doc.logoWidth ?? ''} onChange={(e) => setDoc((d) => ({ ...d, logoWidth: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="120" className="h-8" inputMode="numeric" />
+                </div>
+                <div className="col-span-2">
+                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Alt-текст (для доступности/SEO)</label>
+                  <Input value={doc.logoAlt ?? ''} onChange={(e) => setDoc((d) => ({ ...d, logoAlt: e.target.value }))} placeholder={doc.brand} className="h-8" />
+                </div>
+                <Button size="sm" variant="ghost" className="col-span-2 h-7 text-xs text-muted-foreground hover:text-red-500" onClick={() => setDoc((d) => ({ ...d, logoUrl: '', brandMode: 'text' }))}>
+                  Удалить логотип
+                </Button>
+              </div>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">Alt и размеры задаются автоматически, чтобы не было ошибок Lighthouse (CLS/доступность).</p>
+          </Card>
+          <Card className="p-3">
             <p className="mb-2 text-sm font-semibold">Шапка (header)</p>
             <div className="grid grid-cols-2 gap-2">
               {(['minimal', 'centered', 'split', 'cta'] as const).map((v) => (
@@ -1139,6 +1337,20 @@ function BuilderEditor() {
                 <div key={i} className="flex items-center gap-1.5">
                   <Input value={l.label} onChange={(e) => setNavLink(i, 'label', e.target.value)} placeholder="Текст" className="h-8" />
                   <Input value={l.href} onChange={(e) => setNavLink(i, 'href', e.target.value)} placeholder="/site/..." className="h-8" />
+                  <select
+                    value={doc.pages.some((p) => (p.path ? `/site/${p.path}` : '/site') === l.href) ? l.href : ''}
+                    onChange={(e) => { if (e.target.value) setNavLink(i, 'href', e.target.value); }}
+                    className="h-8 shrink-0 rounded-md border border-input bg-background px-1 text-xs"
+                    title="Связать со страницей сайта"
+                    aria-label="Связать со страницей сайта"
+                  >
+                    <option value="">Страница…</option>
+                    {doc.pages.map((p) => (
+                      <option key={p.id} value={p.path ? `/site/${p.path}` : '/site'}>
+                        {p.title}{p.path ? ` (/${p.path})` : ' (главная)'}
+                      </option>
+                    ))}
+                  </select>
                   <button onClick={() => removeNavLink(i)} className="shrink-0 text-muted-foreground hover:text-red-500" aria-label="Удалить"><X className="h-4 w-4" /></button>
                 </div>
               ))}
@@ -1237,8 +1449,7 @@ function LandingThumb({ def }: { def: { id: string; themeId?: string; build: () 
   const css = useMemo(() => themeCss(theme).split(':root').join(`.${cls}`).split('.dark').join(`.${cls}`), [theme, cls]);
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.3);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useMounted();
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

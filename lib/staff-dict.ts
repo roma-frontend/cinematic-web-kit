@@ -48,6 +48,30 @@ export type StaffDict = {
   dbMetaTitle: string;
   dbTitle: string;
   dbSubtitle: string;
+  db: {
+    storageLabel: string;
+    r2: string;
+    local: string;
+    loading: string;
+    bucketInfo: string; // {bucket} {base}
+    localInfo: string;
+    gcButton: string;
+    gcDone: string; // {n}
+    error: string;
+    searchIn: string; // {table}
+    find: string;
+    noRows: string;
+    edit: string;
+    delete: string;
+    total: string; // {n}
+    deleteRowTitle: string;
+    deleteRowDesc: string;
+    cancel: string;
+    close: string;
+    editRow: string; // {table}
+    editHint: string;
+    save: string;
+  };
   // user dossier
   dossier: {
     metaTitle: string;
@@ -147,6 +171,30 @@ const ru: StaffDict = {
   dbMetaTitle: 'База данных',
   dbTitle: 'База данных',
   dbSubtitle: 'Просмотр и редактирование таблиц. Изменения применяются немедленно — будьте внимательны.',
+  db: {
+    storageLabel: 'Хранилище:',
+    r2: 'Cloudflare R2',
+    local: 'Локально (диск)',
+    loading: 'Загрузка…',
+    bucketInfo: 'bucket {bucket} · {base}',
+    localInfo: 'public/uploads на диске сервера',
+    gcButton: 'Очистить хранилище',
+    gcDone: 'Очищено: удалено {n} неиспользуемых файлов.',
+    error: 'Ошибка',
+    searchIn: 'Поиск в {table}…',
+    find: 'Найти',
+    noRows: 'Нет строк.',
+    edit: 'Изменить',
+    delete: 'Удалить',
+    total: 'Всего: {n}',
+    deleteRowTitle: 'Удалить строку?',
+    deleteRowDesc: 'Действие необратимо. Связанные записи могут удалиться каскадно.',
+    cancel: 'Отмена',
+    close: 'Закрыть',
+    editRow: 'Изменить строку · {table}',
+    editHint: 'Пустое поле сохранится как NULL. Первичный ключ менять нельзя.',
+    save: 'Сохранить',
+  },
   dossier: {
     metaTitle: 'Досье пользователя',
     backAll: 'Все пользователи',
@@ -245,6 +293,30 @@ const en: StaffDict = {
   dbMetaTitle: 'Database',
   dbTitle: 'Database',
   dbSubtitle: 'View and edit tables. Changes apply immediately — be careful.',
+  db: {
+    storageLabel: 'Storage:',
+    r2: 'Cloudflare R2',
+    local: 'Local (disk)',
+    loading: 'Loading…',
+    bucketInfo: 'bucket {bucket} · {base}',
+    localInfo: 'public/uploads on the server disk',
+    gcButton: 'Clean storage',
+    gcDone: 'Cleaned: {n} unused files deleted.',
+    error: 'Error',
+    searchIn: 'Search in {table}…',
+    find: 'Search',
+    noRows: 'No rows.',
+    edit: 'Edit',
+    delete: 'Delete',
+    total: 'Total: {n}',
+    deleteRowTitle: 'Delete row?',
+    deleteRowDesc: 'This action is irreversible. Related records may be deleted cascadingly.',
+    cancel: 'Cancel',
+    close: 'Close',
+    editRow: 'Edit row · {table}',
+    editHint: 'An empty field is saved as NULL. The primary key cannot be changed.',
+    save: 'Save',
+  },
   dossier: {
     metaTitle: 'User dossier',
     backAll: 'All users',
@@ -343,6 +415,30 @@ const hy: StaffDict = {
   dbMetaTitle: 'Տվյալների բազա',
   dbTitle: 'Տվյալների բազա',
   dbSubtitle: 'Դիտեք և խմբագրեք աղյուսակները։ Փոփոխություններն ուժի մեջ են մտնում անմիջապես — եղեք ուշադիր։',
+  db: {
+    storageLabel: 'Պահեստ՝',
+    r2: 'Cloudflare R2',
+    local: 'Տեղական (սկավառակ)',
+    loading: 'Բեռնում…',
+    bucketInfo: 'bucket {bucket} · {base}',
+    localInfo: 'public/uploads սերվերի սկավառակի վրա',
+    gcButton: 'Մաքրել պահեստը',
+    gcDone: 'Մաքրված է՝ ջնջվել է {n} չօգտագործվող ֆայլ։',
+    error: 'Սխալ',
+    searchIn: 'Որոնում {table}-ում…',
+    find: 'Գտնել',
+    noRows: 'Տողեր չկան։',
+    edit: 'Խմբագրել',
+    delete: 'Ջնջել',
+    total: 'Ընդամենը՝ {n}',
+    deleteRowTitle: 'Ջնջե՞լ տողը։',
+    deleteRowDesc: 'Գործողությունն անշրջելի է։ Կապակցված գրառումները կարող են ջնջվել կասկադով։',
+    cancel: 'Չեղարկել',
+    close: 'Փակել',
+    editRow: 'Խմբագրել տողը · {table}',
+    editHint: 'Դատարկ դաշտը կպահվի որպես NULL։ Առաջնային բանալին հնարավոր չէ փոխել։',
+    save: 'Պահպանել',
+  },
   dossier: {
     metaTitle: 'Օգտատիրոջ անձնական գործ',
     backAll: 'Բոլոր օգտատերերը',

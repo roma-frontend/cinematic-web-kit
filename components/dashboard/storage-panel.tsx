@@ -5,10 +5,13 @@
 import { useEffect, useState } from 'react';
 import { Cloud, HardDrive, Loader2, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLocale } from '@/hooks/use-locale';
+import { staffDict } from '@/lib/staff-dict';
 
 type Info = { mode: 'r2'; bucket: string; publicBase: string } | { mode: 'local' };
 
 export function StoragePanel() {
+  const t = staffDict(useLocale().locale).db;
   const [info, setInfo] = useState<Info | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -22,7 +25,7 @@ export function StoragePanel() {
     const res = await fetch('/api/admin/storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'gc' }) });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
-    setMsg(res.ok ? `Очищено: удалено ${d.deleted ?? 0} неиспользуемых файлов.` : (d.error || 'Ошибка'));
+    setMsg(res.ok ? t.gcDone.replace('{n}', String(d.deleted ?? 0)) : (d.error || t.error));
   };
 
   const isR2 = info?.mode === 'r2';
@@ -34,16 +37,16 @@ export function StoragePanel() {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">
-          Хранилище: {info === null ? '…' : isR2 ? 'Cloudflare R2' : 'Локально (диск)'}
+          {t.storageLabel} {info === null ? '…' : isR2 ? t.r2 : t.local}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {info === null ? 'Загрузка…' : isR2 ? `bucket ${info.bucket} · ${info.publicBase}` : 'public/uploads на диске сервера'}
+          {info === null ? t.loading : isR2 ? t.bucketInfo.replace('{bucket}', info.bucket).replace('{base}', info.publicBase) : t.localInfo}
         </p>
       </div>
       <div className="flex items-center gap-3">
         {msg && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Check className="h-3.5 w-3.5 text-green-600" /> {msg}</span>}
         <Button size="sm" variant="outline" className="gap-1.5" onClick={gc} disabled={busy}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Очистить хранилище
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} {t.gcButton}
         </Button>
       </div>
     </div>
