@@ -79,6 +79,9 @@ export default function GlobalError({
               <RefreshCw style={{ height: 16, width: 16 }} />
               Обновить
             </button>
+            {/* global-error replaces the whole app shell, so the router may be
+                broken — a plain <a> forcing a full reload is the safe way home. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
               style={{

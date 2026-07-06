@@ -4,7 +4,7 @@
 // auth (glass Shell, icon inputs, register stepper), but wired to the isolated
 // /api/site-auth (scoped by siteId) and themed with the tenant's own theme.
 
-import { useMemo, useState, useEffect, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';

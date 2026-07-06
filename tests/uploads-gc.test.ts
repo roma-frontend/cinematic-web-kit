@@ -3,7 +3,7 @@ import { resetDb } from './helpers';
 import { mkdir, writeFile, utimes, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { getDb, newId, sites } from '@/lib/db';
+import { getDb, sites } from '@/lib/db';
 import { createUser } from '@/lib/auth';
 import { createSite } from '@/lib/sites';
 import { UPLOAD_DIR } from '@/lib/media-optimize';
@@ -40,7 +40,7 @@ describe('gcUploads (local disk)', () => {
 
     // Reference `keep` from a site draft doc.
     const su = createUser('a@x.com', 'pw', 'Owner');
-    const site = createSite(su.id, 'S');
+    createSite(su.id, 'S');
     getDb().update(sites).set({ draftDoc: JSON.stringify({ ref: `/uploads/${keep}` }) }).run();
 
     const res = await gcUploads();

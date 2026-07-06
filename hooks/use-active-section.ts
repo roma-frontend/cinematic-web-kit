@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Options = { rootMargin?: string; threshold?: number | number[] };
 
+const DEFAULT_THRESHOLD = [0, 0.2, 0.4, 0.6];
+
 /**
  * Returns the id of the section currently in view — for scroll-spy navigation
  * (highlighting the active anchor). Re-attaches when sections mount later
@@ -11,7 +13,7 @@ type Options = { rootMargin?: string; threshold?: number | number[] };
  */
 export function useActiveSection(sectionIds: string[], options: Options = {}): string | null {
   const rootMargin = options.rootMargin ?? '-40% 0px -55% 0px';
-  const threshold = options.threshold ?? [0, 0.2, 0.4, 0.6];
+  const threshold = options.threshold ?? DEFAULT_THRESHOLD;
 
   const [active, setActive] = useState<string | null>(null);
   const entriesRef = useRef<Map<string, IntersectionObserverEntry>>(new Map());

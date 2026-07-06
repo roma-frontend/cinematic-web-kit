@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Search, CornerDownLeft } from 'lucide-react';
 
 export interface Command { label: string; hint?: string; run: () => void; icon: React.ComponentType<{ className?: string }> }

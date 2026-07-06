@@ -28,7 +28,6 @@ const showAuth = (doc: BuilderDoc) => doc.authButtons !== 'false' && Boolean(doc
 export function Header({ doc }: { doc: BuilderDoc }) {
   const variant = doc.headerVariant || 'minimal';
   const home = homeHref(doc);
-  const contact = contactHref(doc);
   const brand = (
     <Link href={home} className="font-display text-lg font-black tracking-tight">
       {doc.brand}

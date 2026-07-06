@@ -35,7 +35,8 @@ export function DbBrowser({ tables }: { tables: { name: string; count: number }[
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(active, offset, q); }, [active, offset, load]); // q handled on submit
+  // `q` is deliberately not a dep — the search only fires on submit.
+  useEffect(() => { load(active, offset, q); }, [active, offset, load]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectTable = (name: string) => { setActive(name); setOffset(0); setQ(''); };
   const search = () => { setOffset(0); load(active, 0, q); };

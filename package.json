@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "media": "node scripts/media-pipeline/run.mjs",
     "media:list": "node scripts/media-pipeline/list.mjs",

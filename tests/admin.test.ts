@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { resetDb } from './helpers';
-import { getDb, newId, users, sites, sessions, audit, siteUsers, siteMaterials, submissions, domains } from '@/lib/db';
+import { getDb, newId, sites, sessions, audit, siteUsers, siteMaterials, submissions, domains } from '@/lib/db';
 import { createUser } from '@/lib/auth';
 import { createSite } from '@/lib/sites';
 import {

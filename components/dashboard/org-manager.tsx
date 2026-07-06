@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Globe, Rocket, CircleDashed, Loader2, Users, Library, Inbox, Link2, UserCog, Check, ExternalLink, Search } from 'lucide-react';
+import { Globe, Rocket, CircleDashed, Loader2, Users, Library, Inbox, UserCog, Check, ExternalLink, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 

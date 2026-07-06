@@ -20,7 +20,7 @@ describe('normalizeSlug', () => {
 
 describe('createOrgRequest', () => {
   it('create type validations', () => {
-    const su = createUser('a@x.com', 'pw', 'Admin');
+    createUser('a@x.com', 'pw', 'Admin'); // bootstrap superadmin
     const cust = createUser('c@x.com', 'pw', 'Cust');
     expect(() => createOrgRequest(cust, { type: 'create' })).toThrow('NAME_REQUIRED');
     expect(() => createOrgRequest(cust, { type: 'create', requestedName: 'Org', requestedSlug: '!!!' })).toThrow('SLUG_INVALID');
