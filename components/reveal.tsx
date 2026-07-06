@@ -1,34 +1,42 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { useReveal } from '@/hooks/use-reveal';
+import { usePrefersReducedMotion } from '@/hooks/use-media-query';
 
-const ease = [0.22, 1, 0.36, 1] as const;
+type RevealProps = {
+  children: ReactNode;
+  className?: string;
+  /** Stagger delay in ms (for sequenced groups). */
+  delay?: number;
+};
 
 /**
- * Reveals its children with a subtle fade-and-rise the first time they scroll
- * into view. Respects reduced-motion via framer-motion's built-in handling.
+ * Fades + lifts its children into view when scrolled near the viewport.
+ * Progressive enhancement: content is always in the DOM (SSR/no-JS friendly,
+ * SEO-safe) and simply starts visible when reduced-motion is requested.
  */
-export function Reveal({
-  children,
-  delay = 0,
-  y = 24,
-  className,
-}: {
-  children: ReactNode;
-  delay?: number;
-  y?: number;
-  className?: string;
-}) {
+export function Reveal({ children, className = '', delay = 0 }: RevealProps) {
+  const { ref, visible } = useReveal<HTMLDivElement>();
+  const reduced = usePrefersReducedMotion();
+  const animate = !reduced;
+
   return (
-    <motion.div
+    <div
+      ref={ref}
       className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.65, ease, delay }}
+      style={
+        animate
+          ? {
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'none' : 'translateY(24px)',
+              transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+              willChange: 'opacity, transform',
+            }
+          : undefined
+      }
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

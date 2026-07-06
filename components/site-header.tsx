@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useLocale } from '@/hooks/use-locale';
+import { useScrollDirection } from '@/hooks/use-scroll-direction';
 import { ui, type UiDict } from '@/lib/ui-dict';
 import { Button } from '@/components/ui/button';
 import {
@@ -149,6 +150,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { locale } = useLocale();
   const t = ui(locale);
+  const scrollDir = useScrollDirection();
   const isActive = (href: string) => !href.includes('#') && (pathname === href || (href !== '/' && pathname?.startsWith(href)));
 
   // Session probe: `undefined` = still loading (render a skeleton so the
@@ -193,7 +195,9 @@ export function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+    <header className={`sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl transition-transform duration-300 ${
+      scrollDir === 'down' && !open ? '-translate-y-full' : 'translate-y-0'
+    }`}>
       <div className="mx-auto flex h-16 max-w-[var(--container-max)] items-center justify-between gap-4 px-6 sm:px-10">
         <Link href="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">

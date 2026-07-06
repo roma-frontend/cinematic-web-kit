@@ -6,6 +6,7 @@ import { THEMES } from '@/lib/themes';
 import { activeSiteTheme } from '@/lib/site-theme';
 import { ThemeFX } from '@/components/theme-fx';
 import { SiteHeader } from '@/components/site-header';
+import { Reveal } from '@/components/reveal';
 import { SiteFooter } from '@/components/site-footer';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { getLanding } from '@/lib/landing';
@@ -82,15 +83,15 @@ export default async function Home() {
 
       {/* How it works */}
       <section id="how" className="mx-auto max-w-[var(--container-max)] scroll-mt-24 px-6 py-16 sm:px-10 sm:py-20">
-        <div className="mb-12 text-center">
+        <Reveal className="mb-12 text-center">
           <h2 className="font-display text-3xl font-black tracking-tight sm:text-4xl">{L.steps.title}</h2>
           <p className="mx-auto mt-2 max-w-xl text-muted-foreground">{L.steps.subtitle}</p>
-        </div>
+        </Reveal>
         <div className="grid gap-6 md:grid-cols-3">
           {L.steps.items.map((s, i) => {
             const Icon = STEP_ICONS[i] ?? Wand2;
             return (
-            <div key={s.n} className="relative rounded-2xl border border-border/60 bg-card/50 p-6 backdrop-blur">
+            <Reveal key={s.n} delay={i * 90} className="relative rounded-2xl border border-border/60 bg-card/50 p-6 backdrop-blur">
               <div className="mb-4 flex items-center justify-between">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
                   <Icon className="h-5 w-5" />
@@ -99,7 +100,7 @@ export default async function Home() {
               </div>
               <h3 className="text-lg font-bold tracking-tight">{s.title}</h3>
               <p className="mt-1.5 text-sm text-muted-foreground">{s.text}</p>
-            </div>
+            </Reveal>
             );
           })}
         </div>
@@ -107,21 +108,21 @@ export default async function Home() {
 
       {/* Features */}
       <section id="features" className="mx-auto max-w-[var(--container-max)] scroll-mt-24 px-6 py-16 sm:px-10 sm:py-20">
-        <div className="mb-12 text-center">
+        <Reveal className="mb-12 text-center">
           <h2 className="font-display text-3xl font-black tracking-tight sm:text-4xl">{L.features.title}</h2>
           <p className="mx-auto mt-2 max-w-xl text-muted-foreground">{L.features.subtitle}</p>
-        </div>
+        </Reveal>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {L.features.items.map((f, i) => {
             const Icon = FEATURE_ICONS[i] ?? Video;
             return (
-            <div key={f.title} className="rounded-2xl border border-border/60 bg-card/50 p-6 backdrop-blur transition-colors hover:border-primary/50">
+            <Reveal key={f.title} delay={i * 80} className="rounded-2xl border border-border/60 bg-card/50 p-6 backdrop-blur transition-colors hover:border-primary/50">
               <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
               <h3 className="text-base font-bold tracking-tight">{f.title}</h3>
               <p className="mt-1.5 text-sm text-muted-foreground">{f.text}</p>
-            </div>
+            </Reveal>
             );
           })}
         </div>
@@ -173,7 +174,7 @@ export default async function Home() {
       {/* Made on the platform — real example from demo content */}
       {examples.length > 0 && (
         <section id="examples" className="mx-auto max-w-[var(--container-max)] scroll-mt-24 px-6 py-16 sm:px-10 sm:py-20">
-          <div className="mb-12 text-center">
+          <Reveal className="mb-12 text-center">
             <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               <Video className="h-3.5 w-3.5 text-primary" /> {dict.examples.badge}
             </span>
@@ -181,7 +182,7 @@ export default async function Home() {
             <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
               {dict.examples.subtitle}
             </p>
-          </div>
+          </Reveal>
           <VideoCardGrid entries={examples} />
         </section>
       )}
