@@ -4,8 +4,13 @@ import { getSiteForUser, listDomains, listSubmissions, APP_HOST } from '@/lib/si
 import { listSiteUsers } from '@/lib/site-auth';
 import { SiteSettings } from '@/components/dashboard/site-settings';
 import { SiteMembers } from '@/components/dashboard/site-members';
+import { getLocale } from '@/lib/i18n';
+import { siteSettingsDict } from '@/lib/site-settings-dict';
 
-export const metadata = { title: 'Настройки сайта — Cinematic Kit' };
+export async function generateMetadata() {
+  const t = siteSettingsDict(await getLocale());
+  return { title: `${t.metaTitle} — Cinematic Kit` };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function SiteSettingsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +20,7 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const site = getSiteForUser(user.id, id);
   if (!site) notFound();
+  const t = siteSettingsDict(await getLocale());
 
   return (
     <div className="space-y-8">
@@ -47,8 +53,8 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ i
         }))}
       />
       <section id="members" className="scroll-mt-24 rounded-2xl border border-border/60 bg-muted/20 p-5 sm:p-6">
-        <h2 className="mb-1 text-lg font-semibold tracking-tight">Организация: участники и материалы</h2>
-        <p className="mb-5 text-sm text-muted-foreground">Одобряйте участников и публикуйте материалы, видимые только им.</p>
+        <h2 className="mb-1 text-lg font-semibold tracking-tight">{t.orgSectionTitle}</h2>
+        <p className="mb-5 text-sm text-muted-foreground">{t.orgSectionDesc}</p>
         <SiteMembers siteId={site.id} memberApproval={site.memberApproval} />
       </section>
     </div>

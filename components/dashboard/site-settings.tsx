@@ -12,6 +12,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { useLocale } from '@/hooks/use-locale';
+import { siteSettingsDict } from '@/lib/site-settings-dict';
+import { BCP47 } from '@/lib/seo';
 
 interface SiteInfo {
   id: string;
@@ -55,6 +58,8 @@ export function SiteSettings({
 }) {
   const router = useRouter();
   const { confirm, confirmDialog } = useConfirm();
+  const locale = useLocale().locale;
+  const t = siteSettingsDict(locale);
   const [name, setName] = useState(site.name);
   const [slug, setSlug] = useState(site.slug);
   const [savedSlug, setSavedSlug] = useState(site.slug);
@@ -80,7 +85,7 @@ export function SiteSettings({
     const isApex = labels.length <= 2;
     const name = isApex ? '@' : labels.slice(0, labels.length - 2).join('.');
     return isApex
-      ? [{ type: 'A', name, value: serverIp || 'IP вашего сервера' }]
+      ? [{ type: 'A', name, value: serverIp || t.serverIp }]
       : [{ type: 'CNAME', name, value: appHostname }];
   };
 
@@ -96,13 +101,13 @@ export function SiteSettings({
       });
       const data = await res.json();
       if (res.ok) {
-        setMsg('Сохранено.');
+        setMsg(t.saved);
         setSlug(data.site.slug);
         setSavedSlug(data.site.slug);
         router.refresh();
-      } else setMsg(data.error || 'Ошибка.');
+      } else setMsg(data.error || t.error);
     } catch {
-      setMsg('Сеть недоступна.');
+      setMsg(t.networkError);
     } finally {
       setSaving(false);
     }
@@ -123,7 +128,7 @@ export function SiteSettings({
       if (res.ok) {
         setDomains((d) => [...d, { id: data.domain.id, hostname: data.domain.hostname, verified: false }]);
         setNewDomain('');
-      } else setDomErr(data.error || 'Ошибка.');
+      } else setDomErr(data.error || t.error);
     } finally {
       setDomBusy(null);
     }
@@ -139,11 +144,11 @@ export function SiteSettings({
       const data = await res.json();
       if (res.ok) {
         setDomains((list) => list.map((d) => (d.id === domainId ? { ...d, verified: data.verified } : d)));
-        return { verified: Boolean(data.verified), error: data.verified ? '' : `DNS ещё не указывает на платформу (${(data.details || []).join(' · ')})` };
+        return { verified: Boolean(data.verified), error: data.verified ? '' : `${t.dnsNotPointing} (${(data.details || []).join(' · ')})` };
       }
-      return { verified: false, error: data.error || 'Ошибка проверки.' };
+      return { verified: false, error: data.error || t.checkError };
     } catch {
-      return { verified: false, error: 'Сеть недоступна.' };
+      return { verified: false, error: t.networkError };
     }
   };
 
@@ -180,9 +185,9 @@ export function SiteSettings({
 
   const deleteSite = async () => {
     const ok = await confirm({
-      title: `Удалить сайт «${site.name}»?`,
-      description: 'Сайт будет удалён безвозвратно: страницы, домены и заявки будут потеряны.',
-      confirmLabel: 'Удалить сайт',
+      title: t.deleteConfirmTitle.replace('{name}', site.name),
+      description: t.deleteConfirmDesc,
+      confirmLabel: t.deleteSite,
       tone: 'danger',
     });
     if (!ok) return;
@@ -196,11 +201,11 @@ export function SiteSettings({
       <header className="border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-3 px-4">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Мои сайты
+            <ArrowLeft className="h-4 w-4" /> {t.backToSites}
           </Link>
           <span className="font-semibold tracking-tight">/ {site.name}</span>
           <Link href={`/s/${savedSlug}?draft=1`} target="_blank" className="ml-auto">
-            <Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-3.5 w-3.5" /> Открыть сайт</Button>
+            <Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-3.5 w-3.5" /> {t.openSite}</Button>
           </Link>
         </div>
       </header>
@@ -208,23 +213,23 @@ export function SiteSettings({
       <div className="mx-auto max-w-3xl space-y-8 px-4 py-8">
         {/* Identity */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="font-semibold tracking-tight">Основное</h2>
+          <h2 className="font-semibold tracking-tight">{t.identityTitle}</h2>
           <form onSubmit={saveIdentity} className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label htmlFor="site-name" className="text-sm font-medium">Название</label>
+              <label htmlFor="site-name" className="text-sm font-medium">{t.name}</label>
               <Input id="site-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="site-slug" className="text-sm font-medium">Адрес (slug)</label>
+              <label htmlFor="site-slug" className="text-sm font-medium">{t.slugLabel}</label>
               <Input id="site-slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
               <p className="text-xs text-muted-foreground">
-                Сайт доступен по {appHost}/s/<b>{slug || '…'}</b>
-                {appHostname !== 'localhost' && <> и <b>{slug || '…'}</b>.{appHostname}</>}
+                {t.availableAt} {appHost}/s/<b>{slug || '…'}</b>
+                {appHostname !== 'localhost' && <> {t.and} <b>{slug || '…'}</b>.{appHostname}</>}
               </p>
             </div>
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={saving} className="gap-1.5">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Сохранить
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t.save}
               </Button>
               {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
             </div>
@@ -233,15 +238,15 @@ export function SiteSettings({
 
         {/* Domains */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Globe className="h-4 w-4 text-primary" /> Свои домены</h2>
+          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Globe className="h-4 w-4 text-primary" /> {t.domainsTitle}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Направьте домен на платформу: запись <b>CNAME → {appHostname}</b> (для поддоменов) или <b>A-запись → IP сервера</b>, затем нажмите «Проверить».
+            {t.domainsHint.replace('{host}', appHostname)}
           </p>
 
           <form onSubmit={addDomain} className="mt-4 flex gap-2">
-            <Input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="example.com" className="max-w-xs" aria-label="Новый домен" />
+            <Input value={newDomain} onChange={(e) => setNewDomain(e.target.value)} placeholder="example.com" className="max-w-xs" aria-label={t.newDomainAria} />
             <Button type="submit" disabled={domBusy === 'add' || !newDomain.trim()} className="gap-1.5">
-              {domBusy === 'add' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Привязать
+              {domBusy === 'add' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {t.attach}
             </Button>
           </form>
           {domErr && <p className="mt-2 text-sm text-destructive" role="alert">{domErr}</p>}
@@ -253,30 +258,30 @@ export function SiteSettings({
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{d.hostname}</span>
                     {d.verified ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary"><CheckCircle2 className="h-3.5 w-3.5" /> подтверждён</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary"><CheckCircle2 className="h-3.5 w-3.5" /> {t.verified}</span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> ждёт DNS · проверяем автоматически</span>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> {t.awaitingDns}</span>
                     )}
                     <div className="ml-auto flex items-center gap-1">
-                      <Button size="sm" variant="ghost" disabled={domBusy === d.id} onClick={() => checkDomain(d.id)} className="gap-1.5" title="Проверить DNS сейчас">
-                        {domBusy === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Проверить
+                      <Button size="sm" variant="ghost" disabled={domBusy === d.id} onClick={() => checkDomain(d.id)} className="gap-1.5" title={t.checkNow}>
+                        {domBusy === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} {t.check}
                       </Button>
-                      <Button size="sm" variant="ghost" disabled={domBusy === d.id} onClick={() => removeDomain(d.id)} title="Отвязать домен">
+                      <Button size="sm" variant="ghost" disabled={domBusy === d.id} onClick={() => removeDomain(d.id)} title={t.detach}>
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
                   </div>
                   {!d.verified && (
                     <div className="mt-2 rounded-lg border border-border/60 bg-muted/30 p-2.5">
-                      <p className="mb-1.5 text-xs text-muted-foreground">Добавьте у DNS-провайдера запись и подождите (обновление DNS занимает от минут до часов):</p>
+                      <p className="mb-1.5 text-xs text-muted-foreground">{t.addDnsRecord}</p>
                       {dnsRecords(d.hostname).map((r, i) => (
                         <div key={i} className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
                           <span className="rounded bg-background px-1.5 py-0.5 font-semibold">{r.type}</span>
-                          <span className="text-muted-foreground">имя</span>
+                          <span className="text-muted-foreground">{t.dnsName}</span>
                           <code className="rounded bg-background px-1.5 py-0.5">{r.name}</code>
-                          <span className="text-muted-foreground">значение</span>
+                          <span className="text-muted-foreground">{t.dnsValue}</span>
                           <code className="rounded bg-background px-1.5 py-0.5">{r.value}</code>
-                          <button type="button" onClick={() => copy(r.value, `${d.id}-${i}`)} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground hover:bg-background hover:text-foreground" title="Скопировать значение">
+                          <button type="button" onClick={() => copy(r.value, `${d.id}-${i}`)} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-muted-foreground hover:bg-background hover:text-foreground" title={t.copyValue}>
                             {copied === `${d.id}-${i}` ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
                           </button>
                         </div>
@@ -291,19 +296,19 @@ export function SiteSettings({
 
         {/* Site end-users (tenant's own customers) */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Users className="h-4 w-4 text-primary" /> Клиенты сайта</h2>
+          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Users className="h-4 w-4 text-primary" /> {t.clientsTitle}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Пользователи, которые зарегистрировались на вашем опубликованном сайте (через блоки «Вход»/«Регистрация»). Это отдельная база — она не смешивается с аккаунтами платформы.
+            {t.clientsHint}
           </p>
           {initialSiteUsers.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">Пока никто не зарегистрировался. Добавьте на страницу блок «Регистрация (клиенты сайта)» в конструкторе.</p>
+            <p className="mt-3 text-sm text-muted-foreground">{t.clientsEmpty}</p>
           ) : (
             <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
               {initialSiteUsers.map((u) => (
                 <li key={u.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                   <span className="font-medium">{u.name || '—'}</span>
                   <span className="text-muted-foreground">{u.email}</span>
-                  <time className="ml-auto text-xs text-muted-foreground" dateTime={u.createdAt}>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</time>
+                  <time className="ml-auto text-xs text-muted-foreground" dateTime={u.createdAt}>{new Date(u.createdAt).toLocaleDateString(BCP47[locale])}</time>
                 </li>
               ))}
             </ul>
@@ -312,16 +317,16 @@ export function SiteSettings({
 
         {/* Submissions */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Inbox className="h-4 w-4 text-primary" /> Заявки с форм</h2>
+          <h2 className="flex items-center gap-2 font-semibold tracking-tight"><Inbox className="h-4 w-4 text-primary" /> {t.submissionsTitle}</h2>
           {initialSubmissions.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">Пока пусто. Заявки с форм на опубликованном сайте будут появляться здесь.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t.submissionsEmpty}</p>
           ) : (
             <ul className="mt-4 space-y-3">
               {initialSubmissions.map((s) => (
                 <li key={s.id} className="rounded-xl border border-border p-4">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="rounded-full bg-muted px-2 py-0.5 font-medium">{s.formId}</span>
-                    <time dateTime={s.createdAt}>{new Date(s.createdAt).toLocaleString('ru-RU')}</time>
+                    <time dateTime={s.createdAt}>{new Date(s.createdAt).toLocaleString(BCP47[locale])}</time>
                   </div>
                   <dl className="mt-2 space-y-1 text-sm">
                     {Object.entries(s.data)
@@ -341,10 +346,10 @@ export function SiteSettings({
 
         {/* Danger zone */}
         <section className="rounded-2xl border border-destructive/30 bg-card p-6 shadow-sm">
-          <h2 className="font-semibold tracking-tight text-destructive">Опасная зона</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Удаление сайта необратимо: страницы, домены и заявки будут стёрты.</p>
+          <h2 className="font-semibold tracking-tight text-destructive">{t.dangerTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.dangerHint}</p>
           <Button variant="outline" onClick={deleteSite} className="mt-3 gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10">
-            <Trash2 className="h-4 w-4" /> Удалить сайт
+            <Trash2 className="h-4 w-4" /> {t.deleteSite}
           </Button>
         </section>
       </div>
