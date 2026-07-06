@@ -6,6 +6,8 @@ import { ThemeStyle } from '@/components/theme-style';
 import { SiteChrome } from '@/components/builder/site-chrome';
 import { RenderNode } from '@/components/builder/render-node';
 import { SiteAuthProvider } from '@/components/builder/site-auth-blocks';
+import { useLocale } from '@/hooks/use-locale';
+import { ui } from '@/lib/ui-dict';
 import type { BuilderDoc } from '@/lib/builder/types';
 
 // Isolated live preview. Receives the full editor state via postMessage and
@@ -22,6 +24,7 @@ interface Incoming {
 }
 
 export default function BuilderPreview() {
+  const t = ui(useLocale().locale).errors;
   const [state, setState] = useState<Incoming | null>(null);
 
   useEffect(() => {
@@ -30,8 +33,39 @@ export default function BuilderPreview() {
   }, [state?.previewDark]);
   useEffect(() => {
     document.body.classList.add('builder-edit');
+
+    // Drop-target highlight (scale + dashed outline) driven by the editor via
+    // coordinates — reliable across the iframe boundary where native HTML5 DnD
+    // events don't cross into the frame.
+    let lastTarget: HTMLElement | null = null;
+    const clearTarget = () => {
+      if (lastTarget) lastTarget.classList.remove('b-drop-into');
+      lastTarget = null;
+    };
+    const dropZone = (t: HTMLElement | null): HTMLElement | null =>
+      t?.closest('[data-container]') ?? t?.closest('[data-nid]') ?? null;
+    const highlightAt = (x: number, y: number) => {
+      if (x < 0) { clearTarget(); return; }
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      const zone = dropZone(el);
+      if (zone !== lastTarget) {
+        clearTarget();
+        lastTarget = zone;
+        zone?.classList.add('b-drop-into');
+      }
+    };
+    const dropAt = (x: number, y: number, nodeType: string) => {
+      const el = document.elementFromPoint(x, y) as HTMLElement | null;
+      const zone = dropZone(el);
+      clearTarget();
+      window.parent?.postMessage({ source: 'builder-preview', type: 'drop', nodeType, targetId: zone?.getAttribute('data-nid') ?? null }, '*');
+    };
+
     const onMsg = (e: MessageEvent) => {
-      if (e.data?.source === 'builder-editor') setState(e.data as Incoming);
+      if (e.data?.source !== 'builder-editor') return;
+      if (e.data.type === 'dragpoint') { highlightAt(e.data.x as number, e.data.y as number); return; }
+      if (e.data.type === 'dropAt') { dropAt(e.data.x as number, e.data.y as number, e.data.nodeType as string); return; }
+      setState(e.data as Incoming);
     };
     window.addEventListener('message', onMsg);
     // tell the editor we're ready to receive state
@@ -50,49 +84,15 @@ export default function BuilderPreview() {
     };
     document.addEventListener('click', onClick, true);
 
-    // Drag a palette element from the editor directly onto the page, snapping
-    // to the nearest container so it joins the layout/grid correctly.
-    let lastTarget: HTMLElement | null = null;
-    const clearTarget = () => {
-      if (lastTarget) lastTarget.classList.remove('b-drop-target');
-      lastTarget = null;
-    };
-    const dropZone = (t: HTMLElement | null): HTMLElement | null =>
-      t?.closest('[data-container]') ?? t?.closest('[data-nid]') ?? null;
-    const onDragOver = (ev: DragEvent) => {
-      ev.preventDefault();
-      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
-      const zone = dropZone(ev.target as HTMLElement);
-      if (zone !== lastTarget) {
-        clearTarget();
-        lastTarget = zone;
-        zone?.classList.add('b-drop-target');
-      }
-    };
-    const onDrop = (ev: DragEvent) => {
-      const type = ev.dataTransfer?.getData('text/builder-type');
-      clearTarget();
-      if (!type) return;
-      ev.preventDefault();
-      const zone = dropZone(ev.target as HTMLElement);
-      window.parent?.postMessage(
-        { source: 'builder-preview', type: 'drop', nodeType: type, targetId: zone?.getAttribute('data-nid') ?? null },
-        '*',
-      );
-    };
-    document.addEventListener('dragover', onDragOver);
-    document.addEventListener('drop', onDrop);
     return () => {
       window.removeEventListener('message', onMsg);
       document.removeEventListener('click', onClick, true);
-      document.removeEventListener('dragover', onDragOver);
-      document.removeEventListener('drop', onDrop);
       clearTarget();
     };
   }, []);
 
   if (!state) {
-    return <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">Загрузка предпросмотра…</div>;
+    return <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">{t.previewLoading}</div>;
   }
 
   const { doc, pageId, selectedId, siteSlug, siteId } = state;
@@ -121,7 +121,7 @@ export default function BuilderPreview() {
           </SiteChrome>
         </SiteAuthProvider>
       ) : (
-        <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">Нет страницы</div>
+        <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">{t.noPages}</div>
       )}
     </>
   );

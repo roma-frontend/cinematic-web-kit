@@ -31,6 +31,8 @@ export type UiDict = {
   a11y: { openMenu: string; closeMenu: string; language: string };
   examples: { badge: string; title: string; subtitle: string };
   active: string;
+  motion: string;
+  metaTagline: string;
   footer: {
     product: string;
     account: string;
@@ -55,6 +57,8 @@ export type UiDict = {
     notFoundDesc: string;
     dashboard: string;
     loading: string;
+    previewLoading: string;
+    noPages: string;
   };
 };
 
@@ -86,6 +90,8 @@ const ru: UiDict = {
     subtitle: 'Эти секции с ИИ-видео собраны прямо в Студии — так выглядит результат.',
   },
   active: 'активна',
+  motion: 'движение',
+  metaTagline: 'кинематографичный конструктор сайтов',
   footer: {
     product: 'Продукт',
     account: 'Аккаунт',
@@ -110,6 +116,8 @@ const ru: UiDict = {
     notFoundDesc: 'Страница, которую вы ищете, не существует или была перемещена.',
     dashboard: 'Панель управления',
     loading: 'Загрузка…',
+    previewLoading: 'Загрузка предпросмотра…',
+    noPages: 'Нет страниц',
   },
 };
 
@@ -141,6 +149,8 @@ const en: UiDict = {
     subtitle: 'These AI-video sections were composed right in the Studio — this is the result.',
   },
   active: 'active',
+  motion: 'motion',
+  metaTagline: 'cinematic website builder',
   footer: {
     product: 'Product',
     account: 'Account',
@@ -165,6 +175,8 @@ const en: UiDict = {
     notFoundDesc: 'The page you are looking for does not exist or has been moved.',
     dashboard: 'Dashboard',
     loading: 'Loading…',
+    previewLoading: 'Loading preview…',
+    noPages: 'No pages',
   },
 };
 
@@ -196,6 +208,8 @@ const hy: UiDict = {
     subtitle: 'Այս AI-վիդեո բաժինները հավաքվել են հենց Ստուդիայում — ահա արդյունքը։',
   },
   active: 'ակտիվ',
+  motion: 'շարժում',
+  metaTagline: 'կինեմատոգրաֆիկ կայքերի կառուցիչ',
   footer: {
     product: 'Արտադրանք',
     account: 'Հաշիվ',
@@ -220,6 +234,8 @@ const hy: UiDict = {
     notFoundDesc: 'Էջը, որ փնտրում եք, գոյություն չունի կամ տեղափոխվել է։',
     dashboard: 'Կառավարման վահանակ',
     loading: 'Բեռնում…',
+    previewLoading: 'Նախադիտման բեռնում…',
+    noPages: 'Էջեր չկան',
   },
 };
 

@@ -6,8 +6,12 @@ import {
 } from '@/lib/admin';
 import { listAudit } from '@/lib/audit';
 import { ControlCenter } from '@/components/dashboard/control-center';
+import { getLocale } from '@/lib/i18n';
+import { ccDict } from '@/lib/control-center-dict';
 
-export const metadata = { title: 'Центр контроля — Cinematic Kit' };
+export async function generateMetadata() {
+  return { title: `${ccDict(await getLocale()).title} — Cinematic Kit` };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function ControlPage() {

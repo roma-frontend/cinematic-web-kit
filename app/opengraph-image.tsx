@@ -1,10 +1,11 @@
 import { ImageResponse } from 'next/og';
-import { SITE_NAME } from '@/lib/seo';
+import { SITE_NAME, DEFAULT_LOCALE } from '@/lib/seo';
+import { ui } from '@/lib/ui-dict';
 
 // Dynamic Open Graph / social share image (1200×630). Rendered at the edge with
 // system fonts (no network fetch), cinematic dark gradient to match the brand.
 export const runtime = 'nodejs';
-export const alt = `${SITE_NAME} — кинематографичный конструктор сайтов`;
+export const alt = `${SITE_NAME} — ${ui(DEFAULT_LOCALE).metaTagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

@@ -127,6 +127,8 @@ export type DashDict = {
     errGeneric: string;
     welcomeTitle: string;
     welcomeDesc: string;
+    joinMetaTitle: string;
+    joinDesc: string;
   };
   account: {
     metaTitle: string;
@@ -309,6 +311,8 @@ const ru: DashDict = {
     errGeneric: 'Ошибка',
     welcomeTitle: 'Добро пожаловать',
     welcomeDesc: 'Чтобы пользоваться платформой, создайте организацию или присоединитесь к существующей. Доступ откроется после одобрения суперадмином.',
+    joinMetaTitle: 'Организация — Cinematic Kit',
+    joinDesc: 'Создайте свою организацию или присоединитесь к существующей. Заявку рассмотрит суперадмин.',
   },
   account: {
     metaTitle: 'Аккаунт',
@@ -491,6 +495,8 @@ const en: DashDict = {
     errGeneric: 'Error',
     welcomeTitle: 'Welcome',
     welcomeDesc: 'To use the platform, create an organization or join an existing one. Access opens once a superadmin approves.',
+    joinMetaTitle: 'Organization — Cinematic Kit',
+    joinDesc: 'Create your own organization or join an existing one. A superadmin will review your request.',
   },
   account: {
     metaTitle: 'Account',
@@ -673,6 +679,8 @@ const hy: DashDict = {
     errGeneric: 'Սխալ',
     welcomeTitle: 'Բարի գալուստ',
     welcomeDesc: 'Հարթակն օգտագործելու համար ստեղծեք կազմակերպություն կամ միացեք գոյություն ունեցողին։ Մուտքը կբացվի գերադմինի հաստատումից հետո։',
+    joinMetaTitle: 'Կազմակերպություն — Cinematic Kit',
+    joinDesc: 'Ստեղծեք ձեր կազմակերպությունը կամ միացեք գոյություն ունեցողին։ Հայտը կդիտարկի գերադմինը։',
   },
   account: {
     metaTitle: 'Հաշիվ',

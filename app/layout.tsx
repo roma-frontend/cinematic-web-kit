@@ -13,16 +13,21 @@ import {
   DEFAULT_LOCALE,
   siteJsonLd,
 } from '@/lib/seo';
-import { getLocale } from '@/lib/i18n';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ['latin', 'cyrillic'], variable: '--font-serif' });
 const montserrat = Montserrat({ subsets: ['latin', 'cyrillic'], variable: '--font-grotesk' });
 
-export const metadata: Metadata = {
+import { getLocale } from '@/lib/i18n';
+import { ui } from '@/lib/ui-dict';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const tagline = ui(await getLocale()).metaTagline;
+  const title = `${SITE_NAME} — ${tagline}`;
+  return {
   metadataBase: new URL(APP_URL),
   title: {
-    default: `${SITE_NAME} — кинематографичный конструктор сайтов`,
+    default: title,
     template: `%s — ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
@@ -36,14 +41,14 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: SITE_NAME,
     url: '/',
-    title: `${SITE_NAME} — кинематографичный конструктор сайтов`,
+    title,
     description: DEFAULT_DESCRIPTION,
     locale: OG_LOCALE[DEFAULT_LOCALE],
     alternateLocale: [OG_LOCALE.en, OG_LOCALE.hy],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} — кинематографичный конструктор сайтов`,
+    title,
     description: DEFAULT_DESCRIPTION,
   },
   robots: {
@@ -52,7 +57,8 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
   icons: { icon: '/icon.svg', apple: '/icon.svg' },
-};
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -72,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className={`${inter.variable} ${playfair.variable} ${montserrat.variable} font-sans antialiased`}>
-        <ThemeProvider disableTransitionOnChange attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider disableTransitionOnChange={true} attribute="class" defaultTheme="dark" enableSystem>
           <PrefsSync />
           {children}
         </ThemeProvider>

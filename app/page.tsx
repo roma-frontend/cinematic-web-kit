@@ -158,7 +158,7 @@ export default async function Home() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs" style={{ color: ok(d['muted-foreground']) }}>{t.fontDisplay} · движение {t.motion}</p>
+                  <p className="mt-1 text-xs" style={{ color: ok(d['muted-foreground']) }}>{t.fontDisplay} · {dict.motion} {t.motion}</p>
                   <div className="mt-4 flex gap-2">
                     {[d.primary, d.card, d.muted, d.foreground, d.border].map((c, i) => (
                       <span key={i} className="h-6 w-6 rounded-md" style={{ background: ok(c), border: `1px solid ${ok(d.border)}` }} />
