@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
-import { getDb, sites, type SiteUser } from '@/lib/db';
+import { and, eq } from 'drizzle-orm';
+import { getDb, sites, siteSessions, siteUsers, type SiteUser } from '@/lib/db';
 import { notifyOwnerOfPendingMember } from '@/lib/site-membership';
-import { DUMMY_HASH, findUserByEmail, rateLimit, verifyPassword } from '@/lib/auth';
+import { DUMMY_HASH, findUserByEmail, hashPassword, rateLimit, verifyPassword } from '@/lib/auth';
 import {
   createSiteUser,
   verifySiteCredentials,
   getSiteUserByEmail,
+  getSiteUserById,
   siteLockRemainingMs,
   recordSiteLoginFailure,
   clearSiteLoginFailures,
@@ -26,6 +27,19 @@ import {
   markNotificationsRead,
 } from '@/lib/site-auth';
 import { listPublishedMaterials } from '@/lib/site-membership';
+import {
+  createSiteLoginOtp,
+  verifySiteLoginOtp,
+  siteChallengeUser,
+  createSitePasswordReset,
+  consumeSitePasswordReset,
+  maskEmail,
+  OTP_TTL_MIN,
+  RESET_TTL_MIN,
+} from '@/lib/site-auth-codes';
+import { loginOtpEnabled, sendEmail } from '@/lib/email';
+import { renderLoginOtpEmail, renderPasswordResetEmail } from '@/lib/email-templates';
+import { subdomainUrl } from '@/lib/seo';
 import { recordAudit } from '@/lib/audit';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
@@ -185,9 +199,128 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: t.invalidCredentials }, { status: 401 });
     }
     clearSiteLoginFailures(user);
+
+    // Second factor: email a 6-digit code and stop before creating the session.
+    // If the email provider is down, fall back to a direct login — an outage
+    // must degrade security gracefully, never lock every user out (mirrors platform).
+    if (loginOtpEnabled()) {
+      const { challengeId, code } = createSiteLoginOtp({ id: user.id, email: user.email, siteId });
+      const mail = renderLoginOtpEmail(
+        { name: user.name, code, ttlMinutes: OTP_TTL_MIN, brand: site.name },
+        await getLocale(),
+      );
+      const sent = await sendEmail({ to: user.email, ...mail });
+      if (sent.ok) {
+        recordAudit({ id: user.id, email: user.email }, 'site.otp_sent', siteId, `ip=${ip} provider=${sent.provider}`);
+        return NextResponse.json({ ok: true, otpRequired: true, challenge: challengeId, email: maskEmail(user.email) });
+      }
+      recordAudit({ id: user.id, email: user.email }, 'site.otp_send_failed', siteId, `${sent.provider}: ${sent.error ?? ''}`);
+    }
+
     await createSiteSession(user.id, siteId, siteRequestMeta(request));
     recordAudit({ id: user.id, email: user.email }, 'site.login', siteId, `ip=${ip}`);
     return NextResponse.json({ ok: true, user: pub(user) });
+  }
+
+  if (action === 'login-verify') {
+    if (!rateLimit(`site-otp-verify:${ip}`, 30)) {
+      return NextResponse.json({ error: t.tooManyAttempts }, { status: 429 });
+    }
+    const verdict = verifySiteLoginOtp(str('challenge'), str('code').trim());
+    if (verdict.status === 'expired') {
+      return NextResponse.json({ error: t.otpExpired }, { status: 401 });
+    }
+    if (verdict.status === 'too_many') {
+      return NextResponse.json({ error: t.otpTooMany }, { status: 429 });
+    }
+    if (verdict.status === 'invalid') {
+      return NextResponse.json({ error: t.otpInvalid.replace('{n}', String(verdict.attemptsLeft)) }, { status: 401 });
+    }
+    // Belt-and-suspenders: the challenge must belong to THIS site.
+    if (verdict.siteId !== siteId) {
+      return NextResponse.json({ error: t.otpExpired }, { status: 401 });
+    }
+    const user = getSiteUserById(siteId, verdict.siteUserId);
+    if (!user) {
+      return NextResponse.json({ error: t.otpExpired }, { status: 401 });
+    }
+    await createSiteSession(user.id, siteId, siteRequestMeta(request));
+    recordAudit({ id: user.id, email: user.email }, 'site.login', siteId, `ip=${ip} otp`);
+    return NextResponse.json({ ok: true, user: pub(user) });
+  }
+
+  if (action === 'login-resend') {
+    if (!rateLimit(`site-otp-resend:${ip}`, 5)) {
+      return NextResponse.json({ error: t.tooManyAttempts }, { status: 429 });
+    }
+    const user = siteChallengeUser(str('challenge'));
+    if (!user || user.siteId !== siteId) {
+      return NextResponse.json({ error: t.loginSessionExpired }, { status: 401 });
+    }
+    const { challengeId, code } = createSiteLoginOtp({ id: user.id, email: user.email, siteId });
+    const mail = renderLoginOtpEmail(
+      { name: user.name, code, ttlMinutes: OTP_TTL_MIN, brand: site.name },
+      await getLocale(),
+    );
+    const sent = await sendEmail({ to: user.email, ...mail });
+    if (!sent.ok) {
+      return NextResponse.json({ error: t.emailSendFailed }, { status: 502 });
+    }
+    recordAudit({ id: user.id, email: user.email }, 'site.otp_resent', siteId, `ip=${ip} provider=${sent.provider}`);
+    return NextResponse.json({ ok: true, challenge: challengeId, email: maskEmail(user.email) });
+  }
+
+  if (action === 'forgot') {
+    if (!rateLimit(`site-forgot:${ip}`, 5)) {
+      return NextResponse.json({ error: t.tooManyAttempts }, { status: 429 });
+    }
+    const email = str('email').trim();
+    if (!emailOk(email)) return NextResponse.json({ error: t.enterValidEmail }, { status: 400 });
+    // Per-address throttle so one victim can't be flooded with reset emails.
+    if (!rateLimit(`site-forgot-email:${siteId}:${email.toLowerCase()}`, 3, 60 * 60 * 1000)) {
+      return NextResponse.json({ ok: true });
+    }
+    const user = getSiteUserByEmail(siteId, email);
+    if (user) {
+      const { token } = createSitePasswordReset({ id: user.id, email: user.email, siteId });
+      const link = subdomainUrl(site.slug, `/reset?token=${token}`);
+      const mail = renderPasswordResetEmail(
+        { name: user.name, link, ttlMinutes: RESET_TTL_MIN, brand: site.name },
+        await getLocale(),
+      );
+      const sent = await sendEmail({ to: user.email, ...mail });
+      recordAudit(
+        { id: user.id, email: user.email },
+        sent.ok ? 'site.reset_requested' : 'site.reset_send_failed',
+        siteId,
+        `ip=${ip} provider=${sent.provider}`,
+      );
+    }
+    // Always the same answer — the caller learns nothing about the address.
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === 'reset') {
+    if (!rateLimit(`site-reset:${ip}`, 10)) {
+      return NextResponse.json({ error: t.tooManyAttempts }, { status: 429 });
+    }
+    const password = str('password');
+    if (password.length < 8) return NextResponse.json({ error: t.newPasswordMin8 }, { status: 400 });
+    if (password.length > 200) return NextResponse.json({ error: t.passwordTooLong }, { status: 400 });
+    const consumed = consumeSitePasswordReset(str('token'));
+    if (!consumed || consumed.siteId !== siteId) {
+      return NextResponse.json({ error: t.resetLinkInvalid }, { status: 400 });
+    }
+    const db = getDb();
+    db.update(siteUsers)
+      .set({ passwordHash: hashPassword(password), failedAttempts: 0, lockedUntil: null, updatedAt: new Date() })
+      .where(and(eq(siteUsers.id, consumed.siteUserId), eq(siteUsers.siteId, siteId)))
+      .run();
+    // Revoke every existing session — a stolen session must not survive a reset.
+    db.delete(siteSessions).where(eq(siteSessions.siteUserId, consumed.siteUserId)).run();
+    const target = getSiteUserById(siteId, consumed.siteUserId);
+    if (target) recordAudit({ id: target.id, email: target.email }, 'site.password_reset', siteId, `ip=${ip}`);
+    return NextResponse.json({ ok: true });
   }
 
   // ── Authenticated account actions ─────────────────────────────────────

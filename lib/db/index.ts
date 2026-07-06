@@ -175,6 +175,21 @@ CREATE TABLE IF NOT EXISTS auth_codes (
 CREATE INDEX IF NOT EXISTS auth_codes_user_idx ON auth_codes (user_id);
 CREATE INDEX IF NOT EXISTS auth_codes_expires_idx ON auth_codes (expires_at);
 
+CREATE TABLE IF NOT EXISTS site_auth_codes (
+  id TEXT PRIMARY KEY,
+  site_user_id TEXT NOT NULL REFERENCES site_users(id) ON DELETE CASCADE,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS site_auth_codes_user_idx ON site_auth_codes (site_user_id);
+CREATE INDEX IF NOT EXISTS site_auth_codes_expires_idx ON site_auth_codes (expires_at);
+
 CREATE TABLE IF NOT EXISTS user_prefs (
   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   prefs TEXT NOT NULL DEFAULT '{}',
@@ -190,6 +205,15 @@ CREATE TABLE IF NOT EXISTS org_members (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS org_members_site_user_idx ON org_members (site_id, user_id);
 CREATE INDEX IF NOT EXISTS org_members_user_idx ON org_members (user_id);
+
+CREATE TABLE IF NOT EXISTS access_control (
+  role TEXT NOT NULL,
+  capability TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  updated_by TEXT NOT NULL DEFAULT '',
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (role, capability)
+);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;

@@ -3,7 +3,7 @@
 // or by any number of attached custom domains. Form submissions are stored
 // per-site.
 
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable(
   'users',
@@ -199,6 +199,39 @@ export const siteSessions = sqliteTable(
 export type SiteUser = typeof siteUsers.$inferSelect;
 export type SiteSession = typeof siteSessions.$inferSelect;
 
+// One-time email codes for the per-tenant END-USER auth (mirror of authCodes,
+// scoped to site_users): 6-digit login OTP (second factor emailed on password
+// login) and long password-reset tokens. Only the sha256 of the code/token is
+// stored — a leaked DB cannot be replayed. Rows are one-shot (consumed_at) and
+// short-lived (expires_at); attempts guards 6-digit codes from online brute-force.
+// Always scoped by siteId so one tenant's codes can never cross to another.
+export const siteAuthCodes = sqliteTable(
+  'site_auth_codes',
+  {
+    id: text('id').primaryKey(),
+    siteUserId: text('site_user_id')
+      .notNull()
+      .references(() => siteUsers.id, { onDelete: 'cascade' }),
+    /** Denormalized for fast scoping that a code belongs to the current site. */
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    /** Denormalized delivery address (site_users.email at issue time). */
+    email: text('email').notNull(),
+    /** 'login_otp' | 'password_reset'. */
+    purpose: text('purpose').notNull(),
+    /** sha256 hex of the 6-digit code / reset token — never the raw value. */
+    codeHash: text('code_hash').notNull(),
+    /** Wrong guesses so far; the row dies at MAX_OTP_ATTEMPTS. */
+    attempts: integer('attempts').notNull().default(0),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('site_auth_codes_user_idx').on(t.siteUserId), index('site_auth_codes_expires_idx').on(t.expiresAt)],
+);
+export type SiteAuthCode = typeof siteAuthCodes.$inferSelect;
+
 // Admin-managed content that only APPROVED members of a site (organization) can
 // see. Fully scoped by siteId — one site's members can never read another's.
 export const siteMaterials = sqliteTable(
@@ -295,6 +328,26 @@ export const orgMembers = sqliteTable(
   (t) => [uniqueIndex('org_members_site_user_idx').on(t.siteId, t.userId), index('org_members_user_idx').on(t.userId)],
 );
 export type OrgMember = typeof orgMembers.$inferSelect;
+
+// Role-based access control (ported from caron's accessControl): the superadmin
+// can disable specific dashboard capabilities per non-superadmin role. Absence
+// of a row means ENABLED — so the default state preserves current behaviour.
+// Keyed by (role, capability); superadmin is never restricted.
+export const accessControl = sqliteTable(
+  'access_control',
+  {
+    /** Role the rule applies to (currently 'admin'; extensible). */
+    role: text('role').notNull(),
+    /** Capability key from lib/access.ts CAPABILITIES. */
+    capability: text('capability').notNull(),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    /** Platform user id of the superadmin who last changed it. */
+    updatedBy: text('updated_by').notNull().default(''),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.role, t.capability] })],
+);
+export type AccessControl = typeof accessControl.$inferSelect;
 
 export const submissions = sqliteTable(
   'submissions',

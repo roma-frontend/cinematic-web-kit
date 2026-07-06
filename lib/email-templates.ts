@@ -322,7 +322,7 @@ const greet = (name: string, locale: Locale) => {
 export const OTP_SUBJECT = fmt(EMAIL_I18N[DEFAULT_LOCALE].otp.subject, { siteName: SITE_NAME });
 
 export function renderLoginOtpEmail(
-  opts: { name: string; code: string; ttlMinutes: number },
+  opts: { name: string; code: string; ttlMinutes: number; brand?: string },
   locale: Locale = DEFAULT_LOCALE,
 ): {
   subject: string;
@@ -330,7 +330,10 @@ export function renderLoginOtpEmail(
   text: string;
 } {
   const S = EMAIL_I18N[locale].otp;
-  const siteB = `<b style="color:${C.text};">${SITE_NAME}</b>`;
+  // Tenant sites brand the visible message with their own name; the platform
+  // (mailer) name stays in the footer/layout. Falls back to SITE_NAME.
+  const site = opts.brand?.trim() || SITE_NAME;
+  const siteB = `<b style="color:${C.text};">${esc(site)}</b>`;
   const minB = `<b style="color:${C.muted};">${opts.ttlMinutes} ${EMAIL_I18N[locale].minutes}</b>`;
   const changePwd = `<a href="${APP_URL}/forgot-password" style="color:${C.accent};">${esc(S.changePwdLabel)}</a>`;
 
@@ -354,7 +357,7 @@ export function renderLoginOtpEmail(
   });
 
   const text = [
-    fmt(S.textTitle, { siteName: SITE_NAME }),
+    fmt(S.textTitle, { siteName: site }),
     '',
     fmt(S.textCode, { code: opts.code }),
     fmt(S.textNote, { min: opts.ttlMinutes }),
@@ -362,7 +365,7 @@ export function renderLoginOtpEmail(
     fmt(S.textFootnote, { link: `${APP_URL}/forgot-password` }),
   ].join('\n');
 
-  return { subject: fmt(S.subject, { siteName: SITE_NAME }), html, text };
+  return { subject: fmt(S.subject, { siteName: site }), html, text };
 }
 
 // ── Password reset ──────────────────────────────────────────────────────────
@@ -370,7 +373,7 @@ export function renderLoginOtpEmail(
 export const RESET_SUBJECT = fmt(EMAIL_I18N[DEFAULT_LOCALE].reset.subject, { siteName: SITE_NAME });
 
 export function renderPasswordResetEmail(
-  opts: { name: string; link: string; ttlMinutes: number },
+  opts: { name: string; link: string; ttlMinutes: number; brand?: string },
   locale: Locale = DEFAULT_LOCALE,
 ): {
   subject: string;
@@ -378,7 +381,8 @@ export function renderPasswordResetEmail(
   text: string;
 } {
   const S = EMAIL_I18N[locale].reset;
-  const siteB = `<b style="color:${C.text};">${SITE_NAME}</b>`;
+  const site = opts.brand?.trim() || SITE_NAME;
+  const siteB = `<b style="color:${C.text};">${esc(site)}</b>`;
   const minB = `<b style="color:${C.muted};">${opts.ttlMinutes} ${EMAIL_I18N[locale].minutes}</b>`;
 
   const html = layout({
@@ -399,7 +403,7 @@ export function renderPasswordResetEmail(
   });
 
   const text = [
-    fmt(S.textTitle, { siteName: SITE_NAME }),
+    fmt(S.textTitle, { siteName: site }),
     '',
     S.textIntro,
     fmt(S.textNote, { min: opts.ttlMinutes }),
@@ -408,7 +412,7 @@ export function renderPasswordResetEmail(
     S.textFootnote,
   ].join('\n');
 
-  return { subject: fmt(S.subject, { siteName: SITE_NAME }), html, text };
+  return { subject: fmt(S.subject, { siteName: site }), html, text };
 }
 
 
