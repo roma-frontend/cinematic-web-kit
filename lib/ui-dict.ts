@@ -42,6 +42,20 @@ export type UiDict = {
     rights: string;
     madeOn: string;
   };
+  errors: {
+    errTitle: string;
+    errDesc: string;
+    code: string;
+    retry: string;
+    home: string;
+    criticalTitle: string;
+    criticalDesc: string;
+    refresh: string;
+    notFoundTitle: string;
+    notFoundDesc: string;
+    dashboard: string;
+    loading: string;
+  };
 };
 
 const ru: UiDict = {
@@ -82,6 +96,20 @@ const ru: UiDict = {
     startFree: 'Начать бесплатно',
     rights: 'Все права защищены.',
     madeOn: 'Собрано на платформе',
+  },
+  errors: {
+    errTitle: 'Что-то пошло не так',
+    errDesc: 'Произошла непредвиденная ошибка. Попробуйте обновить страницу — если это повторится, вернитесь на главную.',
+    code: 'Код:',
+    retry: 'Попробовать снова',
+    home: 'На главную',
+    criticalTitle: 'Критическая ошибка',
+    criticalDesc: 'Приложение не смогло загрузиться. Пожалуйста, обновите страницу.',
+    refresh: 'Обновить',
+    notFoundTitle: 'Страница не найдена',
+    notFoundDesc: 'Страница, которую вы ищете, не существует или была перемещена.',
+    dashboard: 'Панель управления',
+    loading: 'Загрузка…',
   },
 };
 
@@ -124,6 +152,20 @@ const en: UiDict = {
     rights: 'All rights reserved.',
     madeOn: 'Built on the platform',
   },
+  errors: {
+    errTitle: 'Something went wrong',
+    errDesc: 'An unexpected error occurred. Try refreshing the page — if it happens again, go back home.',
+    code: 'Code:',
+    retry: 'Try again',
+    home: 'Home',
+    criticalTitle: 'Critical error',
+    criticalDesc: 'The application failed to load. Please refresh the page.',
+    refresh: 'Refresh',
+    notFoundTitle: 'Page not found',
+    notFoundDesc: 'The page you are looking for does not exist or has been moved.',
+    dashboard: 'Dashboard',
+    loading: 'Loading…',
+  },
 };
 
 const hy: UiDict = {
@@ -164,6 +206,20 @@ const hy: UiDict = {
     startFree: 'Սկսել անվճար',
     rights: 'Բոլոր իրավունքները պաշտպանված են։',
     madeOn: 'Ստեղծված հարթակում',
+  },
+  errors: {
+    errTitle: 'Ինչ-որ բան սխալ գնաց',
+    errDesc: 'Տեղի ունեցավ անսպասելի սխալ։ Փորձեք թարմացնել էջը — եթե կրկնվի, վերադարձեք գլխավոր էջ։',
+    code: 'Կոդ՝',
+    retry: 'Փորձել կրկին',
+    home: 'Գլխավոր',
+    criticalTitle: 'Կրիտիկական սխալ',
+    criticalDesc: 'Հավելվածը չկարողացավ բեռնվել։ Խնդրում ենք թարմացնել էջը։',
+    refresh: 'Թարմացնել',
+    notFoundTitle: 'Էջը չի գտնվել',
+    notFoundDesc: 'Էջը, որ փնտրում եք, գոյություն չունի կամ տեղափոխվել է։',
+    dashboard: 'Կառավարման վահանակ',
+    loading: 'Բեռնում…',
   },
 };
 

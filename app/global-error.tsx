@@ -5,6 +5,8 @@
 
 import { useEffect } from 'react';
 import { AlertOctagon, RefreshCw, Home } from 'lucide-react';
+import { useLocale } from '@/hooks/use-locale';
+import { ui } from '@/lib/ui-dict';
 
 export default function GlobalError({
   error,
@@ -13,12 +15,14 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const locale = useLocale().locale;
+  const t = ui(locale).errors;
   useEffect(() => {
     console.error('Global error:', error);
   }, [error]);
 
   return (
-    <html lang="ru">
+    <html lang={locale}>
       <body style={{ margin: 0 }}>
         <div
           style={{
@@ -49,13 +53,13 @@ export default function GlobalError({
             <AlertOctagon style={{ height: 48, width: 48, color: '#f87171' }} />
           </div>
           <div>
-            <h1 style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>Критическая ошибка</h1>
+            <h1 style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>{t.criticalTitle}</h1>
             <p style={{ maxWidth: 520, color: '#a1a1aa', marginTop: 8 }}>
-              Приложение не смогло загрузиться. Пожалуйста, обновите страницу.
+              {t.criticalDesc}
             </p>
             {error.digest && (
               <p style={{ fontSize: 12, color: '#71717a', marginTop: 16, fontFamily: 'monospace' }}>
-                Код: {error.digest}
+                {t.code} {error.digest}
               </p>
             )}
           </div>
@@ -77,7 +81,7 @@ export default function GlobalError({
               }}
             >
               <RefreshCw style={{ height: 16, width: 16 }} />
-              Обновить
+              {t.refresh}
             </button>
             {/* global-error replaces the whole app shell, so the router may be
                 broken — a plain <a> forcing a full reload is the safe way home. */}
@@ -98,7 +102,7 @@ export default function GlobalError({
               }}
             >
               <Home style={{ height: 16, width: 16 }} />
-              На главную
+              {t.home}
             </a>
           </div>
         </div>

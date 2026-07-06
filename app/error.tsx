@@ -6,6 +6,8 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { useLocale } from '@/hooks/use-locale';
+import { ui } from '@/lib/ui-dict';
 
 export default function Error({
   error,
@@ -14,6 +16,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = ui(useLocale().locale).errors;
   useEffect(() => {
     console.error('Route error:', error);
   }, [error]);
@@ -25,13 +28,12 @@ export default function Error({
       </div>
 
       <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Что-то пошло не так</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t.errTitle}</h1>
         <p className="max-w-lg text-muted-foreground">
-          Произошла непредвиденная ошибка. Попробуйте обновить страницу — если это повторится,
-          вернитесь на главную.
+          {t.errDesc}
         </p>
         {error.digest && (
-          <p className="mt-4 font-mono text-xs text-muted-foreground/50">Код: {error.digest}</p>
+          <p className="mt-4 font-mono text-xs text-muted-foreground/50">{t.code} {error.digest}</p>
         )}
       </div>
 
@@ -41,14 +43,14 @@ export default function Error({
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           <RefreshCw className="h-4 w-4" />
-          Попробовать снова
+          {t.retry}
         </button>
         <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-6 py-3 text-sm font-medium shadow transition-colors hover:bg-accent"
         >
           <Home className="h-4 w-4" />
-          На главную
+          {t.home}
         </Link>
       </div>
     </div>
