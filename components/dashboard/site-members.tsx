@@ -9,15 +9,17 @@ import { Loader2, Check, X, Ban, Clock, Plus, Trash2, Users, Library, ShieldChec
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SITE_MEMBERS_SEEN_EVENT } from '@/components/dashboard/site-members-badge';
+import { useLocale } from '@/hooks/use-locale';
+import { dashDict } from '@/lib/dashboard-dict';
 
 type Member = { id: string; email: string; name: string; status: string; rejectionReason: string; createdAt: string | number; approvedAt: string | number | null };
 type Material = { id: string; title: string; body: string; url: string; published: boolean; createdAt: string | number };
 
-const STATUS_META: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'Ожидает', cls: 'bg-amber-500/15 text-amber-600' },
-  approved: { label: 'Участник', cls: 'bg-green-500/15 text-green-600' },
-  rejected: { label: 'Отклонён', cls: 'bg-red-500/15 text-red-500' },
-  suspended: { label: 'Приостановлен', cls: 'bg-red-500/15 text-red-500' },
+const STATUS_CLS: Record<string, string> = {
+  pending: 'bg-amber-500/15 text-amber-600',
+  approved: 'bg-green-500/15 text-green-600',
+  rejected: 'bg-red-500/15 text-red-500',
+  suspended: 'bg-red-500/15 text-red-500',
 };
 
 async function post(body: Record<string, unknown>) {
@@ -26,6 +28,7 @@ async function post(body: Record<string, unknown>) {
 }
 
 export function SiteMembers({ siteId, memberApproval }: { siteId: string; memberApproval: boolean }) {
+  const t = dashDict(useLocale().locale).members;
   const [members, setMembers] = useState<Member[] | null>(null);
   const [materials, setMaterials] = useState<Material[] | null>(null);
   const [approval, setApproval] = useState(memberApproval);
@@ -46,7 +49,7 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
 
   const act = async (memberId: string, status: string) => {
     let reason = '';
-    if (status === 'rejected' || status === 'suspended') reason = window.prompt('Причина (необязательно):') ?? '';
+    if (status === 'rejected' || status === 'suspended') reason = window.prompt(t.reasonPrompt) ?? '';
     setBusy(memberId);
     await post({ action: 'set-status', siteId, memberId, status, reason });
     setBusy(''); load();
@@ -62,8 +65,8 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
       {/* Approval policy */}
       <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
         <span>
-          <span className="flex items-center gap-2 text-sm font-medium"><ShieldCheck className="h-4 w-4" /> Одобрение участников</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">Новые регистрации ждут вашего одобрения, прежде чем увидят материалы.</span>
+          <span className="flex items-center gap-2 text-sm font-medium"><ShieldCheck className="h-4 w-4" /> {t.approvalTitle}</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">{t.approvalDesc}</span>
         </span>
         <button type="button" role="switch" aria-checked={approval} onClick={() => toggleApproval(!approval)}
           className={`relative h-6 w-11 flex-none rounded-full transition-colors ${approval ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
@@ -73,22 +76,22 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
 
       {/* Pending requests */}
       <section>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Clock className="h-4 w-4 text-amber-500" /> Заявки на вступление {pending.length > 0 && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-600">{pending.length}</span>}</h3>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Clock className="h-4 w-4 text-amber-500" /> {t.requestsTitle} {pending.length > 0 && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-600">{pending.length}</span>}</h3>
         {!members ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /> : pending.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Нет новых заявок.</p>
+          <p className="text-sm text-muted-foreground">{t.noRequests}</p>
         ) : (
           <ul className="space-y-2">
             {pending.map((m) => (
               <li key={m.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{m.name || 'Без имени'}</p>
+                  <p className="truncate text-sm font-medium">{m.name || t.noName}</p>
                   <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                 </div>
                 <Button size="sm" className="gap-1.5 bg-green-600 text-white hover:bg-green-700" disabled={busy === m.id} onClick={() => act(m.id, 'approved')}>
-                  {busy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Одобрить
+                  {busy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t.approve}
                 </Button>
                 <Button size="sm" variant="outline" className="gap-1.5 border-red-500/40 text-red-500 hover:bg-red-500/10" disabled={busy === m.id} onClick={() => act(m.id, 'rejected')}>
-                  <X className="h-4 w-4" /> Отклонить
+                  <X className="h-4 w-4" /> {t.reject}
                 </Button>
               </li>
             ))}
@@ -98,27 +101,27 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
 
       {/* All members */}
       <section>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4" /> Участники</h3>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4" /> {t.membersTitle}</h3>
         {members && others.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Пока нет участников.</p>
+          <p className="text-sm text-muted-foreground">{t.noMembers}</p>
         ) : (
           <ul className="space-y-2">
             {others.map((m) => {
-              const meta = STATUS_META[m.status] ?? STATUS_META.approved;
+              const cls = STATUS_CLS[m.status] ?? STATUS_CLS.approved;
               return (
                 <li key={m.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{m.name || 'Без имени'}</p>
+                    <p className="truncate text-sm font-medium">{m.name || t.noName}</p>
                     <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                   </div>
-                  <span className={`flex-none rounded-full px-2 py-0.5 text-xs font-semibold ${meta.cls}`}>{meta.label}</span>
+                  <span className={`flex-none rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{t.status[m.status as keyof typeof t.status] ?? m.status}</span>
                   {m.status === 'approved' ? (
                     <Button size="sm" variant="outline" className="gap-1.5 border-red-500/40 text-red-500 hover:bg-red-500/10" disabled={busy === m.id} onClick={() => act(m.id, 'suspended')}>
-                      <Ban className="h-4 w-4" /> Приостановить
+                      <Ban className="h-4 w-4" /> {t.suspend}
                     </Button>
                   ) : (
                     <Button size="sm" variant="outline" className="gap-1.5" disabled={busy === m.id} onClick={() => act(m.id, 'approved')}>
-                      {busy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Восстановить
+                      {busy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t.restore}
                     </Button>
                   )}
                 </li>
@@ -134,6 +137,7 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
 }
 
 function MaterialsEditor({ siteId, materials, reload }: { siteId: string; materials: Material[] | null; reload: () => void }) {
+  const t = dashDict(useLocale().locale).members;
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
@@ -150,14 +154,14 @@ function MaterialsEditor({ siteId, materials, reload }: { siteId: string; materi
 
   return (
     <section>
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Library className="h-4 w-4" /> Материалы для участников</h3>
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><Library className="h-4 w-4" /> {t.materialsTitle}</h3>
       <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Заголовок" className="h-10" />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Текст материала…" rows={3}
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.materialTitle} className="h-10" />
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={t.materialBody} rows={3}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Ссылка (необязательно)" className="h-10" />
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t.materialUrl} className="h-10" />
         <Button size="sm" className="gap-1.5" disabled={busy} onClick={add}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Добавить материал
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {t.addMaterial}
         </Button>
       </div>
       {materials && materials.length > 0 && (
@@ -165,10 +169,10 @@ function MaterialsEditor({ siteId, materials, reload }: { siteId: string; materi
           {materials.map((m) => (
             <li key={m.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{m.title || 'Без названия'}</p>
+                <p className="truncate text-sm font-medium">{m.title || t.untitled}</p>
                 {m.body && <p className="truncate text-xs text-muted-foreground">{m.body}</p>}
               </div>
-              <button type="button" onClick={() => del(m.id)} disabled={delBusy === m.id} aria-label="Удалить" className="flex-none rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
+              <button type="button" onClick={() => del(m.id)} disabled={delBusy === m.id} aria-label={t.delete} className="flex-none rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
                 {delBusy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               </button>
             </li>

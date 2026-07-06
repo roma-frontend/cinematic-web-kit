@@ -6,14 +6,21 @@ import { listSitesForUser, statsForUser } from '@/lib/sites';
 import { platformStats } from '@/lib/admin';
 import { Button } from '@/components/ui/button';
 import { PageHeader, StatCard, EmptyState } from '@/components/dashboard/ui';
+import { getLocale } from '@/lib/i18n';
+import { dashDict } from '@/lib/dashboard-dict';
 
-export const metadata = { title: 'Обзор — Cinematic Kit' };
+export async function generateMetadata() {
+  const t = dashDict(await getLocale());
+  return { title: `${t.overview.metaTitle} — Cinematic Kit` };
+}
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardOverview() {
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/dashboard');
 
+  const d = dashDict(await getLocale());
+  const t = d.overview;
   const stats = statsForUser(user.id);
   const sites = listSitesForUser(user.id).slice(0, 4);
   const staff = isStaff(user);
@@ -22,38 +29,38 @@ export default async function DashboardOverview() {
   return (
     <>
       <PageHeader
-        title={`Привет, ${user.name || 'друг'}!`}
-        description="Общая картина по вашим сайтам и заявкам."
-        action={<Link href="/dashboard/sites"><Button className="gap-1.5"><Plus className="h-4 w-4" /> Новый сайт</Button></Link>}
+        title={`${t.hi}, ${user.name || t.friend}!`}
+        description={t.subtitle}
+        action={<Link href="/dashboard/sites"><Button className="gap-1.5"><Plus className="h-4 w-4" /> {d.newSite}</Button></Link>}
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Сайты" value={stats.sites} icon={Globe} href="/dashboard/sites" />
-        <StatCard label="Опубликовано" value={stats.published} icon={Rocket} hint={`из ${stats.sites}`} />
-        <StatCard label="Заявки" value={stats.submissions} icon={Inbox} href="/dashboard/submissions" />
+        <StatCard label={t.statSites} value={stats.sites} icon={Globe} href="/dashboard/sites" />
+        <StatCard label={t.statPublished} value={stats.published} icon={Rocket} hint={`${t.ofN} ${stats.sites}`} />
+        <StatCard label={t.statSubmissions} value={stats.submissions} icon={Inbox} href="/dashboard/submissions" />
       </div>
 
       {platform && (
         <>
           <h2 className="mb-3 mt-10 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-            <Users className="h-4 w-4 text-amber-500" /> Платформа (staff)
+            <Users className="h-4 w-4 text-amber-500" /> {t.platformStaff}
           </h2>
           <div className="grid gap-4 sm:grid-cols-4">
-            <StatCard label="Пользователи" value={platform.users} icon={Users} href="/dashboard/users" />
-            <StatCard label="Всего сайтов" value={platform.sites} icon={Globe} href="/dashboard/all-sites" />
-            <StatCard label="Опубликовано" value={platform.published} icon={Rocket} />
-            <StatCard label="Заявки" value={platform.submissions} icon={Inbox} />
+            <StatCard label={t.statUsers} value={platform.users} icon={Users} href="/dashboard/users" />
+            <StatCard label={t.statAllSites} value={platform.sites} icon={Globe} href="/dashboard/all-sites" />
+            <StatCard label={t.statPublished} value={platform.published} icon={Rocket} />
+            <StatCard label={t.statSubmissions} value={platform.submissions} icon={Inbox} />
           </div>
         </>
       )}
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold uppercase tracking-widest text-muted-foreground">Недавние сайты</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold uppercase tracking-widest text-muted-foreground">{t.recentSites}</h2>
       {sites.length === 0 ? (
         <EmptyState
           icon={Globe}
-          title="Пока ни одного сайта"
-          description="Создайте первый — конструктор откроется автоматически."
-          action={<Link href="/dashboard/sites"><Button className="mt-1 gap-1.5"><Plus className="h-4 w-4" /> Создать сайт</Button></Link>}
+          title={d.sites.emptyTitle}
+          description={d.sites.emptyDesc}
+          action={<Link href="/dashboard/sites"><Button className="mt-1 gap-1.5"><Plus className="h-4 w-4" /> {d.sites.create}</Button></Link>}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -66,12 +73,12 @@ export default async function DashboardOverview() {
                 </div>
                 <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${site.publishedDoc ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
                   {site.publishedDoc ? <Rocket className="h-3 w-3" /> : <CircleDashed className="h-3 w-3" />}
-                  {site.publishedDoc ? 'Опубликован' : 'Черновик'}
+                  {site.publishedDoc ? d.sites.published : d.sites.draft}
                 </span>
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <Link href={`/studio/builder?site=${site.id}`}><Button size="sm" className="gap-1.5"><Pencil className="h-3.5 w-3.5" /> Редактировать</Button></Link>
-                <Link href={`/s/${site.slug}?draft=1`} target="_blank"><Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-3.5 w-3.5" /> Открыть</Button></Link>
+                <Link href={`/studio/builder?site=${site.id}`}><Button size="sm" className="gap-1.5"><Pencil className="h-3.5 w-3.5" /> {d.sites.edit}</Button></Link>
+                <Link href={`/s/${site.slug}?draft=1`} target="_blank"><Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-3.5 w-3.5" /> {d.sites.open}</Button></Link>
               </div>
             </div>
           ))}

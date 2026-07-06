@@ -60,6 +60,42 @@ export type DashDict = {
     reqMany: string; // contains {n}
     review: string;
   };
+  overview: {
+    metaTitle: string;
+    hi: string;
+    friend: string;
+    subtitle: string;
+    statSites: string;
+    statPublished: string;
+    ofN: string;
+    statSubmissions: string;
+    platformStaff: string;
+    statUsers: string;
+    statAllSites: string;
+    recentSites: string;
+  };
+  members: {
+    status: { pending: string; approved: string; rejected: string; suspended: string };
+    reasonPrompt: string;
+    approvalTitle: string;
+    approvalDesc: string;
+    requestsTitle: string;
+    noRequests: string;
+    noName: string;
+    approve: string;
+    reject: string;
+    membersTitle: string;
+    noMembers: string;
+    suspend: string;
+    restore: string;
+    materialsTitle: string;
+    materialTitle: string;
+    materialBody: string;
+    materialUrl: string;
+    addMaterial: string;
+    untitled: string;
+    delete: string;
+  };
 };
 
 const ru: DashDict = {
@@ -118,6 +154,42 @@ const ru: DashDict = {
     reqOne: '1 заявка на вступление',
     reqMany: '{n} заявок на вступление',
     review: 'Рассмотреть →',
+  },
+  overview: {
+    metaTitle: 'Обзор',
+    hi: 'Привет',
+    friend: 'друг',
+    subtitle: 'Общая картина по вашим сайтам и заявкам.',
+    statSites: 'Сайты',
+    statPublished: 'Опубликовано',
+    ofN: 'из',
+    statSubmissions: 'Заявки',
+    platformStaff: 'Платформа (staff)',
+    statUsers: 'Пользователи',
+    statAllSites: 'Всего сайтов',
+    recentSites: 'Недавние сайты',
+  },
+  members: {
+    status: { pending: 'Ожидает', approved: 'Участник', rejected: 'Отклонён', suspended: 'Приостановлен' },
+    reasonPrompt: 'Причина (необязательно):',
+    approvalTitle: 'Одобрение участников',
+    approvalDesc: 'Новые регистрации ждут вашего одобрения, прежде чем увидят материалы.',
+    requestsTitle: 'Заявки на вступление',
+    noRequests: 'Нет новых заявок.',
+    noName: 'Без имени',
+    approve: 'Одобрить',
+    reject: 'Отклонить',
+    membersTitle: 'Участники',
+    noMembers: 'Пока нет участников.',
+    suspend: 'Приостановить',
+    restore: 'Восстановить',
+    materialsTitle: 'Материалы для участников',
+    materialTitle: 'Заголовок',
+    materialBody: 'Текст материала…',
+    materialUrl: 'Ссылка (необязательно)',
+    addMaterial: 'Добавить материал',
+    untitled: 'Без названия',
+    delete: 'Удалить',
   },
 };
 
@@ -178,6 +250,42 @@ const en: DashDict = {
     reqMany: '{n} join requests',
     review: 'Review →',
   },
+  overview: {
+    metaTitle: 'Overview',
+    hi: 'Hi',
+    friend: 'friend',
+    subtitle: 'A snapshot of your sites and submissions.',
+    statSites: 'Sites',
+    statPublished: 'Published',
+    ofN: 'of',
+    statSubmissions: 'Submissions',
+    platformStaff: 'Platform (staff)',
+    statUsers: 'Users',
+    statAllSites: 'Total sites',
+    recentSites: 'Recent sites',
+  },
+  members: {
+    status: { pending: 'Pending', approved: 'Member', rejected: 'Rejected', suspended: 'Suspended' },
+    reasonPrompt: 'Reason (optional):',
+    approvalTitle: 'Member approval',
+    approvalDesc: 'New registrations await your approval before they can see materials.',
+    requestsTitle: 'Join requests',
+    noRequests: 'No new requests.',
+    noName: 'No name',
+    approve: 'Approve',
+    reject: 'Reject',
+    membersTitle: 'Members',
+    noMembers: 'No members yet.',
+    suspend: 'Suspend',
+    restore: 'Restore',
+    materialsTitle: 'Member materials',
+    materialTitle: 'Title',
+    materialBody: 'Material text…',
+    materialUrl: 'Link (optional)',
+    addMaterial: 'Add material',
+    untitled: 'Untitled',
+    delete: 'Delete',
+  },
 };
 
 const hy: DashDict = {
@@ -236,6 +344,42 @@ const hy: DashDict = {
     reqOne: '1 միանալու հայտ',
     reqMany: '{n} միանալու հայտ',
     review: 'Դիտել →',
+  },
+  overview: {
+    metaTitle: 'Ընդհանուր',
+    hi: 'Բարև',
+    friend: 'ընկեր',
+    subtitle: 'Ձեր կայքերի և հայտերի ընդհանուր պատկերը։',
+    statSites: 'Կայքեր',
+    statPublished: 'Հրապարակված',
+    ofN: '/',
+    statSubmissions: 'Հայտեր',
+    platformStaff: 'Հարթակ (staff)',
+    statUsers: 'Օգտատերեր',
+    statAllSites: 'Ընդամենը կայքեր',
+    recentSites: 'Վերջին կայքերը',
+  },
+  members: {
+    status: { pending: 'Սպասում է', approved: 'Մասնակից', rejected: 'Մերժված', suspended: 'Կասեցված' },
+    reasonPrompt: 'Պատճառ (ըստ ցանկության)՝',
+    approvalTitle: 'Մասնակիցների հաստատում',
+    approvalDesc: 'Նոր գրանցումները սպասում են ձեր հաստատմանը, նախքան նյութերը տեսնելը։',
+    requestsTitle: 'Միանալու հայտեր',
+    noRequests: 'Նոր հայտեր չկան։',
+    noName: 'Առանց անվան',
+    approve: 'Հաստատել',
+    reject: 'Մերժել',
+    membersTitle: 'Մասնակիցներ',
+    noMembers: 'Դեռ մասնակիցներ չկան։',
+    suspend: 'Կասեցնել',
+    restore: 'Վերականգնել',
+    materialsTitle: 'Նյութեր մասնակիցների համար',
+    materialTitle: 'Վերնագիր',
+    materialBody: 'Նյութի տեքստ…',
+    materialUrl: 'Հղում (ըստ ցանկության)',
+    addMaterial: 'Ավելացնել նյութ',
+    untitled: 'Առանց վերնագրի',
+    delete: 'Ջնջել',
   },
 };
 
