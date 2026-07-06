@@ -14,6 +14,10 @@ import { VideoCardGrid } from '@/components/media/video-card';
 import mediaData from '@/data/media.json';
 import type { MediaEntry } from '@/lib/media';
 import { SiteAuthForm, SiteAccount } from '@/components/builder/site-auth-blocks';
+import { siteRt, type SiteRtDict } from '@/lib/site-runtime-dict';
+
+const RT_DEFAULT = siteRt('ru');
+
 
 const okl = (v: string) => `oklch(${v})`;
 
@@ -79,7 +83,34 @@ const BG = {
 const WIDTH = { narrow: 'max-w-2xl', normal: 'max-w-4xl', wide: 'max-w-6xl' } as const;
 const GAP = { none: 'gap-0', sm: 'gap-3', md: 'gap-6', lg: 'gap-10' } as const;
 const ALIGN = { start: 'items-start', center: 'items-center', end: 'items-end', stretch: 'items-stretch' } as const;
-const JUSTIFY = { start: 'justify-start', center: 'justify-center', end: 'justify-end', between: 'justify-between' } as const;
+const JUSTIFY = { start: 'justify-start', center: 'justify-center', end: 'justify-end', between: 'justify-between', around: 'justify-around', evenly: 'justify-evenly' } as const;
+const JUSTIFY_ITEMS = { start: 'justify-items-start', center: 'justify-items-center', end: 'justify-items-end', stretch: 'justify-items-stretch' } as const;
+// Child-level (item) layout inside a flex/grid parent.
+const SELF_ALIGN: Record<string, string> = { auto: 'self-auto', start: 'self-start', center: 'self-center', end: 'self-end', stretch: 'self-stretch' };
+const JUSTIFY_SELF: Record<string, string> = { auto: 'justify-self-auto', start: 'justify-self-start', center: 'justify-self-center', end: 'justify-self-end', stretch: 'justify-self-stretch' };
+const GROW: Record<string, string> = { none: 'flex-none', grow: 'flex-1', shrink: 'shrink' };
+const WIDTHS: Record<string, string> = { auto: 'w-auto', full: 'w-full', fit: 'w-fit' };
+function layoutClass(p: Record<string, string>): string {
+  return cn(
+    respClass(SELF_ALIGN, p, 'alignSelf'),
+    respClass(JUSTIFY_SELF, p, 'justifySelf'),
+    respClass(GROW, p, 'grow'),
+    respClass(WIDTHS, p, 'width'),
+  );
+}
+// Turn a section's content area into a flex/grid layout directly (no need to
+// nest a Row/Column/Grid container). `layout` = flex-row | flex-col | grid.
+function SECTION_LAYOUT(p: Record<string, string>): string {
+  const gap = respPick(GAP, p, 'gap', 'md');
+  if (p.layout === 'grid') return cn('grid', gridColsClass(p, '2'), gap, respClass(ALIGN, p, 'align'), respClass(JUSTIFY_ITEMS, p, 'justifyItems'));
+  // In a horizontal layout, make direct children share the row equally by
+  // default (min-w-0 lets them shrink) so columns sit side by side instead of an
+  // image forcing 100% width and wrapping. A child can still override via its
+  // own "Растяжение" (grow) control.
+  if (p.layout === 'flex-row') return cn('flex flex-wrap [&>*]:min-w-0', p.colWidth !== 'auto' && '[&>*]:flex-1', gap, respPick(ALIGN, p, 'align', 'stretch'), respClass(JUSTIFY, p, 'justify'));
+  if (p.layout === 'flex-col') return cn('flex flex-col', gap, respPick(ALIGN, p, 'align', 'stretch'), respClass(JUSTIFY, p, 'justify'));
+  return '';
+}
 const COLS = { '1': 'sm:grid-cols-1', '2': 'sm:grid-cols-2', '3': 'sm:grid-cols-2 lg:grid-cols-3', '4': 'sm:grid-cols-2 lg:grid-cols-4' } as const;
 const TEXT_ALIGN = { left: 'text-left', center: 'text-center', right: 'text-right' } as const;
 const HEADING_SIZE = { '1': 'text-4xl sm:text-6xl', '2': 'text-3xl sm:text-4xl', '3': 'text-xl sm:text-2xl', '4': 'text-lg sm:text-xl' } as const;
@@ -112,7 +143,7 @@ const SHOW_ON: Record<string, string> = {
 function motionClass(p: Record<string, string>): string {
   // animation now handled by <Reveal> (Framer Motion, scroll-triggered)
   void ANIM_FX;
-  return cn(p.hover && HOVER_FX[p.hover], p.loop && LOOP[p.loop], p.mt && MT[p.mt], p.mb && MB[p.mb]);
+  return cn(respClass(HOVER_FX, p, 'hover'), respClass(LOOP, p, 'loop'), respClass(MT, p, 'mt'), respClass(MB, p, 'mb'));
 }
 
 // surfaceClass: shadow, focus ring, hover background/text (need :hover/:focus)
@@ -138,7 +169,7 @@ const RING: Record<string, string> = {
 };
 
 function surfaceClass(p: Record<string, string>): string {
-  return cn(p.shadow && SHADOW[p.shadow], p.ring && RING[p.ring], p.hoverBg && HOVER_BG[p.hoverBg], p.hoverText && HOVER_TEXT[p.hoverText]);
+  return cn(respClass(SHADOW, p, 'shadow'), respClass(RING, p, 'ring'), respClass(HOVER_BG, p, 'hoverBg'), respClass(HOVER_TEXT, p, 'hoverText'), p.shimmer === 'true' && 'b-shimmer');
 }
 
 // surfaceStyle: inline styles (always win over classes, update live)
@@ -175,11 +206,116 @@ function surfaceStyle(p: Record<string, string>): CSSProperties {
 const pick = <T extends Record<string, string>>(map: T, key: string | undefined, fallback: keyof T): string =>
   map[(key ?? '') as keyof T] ?? map[fallback];
 
+// ---- Per-breakpoint (responsive) surface styles ----
+// Base props = mobile (apply everywhere); keys suffixed `Tablet` (>=768px) and
+// `Desktop` (>=1024px) override for larger screens, inheriting mobile → tablet →
+// desktop when unset. Because these are inline-style properties (which cannot
+// carry @media rules), we emit a scoped <style> targeting [data-nid] instead.
+const SURFACE_KEYS = ['textColor', 'fontWeight', 'fontSize', 'letterSpacing', 'lineHeight', 'opacity', 'bgColor', 'borderWidth', 'borderColor', 'radius'] as const;
+function bpProps(p: Record<string, string>, bp: 'base' | 'tablet' | 'desktop'): Record<string, string> {
+  const out: Record<string, string> = {};
+  const ov = (k: string, s: string) => { const v = p[k + s]; return v && v !== '—' ? v : undefined; };
+  for (const k of SURFACE_KEYS) {
+    let v: string | undefined = p[k];
+    if (bp !== 'base') { const t = ov(k, 'Tablet'); if (t !== undefined) v = t; }
+    if (bp === 'desktop') { const d = ov(k, 'Desktop'); if (d !== undefined) v = d; }
+    if (v !== undefined && v !== '') out[k] = v;
+  }
+  // carry through border color companion + borderWidth handling done in surfaceStyle
+  if (p.borderColor && !out.borderColor) out.borderColor = p.borderColor;
+  return out;
+}
+function hasResponsive(p: Record<string, string>): boolean {
+  return SURFACE_KEYS.some((k) => (p[k + 'Tablet'] && p[k + 'Tablet'] !== '—') || (p[k + 'Desktop'] && p[k + 'Desktop'] !== '—'));
+}
+const kebab = (s: string) => s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+const declOf = (st: CSSProperties): string =>
+  Object.entries(st).map(([k, v]) => `${kebab(k)}:${v}`).join(';');
+function responsiveCss(id: string, p: Record<string, string>, innerSel = false): string {
+  const sel = innerSel ? `[data-nid="${id}"] :where(button,input,textarea,a)` : `[data-nid="${id}"]`;
+  const base = declOf(surfaceStyle(bpProps(p, 'base')));
+  const tab = declOf(surfaceStyle(bpProps(p, 'tablet')));
+  const desk = declOf(surfaceStyle(bpProps(p, 'desktop')));
+  return `${sel}{${base}}@media(min-width:768px){${sel}{${tab}}}@media(min-width:1024px){${sel}{${desk}}}`;
+}
+// Class-based (Tailwind) props also become per-breakpoint: base applies to all,
+// `<key>Tablet` gets an `md:` prefix, `<key>Desktop` an `lg:` prefix.
+const prefixCls = (cls: string, prefix: string): string =>
+  cls ? cls.split(/\s+/).filter(Boolean).map((t) => prefix + t).join(' ') : '';
+function respClass(map: Record<string, string>, p: Record<string, string>, key: string): string {
+  const g = (k: string) => { const v = p[k]; return v && v !== '—' && map[v] ? map[v] : ''; };
+  return cn(g(key), prefixCls(g(key + 'Tablet'), 'md:'), prefixCls(g(key + 'Desktop'), 'lg:'));
+}
+// Like respClass but the base always resolves (uses `fallback` when unset), for
+// container props that need a default (gap, align in flex rows/columns).
+function respPick(map: Record<string, string>, p: Record<string, string>, key: string, fallback: string): string {
+  const g = (k: string) => { const v = p[k]; return v && v !== '—' && map[v] ? map[v] : ''; };
+  return cn(pick(map, p[key], fallback), prefixCls(g(key + 'Tablet'), 'md:'), prefixCls(g(key + 'Desktop'), 'lg:'));
+}
+// Per-breakpoint container layout (gap / align-items / justify-content /
+// justify-items) is emitted as raw CSS @media instead of Tailwind md:/lg:
+// prefixes, because those dynamic prefixes are purged from the build.
+const GAP_CSS: Record<string, string> = { none: '0', sm: '0.75rem', md: '1.5rem', lg: '2.5rem' };
+const ALIGN_CSS: Record<string, string> = { start: 'flex-start', center: 'center', end: 'flex-end', stretch: 'stretch' };
+const JUSTIFY_CSS: Record<string, string> = { start: 'flex-start', center: 'center', end: 'flex-end', between: 'space-between', around: 'space-around', evenly: 'space-evenly' };
+const JITEMS_CSS: Record<string, string> = { start: 'start', center: 'center', end: 'end', stretch: 'stretch' };
+function hasResponsiveLayout(p: Record<string, string>): boolean {
+  return ['gap', 'align', 'justify', 'justifyItems'].some((k) => (p[k + 'Tablet'] && p[k + 'Tablet'] !== '—') || (p[k + 'Desktop'] && p[k + 'Desktop'] !== '—'));
+}
+function layoutMedia(sel: string, p: Record<string, string>): string {
+  const decl = (suf: string) => {
+    const g = (k: string) => { const v = p[k + suf]; return v && v !== '—' ? v : ''; };
+    const parts: string[] = [];
+    if (GAP_CSS[g('gap')] != null && g('gap')) parts.push(`gap:${GAP_CSS[g('gap')]}`);
+    if (ALIGN_CSS[g('align')]) parts.push(`align-items:${ALIGN_CSS[g('align')]}`);
+    if (JUSTIFY_CSS[g('justify')]) parts.push(`justify-content:${JUSTIFY_CSS[g('justify')]}`);
+    if (JITEMS_CSS[g('justifyItems')]) parts.push(`justify-items:${JITEMS_CSS[g('justifyItems')]}`);
+    return parts.join(';');
+  };
+  const t = decl('Tablet'), d = decl('Desktop');
+  return (t ? `@media(min-width:768px){${sel}{${t}}}` : '') + (d ? `@media(min-width:1024px){${sel}{${d}}}` : '');
+}
+// Per-breakpoint change of the SECTION content layout MODE (block/flex/grid) —
+// emitted as raw CSS because it toggles display/flex-direction/grid together.
+function sectionModeMedia(id: string, p: Record<string, string>): string {
+  const sel = `[data-nid="${id}"] [data-layout]`;
+  const colsN = (suf: string) => {
+    const v = (p['columns' + suf] && p['columns' + suf] !== '—' ? p['columns' + suf] : '') || (suf === 'Desktop' && p.columnsTablet && p.columnsTablet !== '—' ? p.columnsTablet : '') || p.columns || '2';
+    return ['1', '2', '3', '4'].includes(v) ? v : '2';
+  };
+  const modeCss = (lay: string, suf: string) =>
+    lay === 'grid' ? `display:grid;grid-template-columns:repeat(${colsN(suf)},minmax(0,1fr))`
+    : lay === 'flex-row' ? 'display:flex;flex-direction:row;flex-wrap:wrap'
+    : lay === 'flex-col' ? 'display:flex;flex-direction:column'
+    : lay === 'block' ? 'display:block'
+    : '';
+  const childCss = (lay: string) =>
+    lay === 'flex-row' ? `${sel}>*{min-width:0}${p.colWidth !== 'auto' ? `${sel}>*{flex:1 1 0%}` : ''}` : '';
+  const one = (suf: string, minw: number) => {
+    const lay = p['layout' + suf] && p['layout' + suf] !== '—' ? p['layout' + suf] : '';
+    if (!lay) return '';
+    return `@media(min-width:${minw}px){${sel}{${modeCss(lay, suf)}}${childCss(lay)}}`;
+  };
+  return one('Tablet', 768) + one('Desktop', 1024);
+}
+// When the user sets per-device column counts we switch to flat cols + md:/lg:.
+const FLAT_COLS: Record<string, string> = { '1': 'grid-cols-1', '2': 'grid-cols-2', '3': 'grid-cols-3', '4': 'grid-cols-4' };
+function gridColsClass(p: Record<string, string>, fallback: string): string {
+  const t = p.columnsTablet && p.columnsTablet !== '—' ? p.columnsTablet : '';
+  const d = p.columnsDesktop && p.columnsDesktop !== '—' ? p.columnsDesktop : '';
+  if (!t && !d) return pick(COLS, p.columns, fallback as keyof typeof COLS);
+  return cn(
+    FLAT_COLS[p.columns] ?? FLAT_COLS[fallback] ?? 'grid-cols-1',
+    t && FLAT_COLS[t] ? 'md:' + FLAT_COLS[t] : '',
+    d && FLAT_COLS[d] ? 'lg:' + FLAT_COLS[d] : '',
+  );
+}
+
 function Field({ node }: { node: BuilderNode }) {
   const p = node.props;
   const base = 'w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50';
   const ctrlCls = cn(base, surfaceClass(p), node.type === 'textarea' && 'resize-y');
-  const ctrlStyle = surfaceStyle(p);
+  const ctrlStyle = hasResponsive(p) ? undefined : surfaceStyle(p);
   const required = p.required === 'true';
   const control =
     node.type === 'textarea' ? (
@@ -199,27 +335,47 @@ function Field({ node }: { node: BuilderNode }) {
 // the root wrapper (so borders/ring/hover land on the button/input itself).
 const SELF_STYLED = new Set<string>(['button', 'input', 'textarea']);
 
-export function RenderNode({ node }: { node: BuilderNode }) {
-  const el = renderInner(node);
+export function RenderNode({ node, t = RT_DEFAULT }: { node: BuilderNode; t?: SiteRtDict }) {
+  const el = renderInner(node, t);
   if (!isValidElement(el)) return el;
   const p = node.props ?? {};
   const elProps = el.props as { className?: string; style?: CSSProperties };
   const self = SELF_STYLED.has(node.type);
   const merged: { 'data-nid': string; 'data-container'?: string; className: string; style?: CSSProperties } = {
     'data-nid': node.id,
-    className: cn(elProps.className, motionClass(p), self ? '' : surfaceClass(p), p.showOn && SHOW_ON[p.showOn]),
+    className: cn(elProps.className, motionClass(p), layoutClass(p), self ? '' : surfaceClass(p), p.showOn && SHOW_ON[p.showOn]),
   };
   if (isContainer(node.type)) merged['data-container'] = '1';
+  const responsive = hasResponsive(p);
+  // Container flex/grid overrides (gap/align/justify/justify-items) as raw CSS.
+  const layoutSel = node.type === 'section' ? `[data-nid="${node.id}"] [data-layout]` : `[data-nid="${node.id}"]`;
+  const layoutCss = isContainer(node.type) && hasResponsiveLayout(p) ? layoutMedia(layoutSel, p) : '';
+  const modeCss = node.type === 'section' && ((p.layoutTablet && p.layoutTablet !== '—') || (p.layoutDesktop && p.layoutDesktop !== '—')) ? sectionModeMedia(node.id, p) : '';
   if (!self) {
-    const st = surfaceStyle(p);
-    if (Object.keys(st).length) merged.style = { ...(elProps.style ?? {}), ...st };
+    if (responsive) {
+      // Surface styling delivered via scoped <style> (below) so @media overrides
+      // apply; keep only the element's intrinsic inline style here.
+      if (elProps.style) merged.style = elProps.style;
+    } else {
+      const st = surfaceStyle(p);
+      if (Object.keys(st).length) merged.style = { ...(elProps.style ?? {}), ...st };
+    }
   }
   const cloned = cloneElement(el as ReactElement<typeof merged>, merged);
-  if (p.animate && p.animate !== 'none') return <Reveal type={p.animate}>{cloned}</Reveal>;
-  return cloned;
+  const css = (responsive ? responsiveCss(node.id, p, self) : '') + layoutCss + modeCss;
+  const out = css ? (
+    <>
+      {cloned}
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+    </>
+  ) : cloned;
+  // When wrapped for scroll-animation, the wrapper becomes the flex/grid item —
+  // carry the item-level layout classes onto it so align-self/grow/width still apply.
+  if (p.animate && p.animate !== 'none') return <Reveal type={p.animate} className={layoutClass(p)}>{out}</Reveal>;
+  return out;
 }
 
-function renderInner(node: BuilderNode) {
+function renderInner(node: BuilderNode, t: SiteRtDict) {
   const p = node.props ?? {};
   const kids = node.children ?? [];
 
@@ -268,9 +424,10 @@ function renderInner(node: BuilderNode) {
             )
           ) : null}
           {hasMedia && <div className={cn('absolute inset-0', bgVis)} style={{ background: bgChildOverlay || (overlayBg[bgMode] ?? overlayBg.cover) }} />}
-          <div className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), hasMedia && 'text-white')}>
+          {p.fx === 'aurora' ? <div className="b-aurora" aria-hidden /> : p.fx === 'grid' ? <div className="b-pattern-grid" aria-hidden /> : p.fx === 'dots' ? <div className="b-pattern-dots" aria-hidden /> : null}
+          <div data-layout className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), hasMedia && 'text-white', SECTION_LAYOUT(p))}>
             {sectionKids.map((c) => (
-              <RenderNode key={c.id} node={c} />
+              <RenderNode key={c.id} node={c} t={t} />
             ))}
           </div>
         </section>
@@ -278,8 +435,37 @@ function renderInner(node: BuilderNode) {
     }
 
     case 'stack': {
-      const stackCls = cn('flex flex-col', pick(GAP, p.gap, 'md'), pick(ALIGN, p.align, 'stretch'));
-      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} />);
+      const stackCls = cn('flex flex-col', respPick(GAP, p, 'gap', 'md'), respPick(ALIGN, p, 'align', 'stretch'), respClass(JUSTIFY, p, 'justify'));
+      const imgBg = p.imgBg && p.imgBg !== 'off' ? p.imgBg : '';
+      if (imgBg) {
+        // Turn the column into a background surface: the first image child becomes
+        // a full-cover (optionally blurred) backdrop, the rest sit on top in white
+        // so the text stays readable — like a section hero, scoped to the column.
+        const bgIdx = kids.findIndex((k) => k.type === 'image' && k.props?.src);
+        if (bgIdx >= 0) {
+          const bg = kids[bgIdx];
+          const content = kids.filter((_, i) => i !== bgIdx);
+          const filter = imgBg === 'blur' ? 'blur(14px) saturate(1.15) brightness(0.9)' : imgBg === 'duotone' ? 'grayscale(1) contrast(1.05)' : undefined;
+          const ov: Record<string, string> = {
+            cover: 'rgba(0,0,0,0.5)',
+            blur: 'rgba(0,0,0,0.45)',
+            overlay: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.15) 100%)',
+            tint: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 65%, transparent), color-mix(in oklch, var(--primary) 30%, #000))',
+            duotone: 'color-mix(in oklch, var(--primary) 45%, transparent)',
+          };
+          const contentEls = content.map((c) => <RenderNode key={c.id} node={c} t={t} />);
+          const contentCls = cn(stackCls, 'relative z-10 p-6 text-white');
+          return (
+            <div className="relative overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={cn('absolute inset-0 h-full w-full object-cover', imgBg === 'blur' && 'scale-110')} style={filter ? { filter } : undefined} src={bg.props!.src} alt={bg.props?.alt || ''} />
+              <div className="absolute inset-0" style={{ background: ov[imgBg] }} />
+              {p.stagger === 'true' ? <Stagger className={contentCls}>{contentEls}</Stagger> : <div className={contentCls}>{contentEls}</div>}
+            </div>
+          );
+        }
+      }
+      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} t={t} />);
       if (p.stagger === 'true') return <Stagger className={stackCls}>{kidsEls}</Stagger>;
       return <div className={stackCls}>{kidsEls}</div>;
     }
@@ -290,20 +476,20 @@ function renderInner(node: BuilderNode) {
           className={cn(
             'flex',
             p.wrap === 'nowrap' ? 'flex-nowrap' : 'flex-wrap',
-            pick(GAP, p.gap, 'md'),
-            pick(ALIGN, p.align, 'center'),
-            pick(JUSTIFY, p.justify, 'start'),
+            respPick(GAP, p, 'gap', 'md'),
+            respPick(ALIGN, p, 'align', 'center'),
+            respPick(JUSTIFY, p, 'justify', 'start'),
           )}
         >
           {kids.map((c) => (
-            <RenderNode key={c.id} node={c} />
+            <RenderNode key={c.id} node={c} t={t} />
           ))}
         </div>
       );
 
     case 'grid': {
-      const gridCls = cn('grid grid-cols-1', pick(COLS, p.columns, '3'), pick(GAP, p.gap, 'md'));
-      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} />);
+      const gridCls = cn('grid', gridColsClass(p, '3'), respPick(GAP, p, 'gap', 'md'), respClass(ALIGN, p, 'align'), respClass(JUSTIFY_ITEMS, p, 'justifyItems'));
+      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} t={t} />);
       if (p.stagger === 'true') return <Stagger className={gridCls}>{kidsEls}</Stagger>;
       return <div className={gridCls}>{kidsEls}</div>;
     }
@@ -313,12 +499,13 @@ function renderInner(node: BuilderNode) {
       const cardBase =
         cv === 'outline' ? 'border border-border'
         : cv === 'soft' ? 'bg-muted/50'
+        : cv === 'glass' ? 'b-glass'
         : cv === 'plain' ? ''
         : 'bg-card border border-border shadow-md'; // elevated
       return (
         <div className={cn('flex flex-col rounded-2xl', pick(GAP, p.gap, 'sm'), pick(PAD_BOX, p.padding, 'md'), cardBase)}>
           {kids.map((c) => (
-            <RenderNode key={c.id} node={c} />
+            <RenderNode key={c.id} node={c} t={t} />
           ))}
         </div>
       );
@@ -327,7 +514,7 @@ function renderInner(node: BuilderNode) {
     case 'heading': {
       const Tag = (`h${p.level && ['1', '2', '3', '4'].includes(p.level) ? p.level : '2'}`) as 'h1' | 'h2' | 'h3' | 'h4';
       return (
-        <Tag className={cn('font-display font-bold tracking-tight text-balance', pick(HEADING_SIZE, p.level, '2'), pick(TEXT_ALIGN, p.align, 'left'))}>
+        <Tag className={cn('font-display font-bold tracking-tight text-balance', pick(HEADING_SIZE, p.level, '2'), pick(TEXT_ALIGN, p.align, 'left'), p.gradient === 'true' && 'b-gradient-text')}>
           {p.text}
         </Tag>
       );
@@ -335,7 +522,7 @@ function renderInner(node: BuilderNode) {
 
     case 'text':
       return (
-        <p className={cn('leading-relaxed', pick(TEXT_SIZE, p.size, 'base'), pick(TEXT_ALIGN, p.align, 'left'), p.muted === 'true' ? 'text-muted-foreground' : '')}>
+        <p className={cn('leading-relaxed', pick(TEXT_SIZE, p.size, 'base'), pick(TEXT_ALIGN, p.align, 'left'), p.gradient === 'true' ? 'b-gradient-text font-semibold' : p.muted === 'true' ? 'text-muted-foreground' : '')}>
           {p.text}
         </p>
       );
@@ -344,7 +531,7 @@ function renderInner(node: BuilderNode) {
       type Variant = 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
       const cls = cn(buttonVariants({ variant: (p.variant as Variant) || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }), surfaceClass(p));
       const wrap = pick(TEXT_ALIGN, p.align, 'left');
-      const st = surfaceStyle(p);
+      const st = hasResponsive(p) ? undefined : surfaceStyle(p);
       const inner =
         p.type === 'submit' || p.type === 'reset' ? (
           <button type={p.type} className={cls} style={st}>
@@ -362,7 +549,7 @@ function renderInner(node: BuilderNode) {
       if (!p.src) {
         return (
           <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-            Изображение
+            {t.imagePlaceholder}
           </div>
         );
       }
@@ -443,9 +630,9 @@ function renderInner(node: BuilderNode) {
 
     case 'form':
       return (
-        <BuilderForm formId={p.formId || 'form'} submitText={p.submitText || 'Отправить'} successMsg={p.successMsg || 'Спасибо!'}>
+        <BuilderForm formId={p.formId || 'form'} submitText={p.submitText || t.submit} successMsg={p.successMsg || t.thanks}>
           {kids.map((c) => (
-            <RenderNode key={c.id} node={c} />
+            <RenderNode key={c.id} node={c} t={t} />
           ))}
         </BuilderForm>
       );
@@ -492,7 +679,7 @@ function renderInner(node: BuilderNode) {
       const rounded = p.rounded === 'none' ? '' : 'rounded-xl';
       const isEmbed = /youtube\.com|youtu\.be|vimeo\.com/.test(src);
       if (!src) {
-        return <div className={cn('flex aspect-video w-full items-center justify-center border border-dashed border-border text-sm text-muted-foreground', rounded)}>Видео</div>;
+        return <div className={cn('flex aspect-video w-full items-center justify-center border border-dashed border-border text-sm text-muted-foreground', rounded)}>{t.videoPlaceholder}</div>;
       }
       return isEmbed ? (
         <iframe src={src.replace('watch?v=', 'embed/')} title="video" className={cn('w-full border-0', rounded)} style={style} allowFullScreen />
@@ -597,18 +784,18 @@ function renderInner(node: BuilderNode) {
       const cols = p.columns === '2' ? 'sm:grid-cols-2' : p.columns === '4' ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3';
       return (
         <div className={cn('grid gap-4', cols)}>
-          {THEMES.slice(0, count).map((t) => {
-            const d = t.dark;
+          {THEMES.slice(0, count).map((th) => {
+            const d = th.dark;
             return (
               <Link
-                key={t.id}
+                key={th.id}
                 href="/themes"
                 className="group overflow-hidden rounded-2xl border shadow-sm transition-transform hover:-translate-y-0.5"
                 style={{ background: okl(d.background), color: okl(d.foreground), borderColor: okl(d.border) }}
               >
                 <div className="p-5">
-                  <span className="text-base font-bold tracking-tight">{t.label}</span>
-                  <p className="mt-1 text-xs" style={{ color: okl(d['muted-foreground']) }}>{t.fontDisplay} · движение {t.motion}</p>
+                  <span className="text-base font-bold tracking-tight">{th.label}</span>
+                  <p className="mt-1 text-xs" style={{ color: okl(d['muted-foreground']) }}>{th.fontDisplay} · {t.motion} {th.motion}</p>
                   <div className="mt-4 flex gap-2">
                     {[d.primary, d.card, d.muted, d.foreground, d.border].map((c, i) => (
                       <span key={i} className="h-6 w-6 rounded-md" style={{ background: okl(c), border: `1px solid ${okl(d.border)}` }} />

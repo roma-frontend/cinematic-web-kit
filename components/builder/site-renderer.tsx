@@ -8,6 +8,8 @@ import { RenderNode } from '@/components/builder/render-node';
 import { EditBridge } from '@/components/builder/edit-bridge';
 import { SiteAuthProvider } from '@/components/builder/site-auth-blocks';
 import { SiteAuthClient } from '@/components/builder/site-auth-page';
+import { getLocale } from '@/lib/i18n';
+import { siteRt } from '@/lib/site-runtime-dict';
 import type { BuilderDoc, BuilderPage } from '@/lib/builder/types';
 
 export function findPageByPath(doc: BuilderDoc, slug: string[]): BuilderPage | null {
@@ -34,16 +36,17 @@ export function SiteAuthPage({ doc, mode }: { doc: BuilderDoc; mode: 'login' | '
   );
 }
 
-export function SiteRenderer({ doc, page, edit }: { doc: BuilderDoc; page: BuilderPage; edit?: boolean }) {
+export async function SiteRenderer({ doc, page, edit }: { doc: BuilderDoc; page: BuilderPage; edit?: boolean }) {
   const theme = doc.themeId && doc.themeId !== 'auto' ? getTheme(doc.themeId) : DEFAULT_THEME;
+  const t = siteRt(await getLocale());
   return (
     <>
       <ThemeStyle theme={theme} />
       {edit && <EditBridge />}
       <SiteAuthProvider siteId={doc.siteId ?? ''}>
-        <SiteChrome doc={doc}>
+        <SiteChrome doc={doc} t={t}>
           {page.blocks.map((node) => (
-            <RenderNode key={node.id} node={node} />
+            <RenderNode key={node.id} node={node} t={t} />
           ))}
         </SiteChrome>
       </SiteAuthProvider>
