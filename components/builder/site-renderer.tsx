@@ -3,6 +3,8 @@
 
 import { getTheme, DEFAULT_THEME } from '@/lib/themes';
 import { ThemeStyle } from '@/components/theme-style';
+import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { SiteChrome } from '@/components/builder/site-chrome';
 import { RenderNode } from '@/components/builder/render-node';
 import { EditBridge } from '@/components/builder/edit-bridge';
@@ -36,19 +38,30 @@ export function SiteAuthPage({ doc, mode }: { doc: BuilderDoc; mode: 'login' | '
   );
 }
 
-export async function SiteRenderer({ doc, page, edit }: { doc: BuilderDoc; page: BuilderPage; edit?: boolean }) {
+export async function SiteRenderer({ doc, page, edit, platformChrome }: { doc: BuilderDoc; page: BuilderPage; edit?: boolean; platformChrome?: boolean }) {
   const theme = doc.themeId && doc.themeId !== 'auto' ? getTheme(doc.themeId) : DEFAULT_THEME;
   const t = siteRt(await getLocale());
+  const blocks = page.blocks.map((node) => (
+    <RenderNode key={node.id} node={node} t={t} />
+  ));
   return (
     <>
       <ThemeStyle theme={theme} />
       {edit && <EditBridge />}
       <SiteAuthProvider siteId={doc.siteId ?? ''}>
-        <SiteChrome doc={doc} t={t}>
-          {page.blocks.map((node) => (
-            <RenderNode key={node.id} node={node} t={t} />
-          ))}
-        </SiteChrome>
+        {platformChrome ? (
+          // The platform landing (/) keeps the real site header/footer — only
+          // the sections between them come from the builder document.
+          <main className="min-h-dvh">
+            <SiteHeader />
+            {blocks}
+            <SiteFooter />
+          </main>
+        ) : (
+          <SiteChrome doc={doc} t={t}>
+            {blocks}
+          </SiteChrome>
+        )}
       </SiteAuthProvider>
     </>
   );

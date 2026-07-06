@@ -5,12 +5,12 @@ name: Deploy
 # never shipped. Requires a repo secret FLY_API_TOKEN (see steps below).
 #
 #   1. Install flyctl locally and log in:  fly auth login
-#   2. Create a scoped deploy token:        fly tokens create deploy -a cinematic-web-kit
+#   2. Create a scoped deploy token:        fly tokens create deploy -a builder-studio
 #   3. GitHub → repo → Settings → Secrets and variables → Actions → New secret
 #      Name: FLY_API_TOKEN   Value: <the token from step 2>
 #
 # The very first deploy (app + volume creation) must still be done once by hand:
-#   fly apps create cinematic-web-kit
+#   fly apps create builder-studio
 #   fly volumes create cwk_data --size 1 --region fra
 #   fly secrets set SESSION_SECRET="<random>"   # + MUAPI_KEY / R2_* as needed
 #   fly deploy
@@ -45,3 +45,4 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+

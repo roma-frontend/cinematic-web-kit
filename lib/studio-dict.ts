@@ -4,7 +4,7 @@ import type { Locale } from '@/lib/seo';
 
 export type StudioDict = {
   blockLabels: Record<string, string>;
-  tabs: { landing: string; generate: string; theme: string; content: string; layout: string; config: string };
+  tabs: { landing: string; generate: string; images: string; theme: string; content: string; layout: string; config: string };
   // header
   brand: string;
   headerSub: string;
@@ -58,6 +58,16 @@ export type StudioDict = {
   doneClip: string;
   genFailed: string;
   emptyStream: string; streamNoResult: string;
+  // images
+  imgSectionTitle: string;
+  imgFreeNote: string;
+  imgPromptPh: string;
+  imgGenerate: string; imgGenerating: string;
+  imgGallery: string;
+  imgEmpty: string;
+  imgUseHint: string;
+  imgFailed: string;
+  imgDownload: string; imgDelete: string; imgCopied: string;
   // theme
   siteTheme: string;
   themeAuto: string;
@@ -97,9 +107,9 @@ const ru: StudioDict = {
     hero: 'Герой', split: 'Сплит (видео+текст)', cards: 'Карточки', mosaic: 'Мозаика',
     sticky: 'Sticky-история', background: 'Фон-секция', beams: 'Beams-баннер', marquee: 'Бегущая строка',
   },
-  tabs: { landing: 'Лендинг', generate: 'Генерация', theme: 'Тема', content: 'Контент', layout: 'Композиция', config: 'Конфигурация' },
+  tabs: { landing: 'Лендинг', generate: 'Видео', images: 'Картинки', theme: 'Тема', content: 'Контент', layout: 'Композиция', config: 'Конфигурация' },
   brand: 'Студия',
-  headerSub: 'Генерация видео · тема · композиция страницы',
+  headerSub: 'Генерация видео и картинок · тема · композиция страницы',
   builderBtn: 'Конструктор сайта',
   toHome: 'На главную',
   studioBadge: 'Cinematic Studio',
@@ -147,6 +157,15 @@ const ru: StudioDict = {
   doneClip: 'Готово — клип добавлен на сайт',
   genFailed: 'Не удалось сгенерировать',
   emptyStream: 'Пустой ответ сервера (нет потока)', streamNoResult: 'Поток завершился без результата',
+  imgSectionTitle: 'Генератор картинок',
+  imgFreeNote: 'Бесплатно — Pollinations.ai, API-ключ не нужен. Одна картинка рендерится 10–30 секунд.',
+  imgPromptPh: 'Напр.: Чашка эспрессо на мраморном столе, пар, тёплый утренний свет',
+  imgGenerate: 'Сгенерировать', imgGenerating: 'Генерируем…',
+  imgGallery: 'Галерея картинок',
+  imgEmpty: 'Пока нет картинок — опишите сцену выше и нажмите «Сгенерировать».',
+  imgUseHint: 'Скопируйте URL и вставьте в блок «Картинка» в конструкторе — или используйте как фон секции.',
+  imgFailed: 'Не удалось сгенерировать картинку',
+  imgDownload: 'Скачать', imgDelete: 'Удалить', imgCopied: 'Скопировано',
   siteTheme: 'Тема сайта',
   themeAuto: 'Авто (по контенту)',
   suggestByBrief: 'Подобрать по брифу',
@@ -181,9 +200,9 @@ const en: StudioDict = {
     hero: 'Hero', split: 'Split (video+text)', cards: 'Cards', mosaic: 'Mosaic',
     sticky: 'Sticky story', background: 'Background section', beams: 'Beams banner', marquee: 'Marquee',
   },
-  tabs: { landing: 'Landing', generate: 'Generate', theme: 'Theme', content: 'Content', layout: 'Layout', config: 'Config' },
+  tabs: { landing: 'Landing', generate: 'Video', images: 'Images', theme: 'Theme', content: 'Content', layout: 'Layout', config: 'Config' },
   brand: 'Studio',
-  headerSub: 'Video generation · theme · page composition',
+  headerSub: 'Video & image generation · theme · page composition',
   builderBtn: 'Site builder',
   toHome: 'Home',
   studioBadge: 'Cinematic Studio',
@@ -231,6 +250,15 @@ const en: StudioDict = {
   doneClip: 'Done — clip added to the site',
   genFailed: 'Generation failed',
   emptyStream: 'Empty server response (no stream)', streamNoResult: 'Stream ended without a result',
+  imgSectionTitle: 'Image generator',
+  imgFreeNote: 'Free — powered by Pollinations.ai, no API key needed. One image renders in 10–30 seconds.',
+  imgPromptPh: 'E.g.: An espresso cup on a marble table, steam, warm morning light',
+  imgGenerate: 'Generate', imgGenerating: 'Generating…',
+  imgGallery: 'Image gallery',
+  imgEmpty: 'No images yet — describe a scene above and hit “Generate”.',
+  imgUseHint: 'Copy the URL and paste it into an “Image” block in the builder — or use it as a section background.',
+  imgFailed: 'Image generation failed',
+  imgDownload: 'Download', imgDelete: 'Delete', imgCopied: 'Copied',
   siteTheme: 'Site theme',
   themeAuto: 'Auto (from content)',
   suggestByBrief: 'Suggest from brief',
@@ -265,9 +293,9 @@ const hy: StudioDict = {
     hero: 'Հերոս', split: 'Սփլիթ (վիդեո+տեքստ)', cards: 'Քարտեր', mosaic: 'Խճանկար',
     sticky: 'Sticky-պատմություն', background: 'Ֆոն-բաժին', beams: 'Beams-բաններ', marquee: 'Վազող տող',
   },
-  tabs: { landing: 'Լենդինգ', generate: 'Գեներացիա', theme: 'Թեմա', content: 'Բովանդակություն', layout: 'Կոմպոզիցիա', config: 'Կոնֆիգուրացիա' },
+  tabs: { landing: 'Լենդինգ', generate: 'Վիդեո', images: 'Նկարներ', theme: 'Թեմա', content: 'Բովանդակություն', layout: 'Կոմպոզիցիա', config: 'Կոնֆիգուրացիա' },
   brand: 'Ստուդիա',
-  headerSub: 'Վիդեոյի գեներացիա · թեմա · էջի կոմպոզիցիա',
+  headerSub: 'Վիդեոյի և նկարների գեներացիա · թեմա · էջի կոմպոզիցիա',
   builderBtn: 'Կայքի կոնստրուկտոր',
   toHome: 'Գլխավոր',
   studioBadge: 'Cinematic Studio',
@@ -315,6 +343,15 @@ const hy: StudioDict = {
   doneClip: 'Պատրաստ է — կլիպն ավելացվել է կայքում',
   genFailed: 'Չհաջողվեց գեներացնել',
   emptyStream: 'Սերվերի դատարկ պատասխան (հոսք չկա)', streamNoResult: 'Հոսքն ավարտվեց առանց արդյունքի',
+  imgSectionTitle: 'Նկարների գեներատոր',
+  imgFreeNote: 'Անվճար — Pollinations.ai, API-բանալի պետք չէ։ Մեկ նկարը ռենդերվում է 10–30 վայրկյանում։',
+  imgPromptPh: 'Օր.՝ Էսպրեսոյի բաժակ մարմարե սեղանին, գոլորշի, տաք առավոտյան լույս',
+  imgGenerate: 'Գեներացնել', imgGenerating: 'Գեներացնում ենք…',
+  imgGallery: 'Նկարների պատկերասրահ',
+  imgEmpty: 'Դեռ նկարներ չկան — նկարագրեք տեսարանը վերևում և սեղմեք «Գեներացնել»։',
+  imgUseHint: 'Պատճենեք URL-ը և տեղադրեք կոնստրուկտորի «Նկար» բլոկում — կամ օգտագործեք որպես բաժնի ֆոն։',
+  imgFailed: 'Չհաջողվեց գեներացնել նկարը',
+  imgDownload: 'Ներբեռնել', imgDelete: 'Ջնջել', imgCopied: 'Պատճենված է',
   siteTheme: 'Կայքի թեմա',
   themeAuto: 'Ավտո (ըստ բովանդակության)',
   suggestByBrief: 'Ընտրել ըստ բրիֆի',

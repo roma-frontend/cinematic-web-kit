@@ -178,7 +178,9 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'count', label: 'Сколько тем' },
     { k: 'columns', label: 'Колонок', opts: ['2', '3', '4'] },
   ],
-  videoGrid: [{ k: 'count', label: 'Сколько роликов' }],
+  videoGrid: [
+    { k: 'count', label: 'Сколько роликов (из Студии, когда список пуст)' },
+  ],
   authLogin: [
     { k: 'title', label: 'Заголовок' },
     { k: 'submitText', label: 'Текст кнопки' },
@@ -197,6 +199,25 @@ const FIELDS: Record<NodeType, Field[]> = {
 };
 
 const PALETTE: NodeType[] = ['section', 'stack', 'row', 'grid', 'card', 'heading', 'text', 'list', 'counter', 'button', 'image', 'video', 'input', 'textarea', 'form', 'pricing', 'testimonial', 'socials', 'faq', 'tabs', 'divider', 'spacer', 'themeGallery', 'videoGrid', 'authLogin', 'authRegister', 'authAccount'];
+
+// videoGrid manual items: one "URL::Title::Caption::Poster" line per card.
+type GridItem = { src: string; title: string; subtitle: string; poster: string };
+const parseGridItems = (items?: string): GridItem[] =>
+  (items ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [src = '', title = '', subtitle = '', poster = ''] = l.split('::').map((s) => s.trim());
+      return { src, title, subtitle, poster };
+    });
+const serializeGridItems = (rows: GridItem[]): string =>
+  rows
+    // An all-empty row (just added via "+") is kept as '::' so it survives the
+    // round-trip until the user types a URL; render-node skips src-less lines.
+    .map((r) => [r.src, r.title, r.subtitle, r.poster].join('::').replace(/(::)+$/, '') || '::')
+    .join('\n');
+const GRID_IMG_RE = /\.(webp|jpe?g|png|gif|avif|svg)(\?.*)?$/i;
 
 // Styling controls available for EVERY element, grouped for quick access.
 const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
@@ -792,6 +813,38 @@ function BuilderEditor() {
     } finally {
       setUploadBusy(false);
     }
+  };
+  // Photo/video upload for the media grid — appends a "URL::Title[::::Poster]"
+  // line to the node's items list (uploads land in R2 when it is configured).
+  const gridUploadRef = useRef<HTMLInputElement>(null);
+  const videoUploadRef = useRef<HTMLInputElement>(null);
+  const uploadGridMedia = async (files: File[], nodeId: string, items: string) => {
+    setUploadBusy(true);
+    setMsg('');
+    // Sequential on purpose: each file runs through ffmpeg on the server, and
+    // the grid updates line by line as uploads finish.
+    let acc = items.trimEnd();
+    const failed: string[] = [];
+    for (const file of files) {
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) {
+          failed.push(file.name);
+          continue;
+        }
+        const title = file.name.replace(/\.[^.]+$/, '');
+        const line = data.poster ? `${data.url}::${title}::::${data.poster}` : `${data.url}::${title}`;
+        acc = acc ? `${acc}\n${line}` : line;
+        patch(nodeId, { items: acc });
+      } catch {
+        failed.push(file.name);
+      }
+    }
+    if (failed.length) setMsg(`${tr('Ошибка загрузки')}: ${failed.join(', ')}`);
+    setUploadBusy(false);
   };
 
   // Generate a whole page from a brief.
@@ -1457,6 +1510,72 @@ function BuilderEditor() {
                     <input ref={uploadRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0], selected.id)} />
                   </div>
                 )}
+                {selected.type === 'video' && (
+                  <div className="border-t border-border/60 pt-2">
+                    <Button size="sm" variant="outline" className="w-full gap-1.5" disabled={uploadBusy} onClick={() => videoUploadRef.current?.click()}>
+                      {uploadBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} {tr('Загрузить видео')}
+                    </Button>
+                    <input
+                      ref={videoUploadRef}
+                      type="file"
+                      accept="video/*"
+                      hidden
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, selected.id); e.target.value = ''; }}
+                    />
+                  </div>
+                )}
+                {selected.type === 'videoGrid' && (() => {
+                  const rows = parseGridItems(selected.props.items);
+                  const setRows = (next: GridItem[]) => patch(selected.id, { items: serializeGridItems(next) });
+                  const setRow = (i: number, k: keyof GridItem, v: string) => setRows(rows.map((r, idx) => (idx === i ? { ...r, [k]: v } : r)));
+                  return (
+                  <div className="space-y-2 border-t border-border/60 pt-2">
+                    <label className="text-xs font-medium text-muted-foreground">{tr('Свои медиа (фото и видео)')}</label>
+                    {rows.length === 0 && (
+                      <p className="rounded-lg border border-dashed border-border p-2.5 text-[11px] leading-snug text-muted-foreground">
+                        {tr('Список пуст — сетка показывает ролики из Студии. Загрузите файлы или добавьте URL, чтобы заменить их.')}
+                      </p>
+                    )}
+                    {rows.map((r, i) => (
+                      <div key={i} className="space-y-1.5 rounded-lg border border-border/60 bg-muted/30 p-2">
+                        <div className="flex items-center gap-2">
+                          {GRID_IMG_RE.test(r.src) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={r.src} alt="" className="h-9 w-14 shrink-0 rounded-md border border-border object-cover" />
+                          ) : (
+                            <video src={r.src} poster={r.poster || undefined} muted playsInline preload="metadata" className="h-9 w-14 shrink-0 rounded-md border border-border object-cover" />
+                          )}
+                          <Input value={r.src} onChange={(e) => setRow(i, 'src', e.target.value)} placeholder="URL" className="h-7 min-w-0 flex-1 text-[11px]" />
+                          <button onClick={() => i > 0 && setRows(rows.map((x, idx) => (idx === i - 1 ? rows[i] : idx === i ? rows[i - 1] : x)))} disabled={i === 0} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30" title={tr('Выше')} aria-label={tr('Выше')}><ArrowUp className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => i < rows.length - 1 && setRows(rows.map((x, idx) => (idx === i + 1 ? rows[i] : idx === i ? rows[i + 1] : x)))} disabled={i === rows.length - 1} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30" title={tr('Ниже')} aria-label={tr('Ниже')}><ArrowDown className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => setRows(rows.filter((_, idx) => idx !== i))} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-red-500" title={tr('Удалить')} aria-label={tr('Удалить')}><X className="h-3.5 w-3.5" /></button>
+                        </div>
+                        <Input value={r.title} onChange={(e) => setRow(i, 'title', e.target.value)} placeholder="Заголовок" className="h-7 text-xs" />
+                        <Input value={r.subtitle} onChange={(e) => setRow(i, 'subtitle', e.target.value)} placeholder="Подпись" className="h-7 text-xs" />
+                      </div>
+                    ))}
+                    <div className="flex gap-1.5">
+                      <Button size="sm" variant="outline" className="flex-1 gap-1.5" disabled={uploadBusy} onClick={() => gridUploadRef.current?.click()}>
+                        {uploadBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} {tr('Загрузить фото/видео')}
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1" onClick={() => setRows([...rows, { src: '', title: '', subtitle: '', poster: '' }])} title={tr('Добавить по URL')} aria-label={tr('Добавить по URL')}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <input
+                      ref={gridUploadRef}
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      hidden
+                      onChange={(e) => { const fs = Array.from(e.target.files ?? []); if (fs.length) uploadGridMedia(fs, selected.id, selected.props.items ?? ''); e.target.value = ''; }}
+                    />
+                    <p className="text-[11px] leading-snug text-muted-foreground">
+                      {tr('Можно выбрать сразу несколько файлов — каждый оптимизируется и добавится карточкой выше. Видео до 64 МБ.')}
+                    </p>
+                  </div>
+                  );
+                })()}
 
                 {/* Styling for every element */}
                 {STYLE_GROUPS.map((g) => (
@@ -1553,6 +1672,15 @@ function BuilderEditor() {
 
           {/* TAB: Сайт */}
           <div className={tab === 'design' ? 'space-y-4' : 'hidden'}>
+          {/* The landing (/) keeps the platform header/footer — chrome settings
+              (logo, header/footer variants, nav) do not apply and are hidden. */}
+          {isLanding && (
+            <Card className="border-primary/30 bg-primary/5 p-3">
+              <p className="flex items-center gap-1.5 text-sm font-semibold"><Home className="h-4 w-4 text-primary" /> {tr('Шапка и подвал платформы')}</p>
+              <p className="mt-1 text-xs leading-snug text-muted-foreground">{tr('Лендинг «/» использует фирменные шапку и подвал сайта — в конструкторе они не редактируются. Здесь настраиваются только секции между ними.')}</p>
+            </Card>
+          )}
+          {!isLanding && (<>
           {/* Chrome variants */}
           <Card className="p-3">
             <p className="mb-2 text-sm font-semibold">{tr('Логотип')}</p>
@@ -1791,6 +1919,7 @@ function BuilderEditor() {
               <Input value={doc.footer.text} onChange={(e) => setDoc((d) => ({ ...d, footer: { ...d.footer, text: e.target.value } }))} className="h-8" />
             </div>
           </Card>
+          </>)}
           </div>{/* end Сайт */}
         </aside>
 

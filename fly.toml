@@ -9,7 +9,7 @@
 # Update NEXT_PUBLIC_APP_HOST to your real hostname (fly.dev subdomain or your
 # Cloudflare domain) so tenant subdomains/links resolve correctly.
 
-app = "cinematic-web-kit"
+app = "builder-studio"
 primary_region = "fra"
 
 [build]
@@ -18,7 +18,7 @@ primary_region = "fra"
   PORT = "3000"
   NODE_ENV = "production"
   DATABASE_FILE = "/data/app.db"
-  NEXT_PUBLIC_APP_HOST = "cinematic-web-kit.fly.dev"
+  NEXT_PUBLIC_APP_HOST = "builder-studio.fly.dev"
 
 [[mounts]]
   source = "cwk_data"

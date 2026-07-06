@@ -3,7 +3,7 @@ import { Inter, Playfair_Display, Montserrat } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PrefsSync } from '@/components/prefs-sync';
-import { Analytics } from '@/components/analytics';
+
 import {
   SITE_NAME,
   DEFAULT_DESCRIPTION,
@@ -82,7 +82,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PrefsSync />
           {children}
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   );

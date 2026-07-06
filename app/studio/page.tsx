@@ -14,17 +14,18 @@ import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Sect
 import { THEMES, getTheme } from '@/lib/themes';
 import siteConfig from '@/data/site.json';
 import mediaData from '@/data/media.json';
-import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette, ArrowUp, ArrowDown, X, Plus, Eye, RotateCcw, LayoutList, Monitor, Tablet, Smartphone, LayoutTemplate } from 'lucide-react';
+import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight, ListVideo, Terminal, Palette, ArrowUp, ArrowDown, X, Plus, Eye, RotateCcw, LayoutList, Monitor, Tablet, Smartphone, LayoutTemplate, LayoutDashboard, Image as ImageIcon, Download } from 'lucide-react';
 import { getLanding, type LandingContent } from '@/lib/landing';
 import { useLocale } from '@/hooks/use-locale';
 import { studioDict } from '@/lib/studio-dict';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { dashDict } from '@/lib/dashboard-dict';
 
 const ALL_BLOCKS = ['hero', 'split', 'cards', 'mosaic', 'sticky', 'background', 'beams', 'marquee'];
 
-const STUDIO_TAB_IDS = ['landing', 'generate', 'theme', 'content', 'layout', 'config'] as const;
+const STUDIO_TAB_IDS = ['landing', 'generate', 'images', 'theme', 'content', 'layout', 'config'] as const;
 type StudioTab = (typeof STUDIO_TAB_IDS)[number];
-const TAB_ICON = { landing: LayoutTemplate, generate: Clapperboard, theme: Palette, content: Wand2, layout: LayoutList, config: Upload } as const;
+const TAB_ICON = { landing: LayoutTemplate, generate: Clapperboard, images: ImageIcon, theme: Palette, content: Wand2, layout: LayoutList, config: Upload } as const;
 
 const DEVICE = { full: '100%', tablet: '820px', mobile: '390px' } as const;
 type Device = keyof typeof DEVICE;
@@ -96,7 +97,9 @@ const fade = {
 };
 
 export default function StudioPage() {
-  const t = studioDict(useLocale().locale);
+  const { locale } = useLocale();
+  const t = studioDict(locale);
+  const td = dashDict(locale);
   // Step 1 — brief
   const [brief, setBrief] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -162,6 +165,62 @@ export default function StudioPage() {
   // Batch — whole-page plan
   const [batch, setBatch] = useState<BatchItem[]>([]);
   const [batchRunning, setBatchRunning] = useState(false);
+
+  // Images — free text-to-image (Pollinations) with a persistent gallery
+  type ImgEntry = { id: string; title: string; prompt: string; style?: string; aspect: string; src: string; seed: number; createdAt: string };
+  const [imgPrompt, setImgPrompt] = useState('');
+  const [imgAspect, setImgAspect] = useState('16:9');
+  const [imgStyle, setImgStyle] = useState<StyleId>('auto');
+  const [imgCount, setImgCount] = useState('2');
+  const [imgBusy, setImgBusy] = useState(false);
+  const [imgError, setImgError] = useState('');
+  const [images, setImages] = useState<ImgEntry[]>([]);
+  const imgLoaded = useRef(false);
+  const [copiedImg, setCopiedImg] = useState('');
+
+  useEffect(() => {
+    if (tab !== 'images' || imgLoaded.current) return;
+    imgLoaded.current = true;
+    fetch('/api/generate-image')
+      .then((r) => r.json())
+      .then((d) => setImages(Array.isArray(d.entries) ? d.entries : []))
+      .catch(() => {});
+  }, [tab]);
+
+  const generateImages = async () => {
+    setImgBusy(true);
+    setImgError('');
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: imgPrompt, aspect: imgAspect, style: imgStyle, count: Number(imgCount) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t.imgFailed);
+      setImages((prev) => [...(data.entries ?? []), ...prev]);
+      if (data.partialError) setImgError(data.partialError);
+    } catch (e) {
+      setImgError(e instanceof Error ? e.message : t.imgFailed);
+    } finally {
+      setImgBusy(false);
+    }
+  };
+
+  const deleteImage = async (id: string) => {
+    setImages((prev) => prev.filter((e) => e.id !== id));
+    await fetch('/api/generate-image', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+  };
+
+  const copyImageUrl = async (src: string) => {
+    await navigator.clipboard.writeText(new URL(src, window.location.origin).href);
+    setCopiedImg(src);
+    setTimeout(() => setCopiedImg(''), 1500);
+  };
 
   // Site theme
   const [siteTheme, setSiteTheme] = useState<string>('auto');
@@ -290,6 +349,7 @@ export default function StudioPage() {
   const onContentDragStart = (i: number) => () => {
     contentDrag.current = i;
   };
+
   const onContentDrop = (i: number) => () => {
     const from = contentDrag.current;
     contentDrag.current = null;
@@ -478,9 +538,9 @@ export default function StudioPage() {
     <main className="flex h-dvh flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-[120rem] items-center gap-3 px-4">
-          <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-            <Clapperboard className="h-5 w-5 text-primary" />
-            <span>{t.brand}</span>
+          <Link href="/dashboard" className="flex items-center gap-2 font-bold tracking-tight">
+            <LayoutDashboard className="h-5 w-5 text-primary" />
+            <span>{td.dashboard}</span>
           </Link>
           <div className="mx-2 h-6 w-px bg-border" />
           <span className="hidden text-sm text-muted-foreground sm:inline">{t.headerSub}</span>
@@ -509,7 +569,7 @@ export default function StudioPage() {
         </motion.header>
         {/* Tab bar */}
         <div className="sticky top-0 z-20 -mx-5 mb-2 border-b border-border/60 bg-background/85 px-5 pb-px backdrop-blur-md">
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {STUDIO_TAB_IDS.map((id) => {
               const Icon = TAB_ICON[id];
               const active = tab === id;
@@ -676,6 +736,101 @@ export default function StudioPage() {
               </div>
             </div>
           </Card>
+        </motion.section>
+        )}
+
+        {/* Image generator — free, no API key */}
+        {tab === 'images' && (
+        <motion.section {...fade} transition={{ ...fade.transition, delay: 0.05 }} className="mb-6 space-y-4">
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <ImageIcon className="h-4 w-4 text-primary" /> {t.imgSectionTitle}
+            </label>
+            <Card>
+              <Textarea
+                value={imgPrompt}
+                onChange={(e) => setImgPrompt(e.target.value)}
+                rows={3}
+                placeholder={t.imgPromptPh}
+                className="resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/70"
+              />
+              <div className="flex flex-wrap items-center gap-2 border-t border-border/60 p-3">
+                <Select value={imgStyle} onValueChange={(v) => setImgStyle(v as StyleId)}>
+                  <SelectTrigger className="w-52 gap-1.5"><Palette className="h-4 w-4 opacity-60" /><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">{t.styleAuto}</SelectItem>
+                    {STYLE_PRESETS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={imgAspect} onValueChange={setImgAspect}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['16:9', '9:16', '1:1', '4:3', '3:2'].map((a) => (
+                      <SelectItem key={a} value={a}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={imgCount} onValueChange={setImgCount}>
+                  <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {['1', '2', '3', '4'].map((n) => (
+                      <SelectItem key={n} value={n}>×{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={generateImages} disabled={imgBusy || !imgPrompt.trim()} className="ml-auto gap-1.5">
+                  {imgBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {imgBusy ? t.imgGenerating : t.imgGenerate}
+                </Button>
+              </div>
+            </Card>
+            <p className="mt-2 text-[11px] text-muted-foreground">{t.imgFreeNote}</p>
+          </div>
+
+          {imgError && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm">
+              <p className="font-semibold text-red-500">{t.imgFailed}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{imgError}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold">
+              <Eye className="h-4 w-4 text-primary" /> {t.imgGallery}
+            </label>
+            {images.length === 0 && !imgBusy ? (
+              <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{t.imgEmpty}</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {imgBusy && Array.from({ length: Number(imgCount) }, (_, i) => (
+                  <div key={`skeleton-${i}`} className="flex aspect-video animate-pulse items-center justify-center rounded-xl border border-border/60 bg-muted/40">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/60" />
+                  </div>
+                ))}
+                {images.map((img) => (
+                  <motion.div key={img.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="group overflow-hidden rounded-xl border border-border/60 bg-card/60">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img.src} alt={img.title} loading="lazy" className="w-full object-cover" style={{ aspectRatio: img.aspect.replace(':', ' / ') }} />
+                    <div className="flex items-center gap-1 p-2">
+                      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={img.prompt}>{img.title}</span>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => copyImageUrl(img.src)} aria-label={t.copy} title={copiedImg === img.src ? t.imgCopied : t.copy}>
+                        {copiedImg === img.src ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                      <a href={img.src} download aria-label={t.imgDownload} title={t.imgDownload}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7"><Download className="h-3.5 w-3.5" /></Button>
+                      </a>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500" onClick={() => deleteImage(img.id)} aria-label={t.imgDelete} title={t.imgDelete}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">{t.imgUseHint}</p>
+          </div>
         </motion.section>
         )}
 

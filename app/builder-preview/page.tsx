@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { getTheme, DEFAULT_THEME } from '@/lib/themes';
 import { ThemeStyle } from '@/components/theme-style';
 import { SiteChrome } from '@/components/builder/site-chrome';
+import { SiteHeader } from '@/components/site-header';
 import { RenderNode } from '@/components/builder/render-node';
 import { SiteAuthProvider } from '@/components/builder/site-auth-blocks';
 import { useLocale } from '@/hooks/use-locale';
 import { ui } from '@/lib/ui-dict';
+import { builderTr } from '@/lib/builder-dict';
 import type { BuilderDoc } from '@/lib/builder/types';
 
 // Isolated live preview. Receives the full editor state via postMessage and
@@ -24,7 +26,9 @@ interface Incoming {
 }
 
 export default function BuilderPreview() {
-  const t = ui(useLocale().locale).errors;
+  const { locale } = useLocale();
+  const t = ui(locale).errors;
+  const tr = builderTr(locale);
   const [state, setState] = useState<Incoming | null>(null);
 
   useEffect(() => {
@@ -114,11 +118,32 @@ export default function BuilderPreview() {
       )}
       {page ? (
         <SiteAuthProvider siteId={previewDoc.siteId ?? ''}>
-          <SiteChrome doc={previewDoc}>
-            {page.blocks.map((node) => (
-              <RenderNode key={node.id} node={node} />
-            ))}
-          </SiteChrome>
+          {siteSlug === '__landing__' ? (
+            // The landing keeps the platform header/footer — show them frozen
+            // (real header, footer placeholder) so only sections are editable.
+            <main className="min-h-dvh">
+              <div className="relative" aria-hidden>
+                <div className="pointer-events-none select-none opacity-60">
+                  <SiteHeader />
+                </div>
+                <span className="absolute right-2 top-2 z-50 rounded-md border border-border bg-background/90 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {tr('Шапка платформы — не редактируется')}
+                </span>
+              </div>
+              {page.blocks.map((node) => (
+                <RenderNode key={node.id} node={node} />
+              ))}
+              <div aria-hidden className="pointer-events-none select-none border-t border-border bg-card/40 px-6 py-10 text-center text-xs text-muted-foreground opacity-70">
+                {tr('Подвал платформы — не редактируется')}
+              </div>
+            </main>
+          ) : (
+            <SiteChrome doc={previewDoc}>
+              {page.blocks.map((node) => (
+                <RenderNode key={node.id} node={node} />
+              ))}
+            </SiteChrome>
+          )}
         </SiteAuthProvider>
       ) : (
         <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">{t.noPages}</div>

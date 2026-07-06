@@ -38,7 +38,9 @@ export default async function Home() {
   if (builderDoc) {
     const doc = { ...rebaseDoc(builderDoc, ''), siteId: landingSite!.id };
     const page = findPageByPath(doc, []);
-    if (page) return <SiteRenderer doc={doc} page={page} />;
+    // platformChrome: the landing always keeps the real site header/footer —
+    // the builder only edits the sections between them.
+    if (page) return <SiteRenderer doc={doc} page={page} platformChrome />;
   }
 
   const media = mediaData as MediaEntry[];

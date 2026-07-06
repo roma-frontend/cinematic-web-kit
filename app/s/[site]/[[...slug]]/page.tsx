@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth';
 import { getSiteBySlug, parseDoc, rebaseDoc, APP_HOST } from '@/lib/sites';
+import { LANDING_SLUG } from '@/lib/landing-site';
 import { subdomainUrl, tenantJsonLd } from '@/lib/seo';
 import { SiteRenderer, SiteAuthPage, AUTH_PATHS, findPageByPath } from '@/components/builder/site-renderer';
 
@@ -87,7 +88,7 @@ export default async function TenantSitePage({ params, searchParams }: Props) {
           ),
         }}
       />
-      <SiteRenderer doc={resolved.doc} page={page} edit={edit === '1' && draft === '1'} />
+      <SiteRenderer doc={resolved.doc} page={page} edit={edit === '1' && draft === '1'} platformChrome={resolved.site.slug === LANDING_SLUG} />
     </>
   );
 }

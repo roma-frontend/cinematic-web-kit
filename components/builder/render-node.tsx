@@ -139,7 +139,7 @@ function SECTION_LAYOUT(p: Record<string, string>): string {
   if (p.layout === 'flex-col') return cn('flex flex-col', gap, respPick(ALIGN, p, 'align', 'stretch'), respClass(JUSTIFY, p, 'justify'));
   return '';
 }
-const COLS = { '1': 'sm:grid-cols-1', '2': 'sm:grid-cols-2', '3': 'sm:grid-cols-2 lg:grid-cols-3', '4': 'sm:grid-cols-2 lg:grid-cols-4' } as const;
+const COLS = { '1': 'grid-cols-1', '2': 'grid-cols-1 sm:grid-cols-2', '3': 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3', '4': 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' } as const;
 const TEXT_ALIGN = { left: 'text-left', center: 'text-center', right: 'text-right' } as const;
 const HEADING_SIZE = { '1': 'text-4xl sm:text-6xl', '2': 'text-3xl sm:text-4xl', '3': 'text-xl sm:text-2xl', '4': 'text-lg sm:text-xl' } as const;
 const TEXT_SIZE = { sm: 'text-sm', base: 'text-base', lg: 'text-lg sm:text-xl' } as const;
@@ -829,7 +829,7 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
 
     case 'themeGallery': {
       const count = Math.max(1, Math.min(12, parseInt(p.count || '6', 10) || 6));
-      const cols = p.columns === '2' ? 'sm:grid-cols-2' : p.columns === '4' ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3';
+      const cols = p.columns === '2' ? 'grid-cols-1 sm:grid-cols-2' : p.columns === '4' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
       return (
         <div className={cn('grid gap-4', cols)}>
           {THEMES.slice(0, count).map((th) => {
@@ -858,8 +858,27 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
     }
 
     case 'videoGrid': {
+      // Manual media list: one "URL::Title::Caption::Poster" per line. Images
+      // (by extension) and videos both work. When empty, the grid falls back
+      // to the first `count` clips generated in the Studio (data/media.json).
+      const custom = lines(p.items)
+        .map((ln, i) => {
+          const [src = '', title = '', subtitle = '', poster = ''] = ln.split('::').map((s) => s.trim());
+          if (!src) return null;
+          const entry: MediaEntry = {
+            id: `${node.id}-item-${i}`,
+            title,
+            section: 'card',
+            src,
+            subtitle: subtitle || undefined,
+            poster: poster || undefined,
+            aspectRatio: '16:9',
+          };
+          return entry;
+        })
+        .filter((e): e is MediaEntry => e !== null);
       const count = Math.max(1, Math.min(12, parseInt(p.count || '6', 10) || 6));
-      const entries = (mediaData as MediaEntry[]).slice(0, count);
+      const entries = custom.length ? custom : (mediaData as MediaEntry[]).slice(0, count);
       if (entries.length === 0) return null;
       return <VideoCardGrid entries={entries} />;
     }
