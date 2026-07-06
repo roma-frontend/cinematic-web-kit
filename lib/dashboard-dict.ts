@@ -31,6 +31,25 @@ export type DashDict = {
     search: string;
     noResults: string;
   };
+  hub: {
+    open: string;
+    staffTitle: string;
+    staffSubtitle: string;
+    superTitle: string;
+    superSubtitle: string;
+    desc: {
+      users: string;
+      allSites: string;
+      audit: string;
+      organizations: string;
+      database: string;
+      access: string;
+      activity: string;
+      trash: string;
+      control: string;
+      studio: string;
+    };
+  };
   brandSub: string;
   gatedTitle: string;
   gatedNote: string;
@@ -228,6 +247,25 @@ const ru: DashDict = {
     expand: 'Развернуть меню',
     search: 'Поиск разделов…',
     noResults: 'Ничего не найдено',
+  },
+  hub: {
+    open: 'Открыть',
+    staffTitle: 'Персонал платформы',
+    staffSubtitle: 'Инструменты для сотрудников платформы: пользователи, сайты и журнал аудита.',
+    superTitle: 'Суперадмин',
+    superSubtitle: 'Управление платформой: организации, база данных, доступ и контроль.',
+    desc: {
+      users: 'Управление учётными записями и ролями пользователей.',
+      allSites: 'Все сайты платформы в одном списке.',
+      audit: 'История действий и событий безопасности.',
+      organizations: 'Организации, их данные и назначение администраторов.',
+      database: 'Просмотр и обслуживание таблиц базы данных.',
+      access: 'Матрица доступа ролей к разделам дашборда.',
+      activity: 'Активность персонала в реальном времени.',
+      trash: 'Удалённые объекты и их восстановление.',
+      control: 'Сводный центр контроля платформы.',
+      studio: 'Студия генерации медиа и конструктор сайтов.',
+    },
   },
   brandSub: 'Дашборд',
   gatedTitle: 'Доступ ограничен',
@@ -427,6 +465,25 @@ const en: DashDict = {
     search: 'Search sections…',
     noResults: 'Nothing found',
   },
+  hub: {
+    open: 'Open',
+    staffTitle: 'Platform staff',
+    staffSubtitle: 'Tools for platform staff: users, sites and the audit log.',
+    superTitle: 'Superadmin',
+    superSubtitle: 'Platform management: organizations, database, access and control.',
+    desc: {
+      users: 'Manage user accounts and roles.',
+      allSites: 'Every site on the platform in one list.',
+      audit: 'History of actions and security events.',
+      organizations: 'Organizations, their data and admin assignment.',
+      database: 'Browse and maintain database tables.',
+      access: 'Role access matrix for dashboard sections.',
+      activity: 'Real-time staff activity.',
+      trash: 'Deleted items and their restoration.',
+      control: 'The platform control center.',
+      studio: 'Media generation studio and site builder.',
+    },
+  },
   brandSub: 'Dashboard',
   gatedTitle: 'Access restricted',
   gatedNote: 'Sections unlock once a superadmin approves your request.',
@@ -624,6 +681,25 @@ const hy: DashDict = {
     expand: 'Բացել ընտրացանկը',
     search: 'Բաժինների որոնում…',
     noResults: 'Ոչինչ չի գտնվել',
+  },
+  hub: {
+    open: 'Բացել',
+    staffTitle: 'Հարթակի անձնակազմ',
+    staffSubtitle: 'Հարթակի անձնակազմի գործիքներ՝ օգտատերեր, կայքեր և աուդիտի մատյան։',
+    superTitle: 'Գերադմին',
+    superSubtitle: 'Հարթակի կառավարում՝ կազմակերպություններ, տվյալների բազա, հասանելիություն և վերահսկողություն։',
+    desc: {
+      users: 'Օգտատերերի հաշիվների և դերերի կառավարում։',
+      allSites: 'Հարթակի բոլոր կայքերը մեկ ցանկում։',
+      audit: 'Գործողությունների և անվտանգության իրադարձությունների պատմություն։',
+      organizations: 'Կազմակերպությունները, դրանց տվյալները և ադմինի նշանակումը։',
+      database: 'Տվյալների բազայի աղյուսակների դիտում և սպասարկում։',
+      access: 'Դերերի հասանելիության մատրից՝ վահանակի բաժինների համար։',
+      activity: 'Անձնակազմի ակտիվությունն իրական ժամանակում։',
+      trash: 'Ջնջված տարրերը և դրանց վերականգնումը։',
+      control: 'Հարթակի վերահսկման կենտրոն։',
+      studio: 'Մեդիա գեներացիայի ստուդիա և կայքերի կառուցիչ։',
+    },
   },
   brandSub: 'Վահանակ',
   gatedTitle: 'Մուտքը սահմանափակ է',

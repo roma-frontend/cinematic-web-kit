@@ -52,6 +52,8 @@ const NAV: NavItem[] = [
 type NavGroup = 'workspace' | 'staff' | 'super';
 const groupOf = (i: NavItem): NavGroup => (i.super ? 'super' : i.staff ? 'staff' : 'workspace');
 const GROUP_ORDER: NavGroup[] = ['workspace', 'staff', 'super'];
+// Section index (hub) routes — the parent nav items are real, navigable pages.
+const HUB: Record<'staff' | 'super', string> = { staff: '/dashboard/staff', super: '/dashboard/super' };
 
 const ROLE_CLS: Record<Role, string> = {
   superadmin: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
@@ -254,20 +256,29 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
               {workspaceItems.map((item) => navLink(item))}
               {parents.length > 0 && <div className="my-2 h-px bg-border/60" />}
               {parents.map((p) => {
-                const pOn = visible.some((i) => groupOf(i) === p.g && active(i.href));
+                const hub = HUB[p.g];
+                const pOn = active(hub) || visible.some((i) => groupOf(i) === p.g && active(i.href));
                 const sup = p.g === 'super';
                 const cls = pOn
                   ? sup ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'
                   : sup ? 'text-foreground/90 hover:bg-amber-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground';
                 return (
-                  <button key={p.g} type="button" onClick={() => setSubNav(p.g)}
-                    className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${cls}`}>
+                  <div key={p.g} className={`group relative flex items-center rounded-lg text-sm font-medium transition-colors ${cls}`}>
                     {pOn && <span className={`absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full ${sup ? 'bg-amber-500' : 'bg-primary'}`} />}
-                    <p.icon className={`h-4 w-4 shrink-0 ${sup ? 'text-amber-500' : ''}`} />
-                    <span className="flex-1 truncate text-left">{groupLabel[p.g]}</span>
-                    {sup && <OrgRequestsBadge initialCount={orgRequests} />}
-                    <ChevronRight className="h-4 w-4 opacity-50 transition-transform group-hover:translate-x-0.5" />
-                  </button>
+                    <Link href={hub} onClick={() => setOpen(false)} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+                      <p.icon className={`h-4 w-4 shrink-0 transition-transform ${sup ? 'text-amber-500' : ''} ${pOn ? 'scale-110' : ''}`} />
+                      <span className="truncate">{groupLabel[p.g]}</span>
+                      {sup && <OrgRequestsBadge initialCount={orgRequests} />}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setSubNav(p.g)}
+                      aria-label={groupLabel[p.g]}
+                      className="flex items-center self-stretch rounded-r-lg px-2 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -282,13 +293,31 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
                 <ChevronLeft className="h-4 w-4 transition-transform group-hover/back:-translate-x-0.5" />
                 <span>{subNav ? groupLabel[subNav] : ''}</span>
               </button>
+              {subNav && (() => {
+                const hub = HUB[subNav];
+                const on = active(hub);
+                const sup = subNav === 'super';
+                const cls = on
+                  ? sup ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'
+                  : sup ? 'text-foreground/90 hover:bg-amber-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground';
+                return (
+                  <div style={{ opacity: subNav ? 1 : 0, transform: subNav ? 'translateX(0)' : 'translateX(16px)', transition: `opacity 280ms ease 80ms, transform 320ms cubic-bezier(0.34,1.56,0.64,1) 80ms` }}>
+                    <Link href={hub} onClick={() => setOpen(false)}
+                      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${cls}`}>
+                      {on && <span className={`absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full ${sup ? 'bg-amber-500' : 'bg-primary'}`} />}
+                      <LayoutDashboard className={`h-4 w-4 shrink-0 transition-transform ${sup ? 'text-amber-500' : ''} ${on ? 'scale-110' : ''}`} />
+                      <span className="truncate">{t.nav.overview}</span>
+                    </Link>
+                  </div>
+                );
+              })()}
               {subItems.map((item, idx) => (
                 <div
                   key={item.href}
                   style={{
                     opacity: subNav ? 1 : 0,
                     transform: subNav ? 'translateX(0)' : 'translateX(16px)',
-                    transition: `opacity 280ms ease ${80 + idx * 40}ms, transform 320ms cubic-bezier(0.34,1.56,0.64,1) ${80 + idx * 40}ms`,
+                    transition: `opacity 280ms ease ${120 + idx * 40}ms, transform 320ms cubic-bezier(0.34,1.56,0.64,1) ${120 + idx * 40}ms`,
                   }}
                 >
                   {navLink(item)}
@@ -368,7 +397,12 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
             <Menu className="h-5 w-5" />
           </button>
           <span className="text-sm font-semibold tracking-tight">
-            {gated ? t.gatedTitle : (() => { const cur = visible.find((i) => active(i.href)); return cur ? t.nav[cur.key] : t.dashboard; })()}
+            {gated ? t.gatedTitle : (() => {
+              if (pathname === HUB.staff) return t.sidebar.groupStaff;
+              if (pathname === HUB.super) return t.sidebar.groupSuper;
+              const cur = visible.find((i) => active(i.href));
+              return cur ? t.nav[cur.key] : t.dashboard;
+            })()}
           </span>
           <button
             onClick={() => window.dispatchEvent(new Event('cwk:open-palette'))}
