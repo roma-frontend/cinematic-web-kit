@@ -10,6 +10,7 @@ import {
   deleteMaterial,
   listPublishedMaterials,
   countPendingMembersForOwner,
+  pendingCountsBySite,
 } from '@/lib/site-membership';
 import { createUser } from '@/lib/auth';
 import { createSite } from '@/lib/sites';
@@ -216,5 +217,25 @@ describe('countPendingMembersForOwner', () => {
     const { owner, site } = seed();
     createSiteUser(site.id, 'a@x.com', 'password123', 'A', 'approved');
     expect(countPendingMembersForOwner(owner)).toBe(0);
+  });
+});
+
+describe('pendingCountsBySite', () => {
+  it('returns per-site pending counts, omitting sites with none', () => {
+    const { owner, site } = seed();
+    const site2 = createSite(owner.id, 'Org2');
+    createSiteUser(site.id, 'a@x.com', 'password123', 'A', 'pending');
+    createSiteUser(site.id, 'b@x.com', 'password123', 'B', 'pending');
+    createSiteUser(site.id, 'c@x.com', 'password123', 'C', 'approved'); // not counted
+    // site2 has no pending
+
+    const counts = pendingCountsBySite([site.id, site2.id]);
+    expect(counts[site.id]).toBe(2);
+    expect(counts[site2.id]).toBeUndefined();
+  });
+
+  it('returns an empty object for no sites', () => {
+    seed();
+    expect(pendingCountsBySite([])).toEqual({});
   });
 });

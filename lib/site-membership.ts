@@ -1,7 +1,11 @@
 import 'server-only';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { getDb, newId, sites, siteUsers, siteMaterials, siteNotifications, type SiteMaterial, type User } from '@/lib/db';
 import { isSuperadmin } from '@/lib/auth';
+import { getUserById } from '@/lib/admin';
+import { sendEmail } from '@/lib/email';
+import { renderNewMemberEmail } from '@/lib/email-templates';
+import { APP_URL } from '@/lib/seo';
 
 // Org-isolation (variant A): a tenant SITE is an organization, its owner (the
 // platform user) is the admin, and site_users are members "under" the admin.
@@ -62,6 +66,44 @@ export function countPendingMembersForOwner(user: User): number {
     )
     .get();
   return row?.n ?? 0;
+}
+
+/** Pending-member counts keyed by siteId, for the given sites. */
+export function pendingCountsBySite(siteIds: string[]): Record<string, number> {
+  if (siteIds.length === 0) return {};
+  const rows = getDb()
+    .select({ siteId: siteUsers.siteId, n: sql<number>`count(*)` })
+    .from(siteUsers)
+    .where(and(eq(siteUsers.status, 'pending'), inArray(siteUsers.siteId, siteIds)))
+    .groupBy(siteUsers.siteId)
+    .all();
+  const out: Record<string, number> = {};
+  for (const r of rows) out[r.siteId] = r.n;
+  return out;
+}
+
+/**
+ * Email the site owner that a new member is awaiting approval. Fire-and-forget,
+ * never throws (falls back to console when no email provider is configured).
+ * No-op if the owner can't be resolved.
+ */
+export async function notifyOwnerOfPendingMember(siteId: string, memberEmail: string, memberName: string): Promise<void> {
+  try {
+    const site = getDb().select().from(sites).where(eq(sites.id, siteId)).get();
+    if (!site) return;
+    const owner = getUserById(site.userId);
+    if (!owner?.email) return;
+    const mail = renderNewMemberEmail({
+      ownerName: owner.name ?? '',
+      siteName: site.name,
+      memberEmail,
+      memberName,
+      reviewUrl: `${APP_URL}/dashboard/sites/${site.id}`,
+    });
+    await sendEmail({ to: owner.email, ...mail });
+  } catch {
+    /* notification is best-effort — never block registration */
+  }
 }
 
 /** Insert a notification for one member of a site. */

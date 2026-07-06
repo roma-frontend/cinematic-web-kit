@@ -46,7 +46,7 @@ export default async function SiteSettingsPage({ params }: { params: Promise<{ i
           createdAt: u.createdAt.toISOString(),
         }))}
       />
-      <section className="rounded-2xl border border-border/60 bg-muted/20 p-5 sm:p-6">
+      <section id="members" className="scroll-mt-24 rounded-2xl border border-border/60 bg-muted/20 p-5 sm:p-6">
         <h2 className="mb-1 text-lg font-semibold tracking-tight">Организация: участники и материалы</h2>
         <p className="mb-5 text-sm text-muted-foreground">Одобряйте участников и публикуйте материалы, видимые только им.</p>
         <SiteMembers siteId={site.id} memberApproval={site.memberApproval} />

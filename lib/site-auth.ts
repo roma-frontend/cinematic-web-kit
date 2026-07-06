@@ -80,6 +80,7 @@ export function createSiteUser(
     emailNotify: true,
     marketing: false,
     locale: '',
+    theme: '',
     failedAttempts: 0,
     lockedUntil: null,
     createdAt: now,
@@ -187,9 +188,10 @@ export async function destroySiteSession(): Promise<void> {
 export function updateSiteProfile(
   siteId: string,
   userId: string,
-  patch: { name?: string; phone?: string; avatarColor?: string; emailNotify?: boolean; marketing?: boolean; locale?: string },
+  patch: { name?: string; phone?: string; avatarColor?: string; emailNotify?: boolean; marketing?: boolean; locale?: string; theme?: string },
 ): SiteUser | null {
   const set: Record<string, unknown> = { updatedAt: new Date() };
+  if (patch.theme === 'dark' || patch.theme === 'light' || patch.theme === '') set.theme = patch.theme;
   if (typeof patch.name === 'string') set.name = patch.name.trim().slice(0, 120);
   if (typeof patch.phone === 'string') set.phone = patch.phone.trim().slice(0, 40);
   if (typeof patch.avatarColor === 'string') set.avatarColor = patch.avatarColor.trim().slice(0, 40);

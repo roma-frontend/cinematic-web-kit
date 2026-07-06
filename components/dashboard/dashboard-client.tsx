@@ -3,15 +3,16 @@
 // Sites manager (content only — chrome comes from the dashboard shell):
 // create a site, toggle publish, quick links to studio / preview / settings.
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Plus, Loader2, Pencil, ExternalLink, Settings2, Globe, Rocket, CircleDashed,
+  Plus, Loader2, Pencil, ExternalLink, Settings2, Globe, Rocket, CircleDashed, Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageHeader, EmptyState } from '@/components/dashboard/ui';
+import { SITE_MEMBERS_SEEN_EVENT } from '@/components/dashboard/site-members-badge';
 
 export interface DashSite {
   id: string;
@@ -19,6 +20,7 @@ export interface DashSite {
   slug: string;
   published: boolean;
   updatedAt: string;
+  pendingMembers?: number;
 }
 
 export function DashboardClient({ initialSites }: { initialSites: DashSite[] }) {
@@ -28,6 +30,12 @@ export function DashboardClient({ initialSites }: { initialSites: DashSite[] }) 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [pubBusy, setPubBusy] = useState<string | null>(null);
+
+  // Opening «Мои сайты» = the owner has seen the pending requests surfaced here,
+  // so clear the blinking nav badge.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(SITE_MEMBERS_SEEN_EVENT));
+  }, []);
 
   const createSite = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,6 +106,19 @@ export function DashboardClient({ initialSites }: { initialSites: DashSite[] }) 
                   {site.published ? 'Опубликован' : 'Черновик'}
                 </span>
               </div>
+
+              {!!site.pendingMembers && (
+                <Link
+                  href={`/dashboard/sites/${site.id}#members`}
+                  className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
+                >
+                  <Clock className="h-4 w-4" />
+                  {site.pendingMembers === 1
+                    ? '1 заявка на вступление'
+                    : `${site.pendingMembers} заявок на вступление`}
+                  <span className="ml-auto text-xs font-normal opacity-80">Рассмотреть →</span>
+                </Link>
+              )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Link href={`/studio/builder?site=${site.id}`}>
                   <Button size="sm" className="gap-1.5"><Pencil className="h-3.5 w-3.5" /> Редактировать</Button>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb, sites, type SiteUser } from '@/lib/db';
+import { notifyOwnerOfPendingMember } from '@/lib/site-membership';
 import { DUMMY_HASH, findUserByEmail, rateLimit, verifyPassword } from '@/lib/auth';
 import {
   createSiteUser,
@@ -48,6 +49,7 @@ const pub = (u: SiteUser) => ({
   emailNotify: u.emailNotify,
   marketing: u.marketing,
   locale: u.locale,
+  theme: u.theme,
   createdAt: u.createdAt,
   lastLoginAt: u.lastLoginAt,
 });
@@ -124,6 +126,11 @@ export async function POST(request: Request) {
       const status = site.memberApproval ? 'pending' : 'approved';
       const user = createSiteUser(siteId, email, password, str('name'), status);
       await createSiteSession(user.id, siteId, siteRequestMeta(request));
+      // Notify the site owner of a pending join request (email + fuels the nav
+      // badge). Best-effort, non-blocking.
+      if (status === 'pending') {
+        void notifyOwnerOfPendingMember(siteId, user.email, user.name);
+      }
       return NextResponse.json({ ok: true, user: pub(user) });
     } catch (e) {
       if (e instanceof Error && e.message === 'EMAIL_TAKEN') {
@@ -191,6 +198,7 @@ export async function POST(request: Request) {
       emailNotify: bool('emailNotify'),
       marketing: bool('marketing'),
       locale: typeof body.locale === 'string' ? (body.locale as string) : undefined,
+      theme: typeof body.theme === 'string' ? (body.theme as string) : undefined,
     });
     return NextResponse.json({ ok: true, user: updated ? pub(updated) : null });
   }
