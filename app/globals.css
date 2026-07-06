@@ -78,6 +78,13 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Always reserve the vertical scrollbar's gutter so the page doesn't shift
+       sideways when content grows tall enough to need a scrollbar (or when a
+       modal locks scrolling). On mobile the scrollbar is hidden (width: none),
+       so the reserved gutter collapses to 0 — no effect there. */
+    scrollbar-gutter: stable;
+  }
   body {
     background-color: var(--background);
     color: var(--foreground);

@@ -427,7 +427,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
           {banner}
           <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
