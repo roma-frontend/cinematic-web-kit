@@ -3,7 +3,7 @@ import { newId } from './types';
 
 // Pure, immutable operations on a BuilderNode[] tree (a page's blocks).
 
-function cloneWithNewIds(node: BuilderNode): BuilderNode {
+export function cloneWithNewIds(node: BuilderNode): BuilderNode {
   return {
     ...node,
     id: newId(node.type),
@@ -64,6 +64,57 @@ export function moveNode(nodes: BuilderNode[], id: string, dir: -1 | 1): Builder
     return next;
   }
   return nodes.map((n) => (n.children ? { ...n, children: moveNode(n.children, id, dir) } : n));
+}
+
+// ---- Reusable blocks (symbols) ----
+// A "symbol" is a set of linked nodes sharing props.symbolId. Editing any one
+// mirrors its subtree onto all the others (edit once → changes everywhere).
+
+/** Nearest self-or-ancestor of `id` that is a symbol (has props.symbolId). */
+export function findSymbolOf(nodes: BuilderNode[], id: string): BuilderNode | null {
+  let res: BuilderNode | null = null;
+  const walk = (list: BuilderNode[], chain: BuilderNode[]): boolean => {
+    for (const n of list) {
+      const nextChain = [n, ...chain];
+      if (n.id === id) { res = nextChain.find((x) => x.props?.symbolId) ?? null; return true; }
+      if (n.children && walk(n.children, nextChain)) return true;
+    }
+    return false;
+  };
+  walk(nodes, []);
+  return res;
+}
+
+/** Replace every node with symbolId === sid (except `sourceId`) by a fresh clone
+ *  of `master`, preserving each target's own id + symbolId + symbolName. */
+export function applySymbol(nodes: BuilderNode[], sid: string, master: BuilderNode, sourceId: string): BuilderNode[] {
+  return nodes.map((n) => {
+    if (n.props?.symbolId === sid && n.id !== sourceId) {
+      const clone = cloneWithNewIds(master);
+      return { ...clone, id: n.id, props: { ...clone.props, symbolId: sid, ...(n.props.symbolName ? { symbolName: n.props.symbolName } : {}) } };
+    }
+    if (n.children) return { ...n, children: applySymbol(n.children, sid, master, sourceId) };
+    return n;
+  });
+}
+
+/** Distinct symbols present in a tree (for the "insert copy" list). */
+export function collectSymbols(nodes: BuilderNode[], into: Map<string, string> = new Map()): Map<string, string> {
+  for (const n of nodes) {
+    const sid = n.props?.symbolId;
+    if (sid && !into.has(sid)) into.set(sid, n.props.symbolName || sid);
+    if (n.children) collectSymbols(n.children, into);
+  }
+  return into;
+}
+
+/** First node with the given symbolId (a template to clone). */
+export function findBySymbol(nodes: BuilderNode[], sid: string): BuilderNode | null {
+  for (const n of nodes) {
+    if (n.props?.symbolId === sid) return n;
+    if (n.children) { const f = findBySymbol(n.children, sid); if (f) return f; }
+  }
+  return null;
 }
 
 export function findNode(nodes: BuilderNode[], id: string): BuilderNode | null {

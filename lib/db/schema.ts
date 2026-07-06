@@ -86,6 +86,49 @@ export const domains = sqliteTable(
 export type User = typeof users.$inferSelect;
 export type Role = 'customer' | 'admin' | 'superadmin';
 
+// One-time email codes for the platform auth: 6-digit login OTP (second factor
+// delivered by email) and long password-reset tokens. Only the sha256 of the
+// code/token is stored — a leaked DB cannot be replayed. Rows are one-shot
+// (consumed_at) and short-lived (expires_at); attempts guards 6-digit codes
+// from online brute-force.
+export const authCodes = sqliteTable(
+  'auth_codes',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Denormalized delivery address (users.email at issue time). */
+    email: text('email').notNull(),
+    /** 'login_otp' | 'password_reset'. */
+    purpose: text('purpose').notNull(),
+    /** sha256 hex of the 6-digit code / reset token — never the raw value. */
+    codeHash: text('code_hash').notNull(),
+    /** Wrong guesses so far; the row dies at MAX_OTP_ATTEMPTS. */
+    attempts: integer('attempts').notNull().default(0),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('auth_codes_user_idx').on(t.userId), index('auth_codes_expires_idx').on(t.expiresAt)],
+);
+export type AuthCode = typeof authCodes.$inferSelect;
+
+// Per-user UI preferences (platform users: customer/admin/superadmin alike).
+// One JSON object per user — theme, locale, dashboard view state, builder
+// editor chrome — so every preference follows the account across browsers
+// instead of living in localStorage. Kept as a single blob: the shape is
+// open-ended client state, not something to query or join on.
+export const userPrefs = sqliteTable('user_prefs', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  /** JSON object of preference key → value (see lib/user-prefs.ts). */
+  prefs: text('prefs').notNull().default('{}'),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+});
+export type UserPrefsRow = typeof userPrefs.$inferSelect;
+
 // ─────────────────────────────────────────────────────────────────────────
 // Per-tenant END-USER auth. Completely separate from platform `users`: these
 // are the customers who register on a tenant's PUBLISHED site to receive that
@@ -118,6 +161,8 @@ export const siteUsers = sqliteTable(
     marketing: integer('marketing', { mode: 'boolean' }).notNull().default(false),
     /** Preferred UI language, e.g. 'ru' | 'en' ('' = site default). */
     locale: text('locale').notNull().default(''),
+    /** Preferred site color scheme: 'dark' | 'light' ('' = follow the toggle/browser). */
+    theme: text('theme').notNull().default(''),
     /** Brute-force lockout: consecutive failed logins; reset on success. */
     failedAttempts: integer('failed_attempts').notNull().default(0),
     /** Login refused until this moment after too many failed attempts. */

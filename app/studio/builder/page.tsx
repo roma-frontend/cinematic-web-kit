@@ -27,7 +27,8 @@ import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
   NODE_LABELS, isContainer, makeNode, newId,
 } from '@/lib/builder/types';
-import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveTo, insertAfter, ancestorTypes, ancestorPath, cloneWithNewIds } from '@/lib/builder/tree';
+import { updateProps, removeNode, insertChild, moveNode, findNode, duplicateNode, moveTo, insertAfter, ancestorTypes, ancestorPath, cloneWithNewIds, findSymbolOf, applySymbol, collectSymbols, findBySymbol } from '@/lib/builder/tree';
+import { chromeBtnClass, CHROME_BTN_VARIANTS, CHROME_BTN_VARIANT_LABELS, CHROME_BTN_ROUNDED_LABELS, NAV_STYLES, NAV_STYLE_LABELS, THEME_BTN_PRESETS } from '@/lib/builder/chrome-buttons';
 import { useLocale } from '@/hooks/use-locale';
 import { builderTr } from '@/lib/builder-dict';
 import { cn } from '@/lib/utils';
@@ -49,7 +50,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'fx', label: 'Спецэффект фона', opts: ['none', 'aurora', 'grid', 'dots'] },
     { k: 'width', label: 'Ширина', opts: ['narrow', 'normal', 'wide'] },
     { k: 'bgImage', label: 'Фоновая картинка (URL)' },
-    { k: 'bgMode', label: 'Режим фона', opts: ['cover', 'blur', 'overlay', 'tint', 'duotone'] },
+    { k: 'bgMode', label: 'Режим фона', opts: ['cover', 'blur', 'glass', 'overlay', 'tint', 'duotone'] },
     { k: 'bgVideo', label: 'Фоновое видео (URL .mp4)' },
     { k: 'parallax', label: 'Параллакс фона', opts: ['false', 'true'] },
   ],
@@ -57,6 +58,7 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'gap', label: 'Промежуток', opts: ['none', 'sm', 'md', 'lg'] },
     { k: 'align', label: 'Выравнивание (align-items)', opts: ['start', 'center', 'end', 'stretch'] },
     { k: 'justify', label: 'Распределение (justify-content)', opts: ['start', 'center', 'end', 'between', 'around', 'evenly'] },
+    { k: 'imgBg', label: 'Картинка как фон колонки', opts: ['off', 'cover', 'blur', 'glass', 'overlay', 'tint', 'duotone'] },
     { k: 'stagger', label: 'Появление по очереди', opts: ['false', 'true'] },
   ],
   row: [
@@ -137,6 +139,10 @@ const FIELDS: Record<NodeType, Field[]> = {
     { k: 'formId', label: 'ID формы' },
     { k: 'submitText', label: 'Текст кнопки' },
     { k: 'successMsg', label: 'Сообщение об успехе' },
+    { k: 'webhook', label: 'Webhook URL (POST при отправке)' },
+    { k: 'notifyEmail', label: 'E-mail для уведомлений' },
+    { k: 'redirect', label: 'Редирект после отправки (URL)' },
+    { k: 'honeypot', label: 'Антиспам (honeypot)', opts: ['on', 'off'] },
   ],
   pricing: [
     { k: 'priceVariant', label: 'Вариант', opts: ['card', 'outline', 'minimal'] },
@@ -248,7 +254,20 @@ const STYLE_GROUPS: { title: string; fields: Field[] }[] = [
     ],
   },
 ];
-const DEVICE = { full: '100%', tablet: '768px', mobile: '390px' } as const;
+const DEVICE = { full: '100%', tablet: '834px', mobile: '390px' } as const;
+// All style keys (from STYLE_GROUPS) + their per-breakpoint variants — used to
+// capture/apply reusable style presets.
+const STYLE_PRESET_BASE_KEYS = STYLE_GROUPS.flatMap((g) => g.fields.map((f) => f.k));
+function collectStyleProps(props: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of STYLE_PRESET_BASE_KEYS) {
+    for (const suf of ['', 'Tablet', 'Desktop']) {
+      const v = props[k + suf];
+      if (v) out[k + suf] = v;
+    }
+  }
+  return out;
+}
 // Image display-mode editing is bound to the selected device. Each device edits
 // its own breakpoint prop; tablet/desktop inherit the smaller size when unset.
 const IMG_MODE_OPTS = ['inline', 'cover', 'background', 'glow', 'overlay', 'duotone', 'framed'] as const;
@@ -262,6 +281,23 @@ function effectiveImgMode(props: Record<string, string>, dev: keyof typeof DEVIC
   return dev === 'mobile' ? base : dev === 'tablet' ? tablet : desktop;
 }
 
+// Generic per-breakpoint styling for surface props. Base key = mobile (applies
+// everywhere); `<key>Tablet` overrides at >=768px, `<key>Desktop` at >=1024px.
+// Switching the device selector scopes edits to that breakpoint.
+const RESP_KEYS = new Set(['textColor', 'fontWeight', 'fontSize', 'letterSpacing', 'lineHeight', 'opacity', 'bgColor', 'borderWidth', 'borderColor', 'radius', 'shadow', 'mt', 'mb', 'alignSelf', 'justifySelf', 'grow', 'width']);
+const BP_SUFFIX = { mobile: '', tablet: 'Tablet', full: 'Desktop' } as const;
+// Per-type layout FIELDS that should also be scoped per breakpoint.
+const RESP_FIELD_KEYS = new Set(['layout', 'gap', 'align', 'justify', 'justifyItems', 'columns', 'imgBg']);
+// All keys that support per-breakpoint overrides (for reset / copy across screens).
+const ALL_RESP_KEYS = [...new Set([...RESP_KEYS, ...RESP_FIELD_KEYS])];
+const respKey = (k: string, dev: keyof typeof DEVICE) => k + BP_SUFFIX[dev];
+function respValue(props: Record<string, string>, k: string, dev: keyof typeof DEVICE): string | undefined {
+  const base = props[k];
+  const tablet = props[k + 'Tablet'] && props[k + 'Tablet'] !== '—' ? props[k + 'Tablet'] : base;
+  const desktop = props[k + 'Desktop'] && props[k + 'Desktop'] !== '—' ? props[k + 'Desktop'] : tablet;
+  return dev === 'mobile' ? base : dev === 'tablet' ? tablet : desktop;
+}
+
 // useSearchParams requires a Suspense boundary at the page level.
 export default function BuilderEditorPage() {
   return (
@@ -269,8 +305,8 @@ export default function BuilderEditorPage() {
       <BuilderEditor />
     </Suspense>
   );
-}
 
+}
 interface SiteMeta {
   id: string;
   name: string;
@@ -434,8 +470,16 @@ function BuilderEditor() {
   useEffect(() => {
     stateRef.current = { doc, pageId, selectedId, previewDark, siteSlug: siteMeta?.slug, siteId: siteMeta?.id };
   }, [doc, pageId, selectedId, previewDark, siteMeta]);
+  // Hovering a theme in the top-bar select live-previews it (with its button
+  // preset) in the iframe without touching the doc; leaving/closing restores.
+  const [hoverTheme, setHoverTheme] = useState<string | null>(null);
+  const hoverThemeRef = useRef<string | null>(null);
+  useEffect(() => { hoverThemeRef.current = hoverTheme; }, [hoverTheme]);
   const postPreview = useCallback(() => {
-    previewRef.current?.contentWindow?.postMessage({ source: 'builder-editor', ...stateRef.current }, '*');
+    const s = stateRef.current;
+    const hover = hoverThemeRef.current;
+    const previewDoc = hover ? { ...s.doc, themeId: hover, ...(THEME_BTN_PRESETS[hover] ?? {}) } : s.doc;
+    previewRef.current?.contentWindow?.postMessage({ source: 'builder-editor', ...s, doc: previewDoc }, '*');
   }, []);
 
   // Insert an element dropped from the palette onto the live page, snapping it
@@ -467,7 +511,7 @@ function BuilderEditor() {
   // Push live state to the preview on every change — instant, no save needed.
   useEffect(() => {
     postPreview();
-  }, [doc, pageId, selectedId, previewDark, postPreview]);
+  }, [doc, pageId, selectedId, previewDark, hoverTheme, postPreview]);
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       if (e.data?.source !== 'builder-preview') return;
@@ -496,9 +540,22 @@ function BuilderEditor() {
   // a render-time snapshot — so consecutive edits accumulate instead of the
   // last one overwriting the rest.
   const setBlocks = (fn: (blocks: BuilderNode[]) => BuilderNode[]) =>
-    setDoc((d) => {
+    commitDoc((d) => {
       const pid = page?.id ?? d.pages[0]?.id;
       return { ...d, pages: d.pages.map((p) => (p.id === pid ? { ...p, blocks: fn(p.blocks) } : p)) };
+    });
+  // Apply a doc mutation, then mirror the edited symbol onto all its linked
+  // copies (edit once → changes everywhere). Canonical = current selection.
+  const commitDoc = (updater: (d: BuilderDoc) => BuilderDoc) =>
+    setDoc((d) => {
+      const next = updater(d);
+      const cid = stateRef.current.selectedId;
+      if (!cid) return next;
+      let master: BuilderNode | null = null;
+      for (const pg of next.pages) { const m = findSymbolOf(pg.blocks, cid); if (m) { master = m; break; } }
+      if (!master || !master.props.symbolId) return next;
+      const sid = master.props.symbolId;
+      return { ...next, pages: next.pages.map((pg) => ({ ...pg, blocks: applySymbol(pg.blocks, sid, master!, master!.id) })) };
     });
 
   const addNode = (type: NodeType) => {
@@ -510,6 +567,63 @@ function BuilderEditor() {
   };
 
   const patch = (id: string, p: Record<string, string>) => setBlocks((b) => updateProps(b, id, p));
+  // Responsive override management: clear all overrides for a breakpoint, or copy
+  // the values from the next-smaller breakpoint into it (empty string = "unset").
+  const resetBreakpoint = (id: string, dev: keyof typeof DEVICE) => {
+    const suf = BP_SUFFIX[dev];
+    if (!suf) return;
+    const patchObj: Record<string, string> = {};
+    ALL_RESP_KEYS.forEach((k) => { patchObj[k + suf] = ''; });
+    patch(id, patchObj);
+  };
+  const copyToBreakpoint = (id: string, dev: keyof typeof DEVICE, props: Record<string, string>) => {
+    const suf = BP_SUFFIX[dev];
+    if (!suf) return;
+    const from: keyof typeof DEVICE = dev === 'full' ? 'tablet' : 'mobile';
+    const patchObj: Record<string, string> = {};
+    ALL_RESP_KEYS.forEach((k) => { const v = respValue(props, k, from); if (v) patchObj[k + suf] = v; });
+    patch(id, patchObj);
+  };
+  // ---- Style presets (feature 3) ----
+  const stylePresets = doc.stylePresets ?? [];
+  const saveStylePreset = () => {
+    if (!selected) return;
+    const props = collectStyleProps(selected.props);
+    if (Object.keys(props).length === 0) { setMsg(tr('У элемента нет заданных стилей для сохранения.')); return; }
+    const name = window.prompt(tr('Название стиль-пресета'))?.trim();
+    if (!name) return;
+    setDoc((d) => ({ ...d, stylePresets: [...(d.stylePresets ?? []), { id: newId('preset'), name, props }] }));
+    setMsg(tr('Стиль-пресет сохранён.'));
+  };
+  const applyStylePreset = (ps: { props: Record<string, string> }) => { if (selected) patch(selected.id, ps.props); };
+  const deleteStylePreset = (id: string) => setDoc((d) => ({ ...d, stylePresets: (d.stylePresets ?? []).filter((p) => p.id !== id) }));
+  // ---- Reusable blocks / symbols (feature 2) ----
+  const symbolsMap = useMemo(() => {
+    const m = new Map<string, string>();
+    doc.pages.forEach((p) => collectSymbols(p.blocks, m));
+    return m;
+  }, [doc]);
+  const makeSymbol = () => {
+    if (!selected || selected.props.symbolId) return;
+    const name = window.prompt(tr('Название общего блока'))?.trim();
+    if (!name) return;
+    patch(selected.id, { symbolId: newId('sym'), symbolName: name });
+    setMsg(tr('Блок стал общим — вставляйте копии, правки синхронизируются.'));
+  };
+  const insertSymbolCopy = (sid: string) => {
+    let src: BuilderNode | null = null;
+    for (const pg of doc.pages) { const f = findBySymbol(pg.blocks, sid); if (f) { src = f; break; } }
+    if (!src) return;
+    const copy = cloneWithNewIds(src); // keeps props incl. symbolId + symbolName
+    if (selected && isContainer(selected.type)) setBlocks((b) => insertChild(b, selected.id, copy));
+    else setBlocks((b) => [...b, copy]);
+    setSelectedId(copy.id);
+  };
+  const detachSymbol = () => {
+    if (!selected?.props.symbolId) return;
+    patch(selected.id, { symbolId: '', symbolName: '' });
+    setMsg(tr('Блок отвязан от общего — теперь правится независимо.'));
+  };
 
   const duplicate = (id: string) => {
     if (!page) return;
@@ -763,6 +877,14 @@ function BuilderEditor() {
       ...(t.headerVariant ? { headerVariant: t.headerVariant } : {}),
       ...(t.headerBehavior ? { headerBehavior: t.headerBehavior } : {}),
       ...(t.footerVariant ? { footerVariant: t.footerVariant } : {}),
+      // Chrome buttons in the landing's design language (style only).
+      ...(t.authLoginVariant ? { authLoginVariant: t.authLoginVariant } : {}),
+      ...(t.authCtaVariant ? { authCtaVariant: t.authCtaVariant } : {}),
+      ...(t.authBtnSize ? { authBtnSize: t.authBtnSize } : {}),
+      ...(t.authBtnRounded ? { authBtnRounded: t.authBtnRounded } : {}),
+      ...(t.footerBtnVariant ? { footerBtnVariant: t.footerBtnVariant } : {}),
+      ...(t.navStyle ? { navStyle: t.navStyle } : {}),
+      ...(t.headerCtaText ? { headerCtaText: t.headerCtaText } : {}),
     };
 
     // Full-site scaffold: a landing with matching sub-pages sets up the WHOLE
@@ -813,11 +935,7 @@ function BuilderEditor() {
     }
 
     const created = addPageDoc(built);
-    if (t.themeId) setDoc((d) => ({ ...d, themeId: t.themeId! }));
-    if (t.asideVariant) setDoc((d) => ({ ...d, asideVariant: t.asideVariant! }));
-    if (t.headerVariant) setDoc((d) => ({ ...d, headerVariant: t.headerVariant! }));
-    if (t.headerBehavior) setDoc((d) => ({ ...d, headerBehavior: t.headerBehavior! }));
-    if (t.footerVariant) setDoc((d) => ({ ...d, footerVariant: t.footerVariant! }));
+    if (Object.keys(chrome).length) setDoc((d) => ({ ...d, ...chrome }));
     setMsg(created.path === ''
       ? tr('«{label}» добавлен как главная страница{suffix}.').replace('{label}', t.label).replace('{suffix}', t.themeId ? tr(' (тема применена)') : '')
       : tr('«{label}» — новая страница /{path}{suffix}. Посетители по-прежнему увидят текущую главную — чтобы показать эту страницу первой, нажмите домик в списке страниц.').replace('{label}', t.label).replace('{path}', created.path).replace('{suffix}', t.themeId ? tr(' (тема применена)') : ''));
@@ -1021,11 +1139,22 @@ function BuilderEditor() {
           <Input value={doc.brand} onChange={(e) => setDoc((d) => ({ ...d, brand: e.target.value }))} className="h-8 w-44" aria-label={tr('Название сайта')} />
           <div className="hidden items-center gap-1 sm:flex">
             <Palette className="h-4 w-4 text-muted-foreground" />
-            <Select value={doc.themeId} onValueChange={(v) => { setDoc((d) => ({ ...d, themeId: v })); }}>
+            {/* Switching theme also applies its recommended chrome-button
+                preset so header/footer buttons stay on-brand (undoable).
+                Hovering an option previews it live in the iframe. */}
+            <Select
+              value={doc.themeId}
+              onValueChange={(v) => { setHoverTheme(null); setDoc((d) => ({ ...d, themeId: v, ...(THEME_BTN_PRESETS[v] ?? {}) })); }}
+              onOpenChange={(o) => { if (!o) setHoverTheme(null); }}
+            >
               <SelectTrigger className="h-8 w-40"><SelectValue placeholder={tr('Тема')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">{tr('Авто')}</SelectItem>
-                {THEMES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+                <SelectItem value="auto" onPointerEnter={() => setHoverTheme('auto')} onFocus={() => setHoverTheme('auto')}>{tr('Авто')}</SelectItem>
+                {THEMES.map((t) => (
+                  <SelectItem key={t.id} value={t.id} onPointerEnter={() => setHoverTheme(t.id)} onFocus={() => setHoverTheme(t.id)}>
+                    {t.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1260,12 +1389,32 @@ function BuilderEditor() {
                   <span className="mx-0.5 h-4 w-px bg-border" />
                   <button onClick={() => deleteNode(selected.id)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-red-500" title={tr('Удалить (Delete)')} aria-label={tr('Удалить')}><Trash2 className="h-4 w-4" /></button>
                 </div>
+                {device !== 'mobile' && (
+                  <div className="flex flex-wrap items-center gap-1 rounded-lg border border-primary/30 bg-primary/5 p-1 text-[11px]">
+                    <span className="px-1 font-medium text-primary">{tr('Правки для')}: {tr(IMG_DEVICE_LABEL[device])}</span>
+                    <span className="mx-0.5 h-4 w-px bg-border" />
+                    <button onClick={() => copyToBreakpoint(selected.id, device, selected.props)} className="rounded px-1.5 py-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" title={tr('Скопировать стили с меньшего экрана в этот')}>{tr('Скопировать с меньшего')}</button>
+                    <button onClick={() => resetBreakpoint(selected.id, device)} className="rounded px-1.5 py-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" title={tr('Убрать все переопределения этого экрана (вернуть наследование)')}>{tr('Сбросить экран')}</button>
+                  </div>
+                )}
                 {FIELDS[selected.type].length === 0 && <p className="text-xs text-muted-foreground">{tr('Нет настроек контента.')}</p>}
-                {FIELDS[selected.type].map((f) => (
+                {FIELDS[selected.type].map((f) => {
+                  const responsive = !!f.opts && RESP_FIELD_KEYS.has(f.k);
+                  const key = responsive ? respKey(f.k, device) : f.k;
+                  const cur = responsive ? respValue(selected.props, f.k, device) : selected.props[f.k];
+                  return (
                   <div key={f.k}>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">{tr(f.label)}</label>
+                    <label className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                      {tr(f.label)}
+                      {responsive && device !== 'mobile' && (
+                        <span className="rounded bg-primary/10 px-1 py-px text-[9px] font-semibold text-primary">{tr(IMG_DEVICE_LABEL[device])}</span>
+                      )}
+                      {responsive && device !== 'mobile' && selected.props[key] ? (
+                        <button onClick={() => patch(selected.id, { [key]: '' })} title={tr('Своё значение для этого экрана — сбросить')} className="ml-auto h-2 w-2 rounded-full bg-primary" aria-label={tr('Сбросить это переопределение')} />
+                      ) : null}
+                    </label>
                     {f.opts ? (
-                      <Select value={selected.props[f.k] ?? f.opts[0]} onValueChange={(v) => patch(selected.id, { [f.k]: v })}>
+                      <Select value={cur ?? f.opts[0]} onValueChange={(v) => patch(selected.id, { [key]: v })}>
                         <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>{f.opts.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                       </Select>
@@ -1275,7 +1424,8 @@ function BuilderEditor() {
                       <Input value={selected.props[f.k] ?? ''} onChange={(e) => patch(selected.id, { [f.k]: e.target.value })} className="h-8" />
                     )}
                   </div>
-                ))}
+                  );
+                })}
                 {selected.type === 'image' && (
                   <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
                     <div className="mb-1.5 flex items-center justify-between">
@@ -1310,12 +1460,22 @@ function BuilderEditor() {
                     <div className="grid grid-cols-2 gap-2">
                       {g.fields.map((f) => {
                         const isColor = f.k === 'textColor' || f.k === 'bgColor' || f.k === 'borderColor';
-                        const val = selected.props[f.k];
+                        const responsive = RESP_KEYS.has(f.k);
+                        const key = responsive ? respKey(f.k, device) : f.k;
+                        const val = responsive ? respValue(selected.props, f.k, device) : selected.props[f.k];
                         return (
                           <div key={f.k}>
-                            <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr(f.label)}</label>
+                            <label className="mb-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                              {tr(f.label)}
+                              {responsive && device !== 'mobile' && (
+                                <span className="rounded bg-primary/10 px-1 py-px text-[9px] font-semibold text-primary">{tr(IMG_DEVICE_LABEL[device])}</span>
+                              )}
+                              {responsive && device !== 'mobile' && selected.props[key] ? (
+                                <button onClick={() => patch(selected.id, { [key]: '' })} title={tr('Своё значение для этого экрана — сбросить')} className="ml-auto h-2 w-2 rounded-full bg-primary" aria-label={tr('Сбросить это переопределение')} />
+                              ) : null}
+                            </label>
                             <div className="flex gap-1">
-                              <Select value={val && !val.startsWith('#') ? val : '—'} onValueChange={(v) => patch(selected.id, { [f.k]: v === '—' ? '' : v })}>
+                              <Select value={val && !val.startsWith('#') ? val : '—'} onValueChange={(v) => patch(selected.id, { [key]: v === '—' ? '' : v })}>
                                 <SelectTrigger className="h-8 min-w-0 flex-1"><SelectValue placeholder={val?.startsWith('#') ? tr('свой') : undefined} /></SelectTrigger>
                                 <SelectContent>{f.opts!.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                               </Select>
@@ -1323,7 +1483,7 @@ function BuilderEditor() {
                                 <input
                                   type="color"
                                   value={val?.startsWith('#') ? val : '#000000'}
-                                  onChange={(e) => patch(selected.id, { [f.k]: e.target.value })}
+                                  onChange={(e) => patch(selected.id, { [key]: e.target.value })}
                                   title={tr('Выбрать свой цвет')}
                                   className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-border bg-transparent p-0.5"
                                 />
@@ -1335,6 +1495,49 @@ function BuilderEditor() {
                     </div>
                   </div>
                 ))}
+                {/* Style presets (feature 3) */}
+                <div className="border-t border-border/60 pt-2.5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tr('Стиль-пресеты')}</p>
+                    <button onClick={saveStylePreset} className="rounded-md border border-border px-2 py-0.5 text-[11px] hover:bg-muted">{tr('Сохранить стиль')}</button>
+                  </div>
+                  {stylePresets.length === 0 ? (
+                    <p className="text-[11px] leading-snug text-muted-foreground">{tr('Сохраните стиль текущего элемента и применяйте к любым другим одним кликом.')}</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {stylePresets.map((ps) => (
+                        <span key={ps.id} className="flex items-center gap-1 rounded-md border border-border bg-muted/40 pl-2 text-[11px]">
+                          <button onClick={() => applyStylePreset(ps)} className="py-1 hover:text-primary" title={tr('Применить к выбранному элементу')}>{ps.name}</button>
+                          <button onClick={() => deleteStylePreset(ps.id)} className="px-1 text-muted-foreground hover:text-red-500" aria-label={tr('Удалить пресет')}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Reusable blocks / symbols (feature 2) */}
+                <div className="border-t border-border/60 pt-2.5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tr('Общие блоки')}</p>
+                    {selected && !selected.props.symbolId && (
+                      <button onClick={makeSymbol} className="rounded-md border border-border px-2 py-0.5 text-[11px] hover:bg-muted">{tr('Сделать общим')}</button>
+                    )}
+                  </div>
+                  {selected?.props.symbolId ? (
+                    <div className="mb-2 flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-[11px]">
+                      <span className="text-primary">🔗 {tr('Общий блок')}: {selected.props.symbolName || tr('без имени')}</span>
+                      <button onClick={detachSymbol} className="text-muted-foreground hover:text-red-500" title={tr('Отвязать эту копию')}>{tr('Отвязать')}</button>
+                    </div>
+                  ) : null}
+                  {symbolsMap.size === 0 ? (
+                    <p className="text-[11px] leading-snug text-muted-foreground">{tr('Сделайте блок общим — и вставляйте его копии. Правка одной копии меняет все.')}</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {[...symbolsMap.entries()].map(([sid, name]) => (
+                        <button key={sid} onClick={() => insertSymbolCopy(sid)} className="rounded-md border border-border bg-muted/40 px-2 py-1 text-[11px] hover:border-primary hover:text-primary" title={tr('Вставить копию (в выбранный контейнер или в конец)')}>+ {name}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">{tr('Выберите элемент в структуре, чтобы редактировать.')}</p>
@@ -1429,11 +1632,131 @@ function BuilderEditor() {
             )}
           </Card>
 
+          {/* Chrome buttons — style only. The hrefs of these built-in buttons
+              (login/register/account, newsletter submit) are fixed by the
+              platform and intentionally have no editor. */}
+          <Card className="p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">{tr('Кнопки шапки и подвала')}</p>
+              <Button
+                size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs"
+                title={tr('Применить стиль кнопок, рекомендованный для текущей темы')}
+                onClick={() => setDoc((d) => ({ ...d, ...(THEME_BTN_PRESETS[d.themeId] ?? THEME_BTN_PRESETS['modern-clean']) }))}
+              >
+                <Palette className="h-3.5 w-3.5" /> {tr('Подобрать под тему')}
+              </Button>
+            </div>
+            <p className="mb-2 mt-0.5 text-[11px] text-muted-foreground">{tr('Меняются только стили. Ссылки этих кнопок (вход, регистрация, кабинет, подписка) фиксированы и не редактируются.')}</p>
+            {([
+              { k: 'authLoginVariant', label: 'Кнопка «Войти»', def: 'outline' },
+              { k: 'authCtaVariant', label: 'Кнопка «Регистрация» / «Кабинет»', def: 'default' },
+            ] as const).map((b) => (
+              <div key={b.k} className="mb-2">
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr(b.label)}</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CHROME_BTN_VARIANTS.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setDoc((d) => ({ ...d, [b.k]: v }))}
+                      className={cn(chromeBtnClass(v, 'sm', doc.authBtnRounded || 'full'), (doc[b.k] || b.def) === v && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
+                    >
+                      {tr(CHROME_BTN_VARIANT_LABELS[v])}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="mb-2 grid grid-cols-2 gap-1.5">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('Размер')}</label>
+                <div className="flex gap-1.5">
+                  {(['sm', 'md', 'lg'] as const).map((s) => (
+                    <Button key={s} size="sm" variant={(doc.authBtnSize || 'sm') === s ? 'default' : 'outline'} className="h-7 flex-1 text-xs" onClick={() => setDoc((d) => ({ ...d, authBtnSize: s }))}>
+                      {s === 'sm' ? 'S' : s === 'md' ? 'M' : 'L'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('Скругление')}</label>
+                <div className="flex gap-1.5">
+                  {(['full', 'lg', 'md'] as const).map((r) => (
+                    <Button key={r} size="sm" variant={(doc.authBtnRounded || 'full') === r ? 'default' : 'outline'} className="h-7 flex-1 text-xs" onClick={() => setDoc((d) => ({ ...d, authBtnRounded: r }))}>
+                      {tr(CHROME_BTN_ROUNDED_LABELS[r])}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {(doc.headerVariant === 'cta') && (
+              <div className="mb-2 border-t border-border/60 pt-2">
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('CTA-кнопка в шапке')}</label>
+                <div className="mb-1.5 flex gap-1.5">
+                  <Input value={doc.headerCtaText ?? ''} onChange={(e) => setDoc((d) => ({ ...d, headerCtaText: e.target.value }))} placeholder={tr('Связаться')} className="h-8" />
+                  <select
+                    value={doc.headerCtaHref ?? ''}
+                    onChange={(e) => setDoc((d) => ({ ...d, headerCtaHref: e.target.value }))}
+                    className="h-8 shrink-0 rounded-md border border-input bg-background px-1 text-xs"
+                    title={tr('Ведёт на страницу')}
+                    aria-label={tr('Ведёт на страницу')}
+                  >
+                    <option value="">{tr('Контакты (по умолчанию)')}</option>
+                    {doc.pages.map((p) => (
+                      <option key={p.id} value={p.path ? `/site/${p.path}` : '/site'}>
+                        {p.title}{p.path ? ` (/${p.path})` : tr(' (главная)')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {CHROME_BTN_VARIANTS.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setDoc((d) => ({ ...d, headerCtaVariant: v }))}
+                      className={cn(chromeBtnClass(v, 'sm', doc.authBtnRounded || 'full'), (doc.headerCtaVariant || 'default') === v && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
+                    >
+                      {tr(CHROME_BTN_VARIANT_LABELS[v])}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {doc.footerVariant === 'newsletter' && (
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('Кнопка подписки (подвал)')}</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CHROME_BTN_VARIANTS.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setDoc((d) => ({ ...d, footerBtnVariant: v }))}
+                      className={cn(chromeBtnClass(v, 'sm', doc.authBtnRounded || 'lg'), (doc.footerBtnVariant || 'default') === v && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
+                    >
+                      {tr(CHROME_BTN_VARIANT_LABELS[v])}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+
           {/* Navigation editor */}
           <Card className="p-3">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-semibold">{tr('Меню (шапка)')}</p>
               <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" onClick={addNavLink}><Plus className="h-3.5 w-3.5" /> {tr('Пункт')}</Button>
+            </div>
+            <div className="mb-2">
+              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('Стиль пунктов меню')}</label>
+              <div className="flex gap-1.5">
+                {NAV_STYLES.map((v) => (
+                  <Button key={v} size="sm" variant={(doc.navStyle || 'pills') === v ? 'default' : 'outline'} className="h-7 flex-1 px-1 text-xs" onClick={() => setDoc((d) => ({ ...d, navStyle: v }))}>
+                    {tr(NAV_STYLE_LABELS[v])}
+                  </Button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               {doc.nav.map((l, i) => (

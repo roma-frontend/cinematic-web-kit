@@ -19,7 +19,6 @@ import {
 // Labels are resolved from the active locale's dictionary at render time.
 const APP_NAV = [
   { href: '/themes', key: 'themes' },
-  { href: '/studio/builder', key: 'builder' },
   { href: '/studio', key: 'studio' },
   { href: '/presets', key: 'presets' },
 ] as const;

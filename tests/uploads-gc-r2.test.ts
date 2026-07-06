@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Drive the R2-backed branch of gcUploads by mocking the storage layer.
 // vi.mock is hoisted above module init, so shared mocks go through vi.hoisted.
-const { r2Delete } = vi.hoisted(() => ({ r2Delete: vi.fn(async () => {}) }));
+const { r2Delete } = vi.hoisted(() => ({ r2Delete: vi.fn(async (_key: string) => {}) }));
 vi.mock('@/lib/storage', () => ({
   r2Configured: () => true,
   r2Delete,

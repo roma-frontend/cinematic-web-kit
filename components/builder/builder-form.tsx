@@ -12,11 +12,19 @@ export function BuilderForm({
   formId,
   submitText,
   successMsg,
+  webhook,
+  notifyEmail,
+  redirect,
+  honeypot = true,
   children,
 }: {
   formId: string;
   submitText: string;
   successMsg: string;
+  webhook?: string;
+  notifyEmail?: string;
+  redirect?: string;
+  honeypot?: boolean;
   children: React.ReactNode;
 }) {
   const [status, setStatus] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
@@ -31,10 +39,15 @@ export function BuilderForm({
       const res = await fetch('/api/form', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formId, ...data }),
+        body: JSON.stringify({ formId, _webhook: webhook || undefined, _notifyEmail: notifyEmail || undefined, ...data }),
       });
-      setStatus(res.ok ? 'done' : 'error');
-      if (res.ok) form.reset();
+      if (res.ok) {
+        form.reset();
+        if (redirect) { window.location.href = redirect; return; }
+        setStatus('done');
+      } else {
+        setStatus('error');
+      }
     } catch {
       setStatus('error');
     }
@@ -51,7 +64,11 @@ export function BuilderForm({
   return (
     <form onSubmit={onSubmit} className="flex w-full flex-col gap-4">
       {children}
-      <Button type="submit" disabled={status === 'busy'} className="gap-2 self-start rounded-full px-6">
+      {honeypot && (
+        // Anti-spam: real users never see/fill this; bots that auto-fill get dropped.
+        <input type="text" name="_hp" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 opacity-0" />
+      )}
+      <Button type="submit" disabled={status === 'busy'} className="bn-btn gap-2 self-start rounded-full px-6">
         {status === 'busy' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {submitText}
       </Button>

@@ -4,7 +4,7 @@
 // its data loads on the right — and assign its admin (transfer ownership +
 // promote to admin). Selection persists in the account prefs (user_prefs).
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePref } from '@/hooks/use-user-prefs';
 import Link from 'next/link';
 import { Globe, Rocket, CircleDashed, Loader2, Users, Library, Inbox, UserCog, Check, ExternalLink, Search } from 'lucide-react';
@@ -26,31 +26,31 @@ type Overview = {
 export function OrgManager({ sites, users }: { sites: SiteLite[]; users: PlatformUser[] }) {
   const t = dashDict(useLocale().locale).orgConsole;
   const [saved, setSaved] = usePref<string>('org-selector', '');
-  const [selected, setSelected] = useState<string | null>(null);
-  const [overview, setOverview] = useState<Overview | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Selection is derived: an explicit click this session wins, then the saved
+  // pref (once its snapshot arrives), then the first org.
+  const [userSelected, setUserSelected] = useState<string | null>(null);
+  const selected = userSelected ?? (saved && sites.some((s) => s.id === saved) ? saved : sites[0]?.id ?? null);
   const [q, setQ] = useState('');
-  const userPicked = useRef(false);
 
-  // Apply the saved selection when the prefs snapshot arrives (unless the user
-  // already clicked something this session); otherwise default to the first org.
+  // Keyed result: `loading` is derived (current params ≠ loaded params), so the
+  // effect never needs a synchronous setLoading. `tick` bumps force a refetch.
+  const [tick, setTick] = useState(0);
+  const [result, setResult] = useState<{ siteId: string; tick: number; overview: Overview | null } | null>(null);
+  const loading = !!selected && (result?.siteId !== selected || result?.tick !== tick);
+  const overview = result && result.siteId === selected ? result.overview : null;
+
   useEffect(() => {
-    if (userPicked.current) return;
-    if (saved && sites.some((s) => s.id === saved)) setSelected(saved);
-    else if (sites[0]) setSelected((cur) => cur ?? sites[0].id);
-  }, [saved, sites]);
-
-  const load = useCallback((siteId: string) => {
-    setLoading(true);
-    fetch(`/api/admin/orgs?site=${encodeURIComponent(siteId)}`)
-      .then((r) => r.json()).then((d) => setOverview(d.overview ?? null)).catch(() => setOverview(null)).finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { if (selected) load(selected); }, [selected, load]);
+    if (!selected) return;
+    let alive = true;
+    fetch(`/api/admin/orgs?site=${encodeURIComponent(selected)}`)
+      .then((r) => r.json())
+      .then((d) => { if (alive) setResult({ siteId: selected, tick, overview: d.overview ?? null }); })
+      .catch(() => { if (alive) setResult({ siteId: selected, tick, overview: null }); });
+    return () => { alive = false; };
+  }, [selected, tick]);
 
   const pick = (id: string) => {
-    userPicked.current = true;
-    setSelected(id);
+    setUserSelected(id);
     setSaved(id);
   };
 
@@ -92,7 +92,7 @@ export function OrgManager({ sites, users }: { sites: SiteLite[]; users: Platfor
         ) : !overview ? (
           <div className="flex h-40 items-center justify-center rounded-2xl border border-border/60 text-sm text-muted-foreground">{t.chooseOrg}</div>
         ) : (
-          <OrgDetail overview={overview} users={users} onReload={() => selected && load(selected)} />
+          <OrgDetail overview={overview} users={users} onReload={() => setTick((n) => n + 1)} />
         )}
       </div>
     </div>

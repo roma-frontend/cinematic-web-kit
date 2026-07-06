@@ -163,7 +163,7 @@ export function SiteSettings({
   // Auto re-check pending domains in the background so a freshly-added DNS
   // record gets picked up without the user clicking «Проверить».
   const domainsRef = useRef(domains);
-  domainsRef.current = domains;
+  useEffect(() => { domainsRef.current = domains; }, [domains]);
   useEffect(() => {
     if (!domains.some((d) => !d.verified)) return;
     const t = setInterval(() => {

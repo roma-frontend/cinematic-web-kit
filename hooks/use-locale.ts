@@ -1,8 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES, isLocale, type Locale } from '@/lib/seo';
+import { setPref } from '@/hooks/use-user-prefs';
+
+const LOCALE_EVENT = 'cwk:locale';
 
 function readCookieLocale(): Locale {
   if (typeof document === 'undefined') return DEFAULT_LOCALE;
@@ -10,25 +13,28 @@ function readCookieLocale(): Locale {
   return isLocale(m?.[1]) ? (m![1] as Locale) : DEFAULT_LOCALE;
 }
 
+const subscribeLocale = (cb: () => void) => {
+  window.addEventListener(LOCALE_EVENT, cb);
+  return () => window.removeEventListener(LOCALE_EVENT, cb);
+};
+
 /**
- * Client-side locale state backed by the NEXT_LOCALE cookie. Initialized to the
- * default (matching SSR) and reconciled to the cookie after mount to avoid a
- * hydration mismatch. `setLocale` persists the cookie and refreshes server
- * components so locale-aware server content (landing copy, <html lang>) updates.
+ * Client-side locale state backed by the NEXT_LOCALE cookie — the cookie is the
+ * store (useSyncExternalStore), so every hook instance stays in sync and SSR
+ * renders the default without a hydration mismatch. `changeLocale` persists the
+ * cookie and refreshes server components so locale-aware server content
+ * (landing copy, <html lang>) updates.
  */
 export function useLocale() {
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const locale = useSyncExternalStore(subscribeLocale, readCookieLocale, () => DEFAULT_LOCALE);
   const router = useRouter();
-
-  useEffect(() => {
-    setLocale(readCookieLocale());
-  }, []);
 
   const changeLocale = useCallback(
     (next: Locale) => {
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
       document.documentElement.lang = next;
-      setLocale(next);
+      window.dispatchEvent(new Event(LOCALE_EVENT));
+      setPref('locale', next); // follows the account across browsers
       router.refresh();
     },
     [router],

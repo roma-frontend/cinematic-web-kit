@@ -161,6 +161,26 @@ CREATE TABLE IF NOT EXISTS org_requests (
 CREATE INDEX IF NOT EXISTS org_requests_status_idx ON org_requests (status);
 CREATE INDEX IF NOT EXISTS org_requests_requester_idx ON org_requests (requester_id);
 
+CREATE TABLE IF NOT EXISTS auth_codes (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS auth_codes_user_idx ON auth_codes (user_id);
+CREATE INDEX IF NOT EXISTS auth_codes_expires_idx ON auth_codes (expires_at);
+
+CREATE TABLE IF NOT EXISTS user_prefs (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  prefs TEXT NOT NULL DEFAULT '{}',
+  updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS org_members (
   id TEXT PRIMARY KEY,
   site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
@@ -217,6 +237,8 @@ function createDb(): DB {
   addColumn('site_users', 'approved_by', `approved_by TEXT`);
   addColumn('site_users', 'approved_at', `approved_at INTEGER`);
   addColumn('site_users', 'rejection_reason', `rejection_reason TEXT NOT NULL DEFAULT ''`);
+  // Site end-user color-scheme preference (follows the account, not the browser).
+  addColumn('site_users', 'theme', `theme TEXT NOT NULL DEFAULT ''`);
   globalForDb.__cwkSqlite = sqlite;
   return drizzle(sqlite, { schema });
 }

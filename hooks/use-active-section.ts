@@ -15,16 +15,16 @@ export function useActiveSection(sectionIds: string[], options: Options = {}): s
   const rootMargin = options.rootMargin ?? '-40% 0px -55% 0px';
   const threshold = options.threshold ?? DEFAULT_THRESHOLD;
 
-  const [active, setActive] = useState<string | null>(null);
+  // Keyed state: when the id list changes, the stale entry reads as null on the
+  // very next render — no reset-in-effect needed.
+  const [state, setState] = useState<{ key: string; id: string | null } | null>(null);
   const entriesRef = useRef<Map<string, IntersectionObserverEntry>>(new Map());
   const idsKey = useMemo(() => sectionIds.join('|'), [sectionIds]);
   const thresholdKey = useMemo(() => JSON.stringify(threshold), [threshold]);
+  const active = state && state.key === idsKey && sectionIds.length ? state.id : null;
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !sectionIds.length) {
-      setActive(null);
-      return;
-    }
+    if (typeof window === 'undefined' || !sectionIds.length) return;
 
     let observer: IntersectionObserver | null = null;
 
@@ -49,7 +49,7 @@ export function useActiveSection(sectionIds: string[], options: Options = {}): s
               bestId = id;
             }
           });
-          if (bestId) setActive(bestId);
+          if (bestId) setState({ key: idsKey, id: bestId });
         },
         { root: null, rootMargin, threshold },
       );

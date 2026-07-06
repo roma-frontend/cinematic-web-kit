@@ -49,7 +49,7 @@ describe('TEMPLATES', () => {
 
 describe('LANDINGS', () => {
   it('every landing builds a valid home page (path empty) with unique ids', () => {
-    expect(LANDINGS.length).toBe(10);
+    expect(LANDINGS.length).toBe(16);
     for (const l of LANDINGS) {
       const p = l.build();
       assertValidPage(p);

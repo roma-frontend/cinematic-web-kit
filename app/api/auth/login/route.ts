@@ -12,6 +12,9 @@ import {
   verifyPassword,
 } from '@/lib/auth';
 import { recordAudit } from '@/lib/audit';
+import { createLoginOtp, maskEmail, OTP_TTL_MIN } from '@/lib/auth-codes';
+import { loginOtpEnabled, sendEmail } from '@/lib/email';
+import { renderLoginOtpEmail } from '@/lib/email-templates';
 
 export const runtime = 'nodejs';
 
@@ -66,6 +69,21 @@ export async function POST(request: Request) {
   }
 
   clearLoginFailures(user);
+
+  // Second factor: email a 6-digit code and stop before creating the session.
+  // If the email provider is down, fall back to a direct login — an outage
+  // must degrade security gracefully, never lock every user out.
+  if (loginOtpEnabled()) {
+    const { challengeId, code } = createLoginOtp(user);
+    const mail = renderLoginOtpEmail({ name: user.name, code, ttlMinutes: OTP_TTL_MIN });
+    const sent = await sendEmail({ to: user.email, ...mail });
+    if (sent.ok) {
+      recordAudit({ id: user.id, email: user.email }, 'auth.otp_sent', user.email, `ip=${ip} provider=${sent.provider}`);
+      return NextResponse.json({ ok: true, otpRequired: true, challenge: challengeId, email: maskEmail(user.email) });
+    }
+    recordAudit({ id: user.id, email: user.email }, 'auth.otp_send_failed', user.email, `${sent.provider}: ${sent.error ?? ''}`);
+  }
+
   const { token, expiresAt } = createSession(user.id, requestMeta(request));
   await setSessionCookie(token, expiresAt);
   recordAudit({ id: user.id, email: user.email }, 'auth.login', user.email, `ip=${ip}`);

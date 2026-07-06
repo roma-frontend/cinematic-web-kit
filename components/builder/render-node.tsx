@@ -52,6 +52,7 @@ function bgBreakpoints(p: Record<string, string>): Set<BP> {
   (['mobile', 'tablet', 'desktop'] as BP[]).forEach((b) => { if (m[b] === 'background') s.add(b); });
   return s;
 }
+const BP_RANGE: Record<BP, string> = { mobile: '(max-width:767px)', tablet: '(min-width:768px) and (max-width:1023px)', desktop: '(min-width:1024px)' };
 /** Tailwind classes to show an element only on the given breakpoints. */
 function showOnly(bps: Set<BP>): string {
   const hide: string[] = [];
@@ -65,6 +66,33 @@ function findBgImage(nodes: BuilderNode[]): BuilderNode | null {
   for (const n of nodes) {
     if (n.type === 'image' && n.props?.src && bgBreakpoints(n.props).size > 0) return n;
     if (n.children) { const f = findBgImage(n.children); if (f) return f; }
+  }
+  return null;
+}
+/** Effective imgBg mode per breakpoint (mobile base → tablet → desktop). */
+function imgBgModes(p: Record<string, string>): Record<BP, string> {
+  const base = p.imgBg && p.imgBg !== '—' ? p.imgBg : 'off';
+  const tablet = p.imgBgTablet && p.imgBgTablet !== '—' ? p.imgBgTablet : base;
+  const desktop = p.imgBgDesktop && p.imgBgDesktop !== '—' ? p.imgBgDesktop : tablet;
+  return { mobile: base, tablet, desktop };
+}
+/** First column (stack) flagged as an image-background surface, together with
+ *  its first image child — hoisted to become the whole section's backdrop.
+ *  Supports per-breakpoint on/off + mode. */
+function findImgBgStack(nodes: BuilderNode[]): { src: string; mode: string; alt: string; bps: Set<BP> } | null {
+  for (const n of nodes) {
+    if (n.type === 'stack' && n.children) {
+      const modes = imgBgModes(n.props ?? {});
+      const bps = new Set<BP>((['mobile', 'tablet', 'desktop'] as BP[]).filter((b) => modes[b] !== 'off'));
+      if (bps.size > 0) {
+        const img = n.children.find((c) => c.type === 'image' && c.props?.src);
+        if (img) {
+          const mode = modes.desktop !== 'off' ? modes.desktop : modes.tablet !== 'off' ? modes.tablet : modes.mobile;
+          return { src: img.props!.src, mode, alt: img.props?.alt || '', bps };
+        }
+      }
+    }
+    if (n.children) { const f = findImgBgStack(n.children); if (f) return f; }
   }
   return null;
 }
@@ -259,6 +287,23 @@ const GAP_CSS: Record<string, string> = { none: '0', sm: '0.75rem', md: '1.5rem'
 const ALIGN_CSS: Record<string, string> = { start: 'flex-start', center: 'center', end: 'flex-end', stretch: 'stretch' };
 const JUSTIFY_CSS: Record<string, string> = { start: 'flex-start', center: 'center', end: 'flex-end', between: 'space-between', around: 'space-around', evenly: 'space-evenly' };
 const JITEMS_CSS: Record<string, string> = { start: 'start', center: 'center', end: 'end', stretch: 'stretch' };
+// A container's text color cascades to every text descendant (heading, text,
+// list, link…) — overriding muted/theme defaults — while a child that sets its
+// own color still wins (its inline style beats this stylesheet rule).
+function containerTextCss(id: string, p: Record<string, string>): string {
+  const c = (bp: 'base' | 'tablet' | 'desktop') => {
+    const v = bpProps(p, bp).textColor;
+    return v ? (v.startsWith('#') ? v : (COLOR_VAR[v] ?? '')) : '';
+  };
+  const b = c('base'), t = c('tablet'), d = c('desktop');
+  if (!b && !t && !d) return '';
+  const sel = `[data-nid="${id}"] :where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,a,strong,em)`;
+  let css = '';
+  if (b) css += `${sel}{color:${b}}`;
+  if (t && t !== b) css += `@media(min-width:768px){${sel}{color:${t}}}`;
+  if (d && d !== (t || b)) css += `@media(min-width:1024px){${sel}{color:${d}}}`;
+  return css;
+}
 function hasResponsiveLayout(p: Record<string, string>): boolean {
   return ['gap', 'align', 'justify', 'justifyItems'].some((k) => (p[k + 'Tablet'] && p[k + 'Tablet'] !== '—') || (p[k + 'Desktop'] && p[k + 'Desktop'] !== '—'));
 }
@@ -362,7 +407,7 @@ export function RenderNode({ node, t = RT_DEFAULT }: { node: BuilderNode; t?: Si
     }
   }
   const cloned = cloneElement(el as ReactElement<typeof merged>, merged);
-  const css = (responsive ? responsiveCss(node.id, p, self) : '') + layoutCss + modeCss;
+  const css = (responsive ? responsiveCss(node.id, p, self) : '') + layoutCss + modeCss + (isContainer(node.type) ? containerTextCss(node.id, p) : '');
   const out = css ? (
     <>
       {cloned}
@@ -387,30 +432,44 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
       // image node itself renders its non-background variants inline for the
       // other breakpoints (handled in the 'image' case), so it stays in flow.
       const bgNode = findBgImage(kids);
-      const bgImageSrc = p.bgImage || bgNode?.props?.src;
+      // A column (stack) flagged "картинка как фон колонки" hoists its image to
+      // fill the whole section (absolute inset-0), using its mode as the bg mode.
+      const bgStack = !bgNode && !p.bgImage && !p.bgVideo ? findImgBgStack(kids) : null;
+      const bgImageSrc = p.bgImage || bgNode?.props?.src || bgStack?.src;
       const bgChildOverlay = bgNode?.props?.overlay;
-      const bgVis = bgNode && !p.bgImage ? showOnly(bgBreakpoints(bgNode.props)) : '';
+      const bgVis = bgNode && !p.bgImage ? showOnly(bgBreakpoints(bgNode.props)) : bgStack ? showOnly(bgStack.bps) : '';
       const sectionKids = kids;
       const hasMedia = !!(bgImageSrc || p.bgVideo);
+      // Media covering ALL breakpoints (uniform) vs a per-breakpoint column bg.
+      const uniformMedia = !!(p.bgVideo || p.bgImage || bgNode);
       const gradStyle = gradient
         ? { backgroundImage: 'linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 45%, #000))', color: 'var(--primary-foreground)' }
         : undefined;
       // Background display modes for an image/video behind the section content.
-      const bgMode = p.bgMode || 'cover';
+      const bgMode = bgStack?.mode || p.bgMode || 'cover';
       const mediaFilter =
         bgMode === 'blur' ? 'blur(14px) saturate(1.15) brightness(0.9)'
+        : bgMode === 'glass' ? 'blur(8px) saturate(1.1) brightness(0.95)'
         : bgMode === 'duotone' ? 'grayscale(1) contrast(1.05)'
         : undefined;
-      const mediaClass = cn('absolute inset-0 h-full w-full object-cover', bgMode === 'blur' && 'scale-110', bgVis);
+      const mediaClass = cn('absolute inset-0 h-full w-full object-cover', (bgMode === 'blur' || bgMode === 'glass') && 'scale-110', bgVis);
       const overlayBg: Record<string, string> = {
         cover: 'rgba(0,0,0,0.5)',
         blur: 'rgba(0,0,0,0.45)',
+        glass: 'rgba(10,10,16,0.32)',
         overlay: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.15) 100%)',
         tint: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 65%, transparent), color-mix(in oklch, var(--primary) 30%, #000))',
         duotone: 'color-mix(in oklch, var(--primary) 45%, transparent)',
       };
       const MINH: Record<string, string> = { none: '', half: 'min-h-[60vh]', screen: 'min-h-dvh' };
       const tall = p.minH === 'half' || p.minH === 'screen';
+      // Per-breakpoint styling for a column-hoisted background: white legible text
+      // (and the frosted glass panel for glass mode) only on the active screens.
+      const bgStackCss = bgStack ? [...bgStack.bps].map((b) => {
+        let d = 'color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.45)';
+        if (bgMode === 'glass') d += ';background:color-mix(in oklch, white 12%, transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(255,255,255,.18);border-radius:1.25rem;padding-top:2rem;padding-bottom:2rem;box-shadow:0 8px 40px rgba(0,0,0,.25)';
+        return `@media ${BP_RANGE[b]}{[data-nid="${node.id}"] [data-layout]{${d}}}`;
+      }).join('') : '';
       return (
         <section className={cn('relative overflow-hidden', tall && 'flex flex-col justify-center', pick(PAD, p.padding, 'lg'), pick(MINH, p.minH, 'none'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
           {p.bgVideo ? (
@@ -425,47 +484,36 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
           ) : null}
           {hasMedia && <div className={cn('absolute inset-0', bgVis)} style={{ background: bgChildOverlay || (overlayBg[bgMode] ?? overlayBg.cover) }} />}
           {p.fx === 'aurora' ? <div className="b-aurora" aria-hidden /> : p.fx === 'grid' ? <div className="b-pattern-grid" aria-hidden /> : p.fx === 'dots' ? <div className="b-pattern-dots" aria-hidden /> : null}
-          <div data-layout className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), hasMedia && 'text-white', SECTION_LAYOUT(p))}>
+          <div data-layout className={cn('relative z-10 mx-auto w-full px-6', pick(WIDTH, p.width, 'wide'), uniformMedia && 'text-white', uniformMedia && 'b-legible', uniformMedia && bgMode === 'glass' && 'b-glass-panel', SECTION_LAYOUT(p))}>
             {sectionKids.map((c) => (
               <RenderNode key={c.id} node={c} t={t} />
             ))}
           </div>
+          {bgStack && bgStackCss && (
+            <style dangerouslySetInnerHTML={{ __html: bgStackCss }} />
+          )}
         </section>
       );
     }
 
     case 'stack': {
       const stackCls = cn('flex flex-col', respPick(GAP, p, 'gap', 'md'), respPick(ALIGN, p, 'align', 'stretch'), respClass(JUSTIFY, p, 'justify'));
-      const imgBg = p.imgBg && p.imgBg !== 'off' ? p.imgBg : '';
-      if (imgBg) {
-        // Turn the column into a background surface: the first image child becomes
-        // a full-cover (optionally blurred) backdrop, the rest sit on top in white
-        // so the text stays readable — like a section hero, scoped to the column.
-        const bgIdx = kids.findIndex((k) => k.type === 'image' && k.props?.src);
-        if (bgIdx >= 0) {
-          const bg = kids[bgIdx];
-          const content = kids.filter((_, i) => i !== bgIdx);
-          const filter = imgBg === 'blur' ? 'blur(14px) saturate(1.15) brightness(0.9)' : imgBg === 'duotone' ? 'grayscale(1) contrast(1.05)' : undefined;
-          const ov: Record<string, string> = {
-            cover: 'rgba(0,0,0,0.5)',
-            blur: 'rgba(0,0,0,0.45)',
-            overlay: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.15) 100%)',
-            tint: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 65%, transparent), color-mix(in oklch, var(--primary) 30%, #000))',
-            duotone: 'color-mix(in oklch, var(--primary) 45%, transparent)',
-          };
-          const contentEls = content.map((c) => <RenderNode key={c.id} node={c} t={t} />);
-          const contentCls = cn(stackCls, 'relative z-10 p-6 text-white');
-          return (
-            <div className="relative overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className={cn('absolute inset-0 h-full w-full object-cover', imgBg === 'blur' && 'scale-110')} style={filter ? { filter } : undefined} src={bg.props!.src} alt={bg.props?.alt || ''} />
-              <div className="absolute inset-0" style={{ background: ov[imgBg] }} />
-              {p.stagger === 'true' ? <Stagger className={contentCls}>{contentEls}</Stagger> : <div className={contentCls}>{contentEls}</div>}
-            </div>
-          );
-        }
-      }
-      const kidsEls = kids.map((c) => <RenderNode key={c.id} node={c} t={t} />);
+      // When this column is used as an image background, its image is hoisted to
+      // the parent section (absolute inset-0, behind content). Here we render only
+      // the remaining children (texts) in normal flow, so they sit on top clearly.
+      const bgM = imgBgModes(p);
+      const stackBgActive = bgM.mobile !== 'off' || bgM.tablet !== 'off' || bgM.desktop !== 'off';
+      // The first image is the hoisted section backdrop on the breakpoints where
+      // bg is ON. On the OFF breakpoints keep it inline so it doesn't disappear —
+      // hide it only where the backdrop takes over.
+      const ALLB: BP[] = ['mobile', 'tablet', 'desktop'];
+      const hideInline = showOnly(new Set<BP>(ALLB.filter((b) => bgM[b] === 'off')));
+      const firstImg = stackBgActive ? kids.findIndex((c) => c.type === 'image' && c.props?.src) : -1;
+      const kidsEls = kids.map((c, i) =>
+        i === firstImg
+          ? <div key={c.id} className={hideInline}><RenderNode node={c} t={t} /></div>
+          : <RenderNode key={c.id} node={c} t={t} />,
+      );
       if (p.stagger === 'true') return <Stagger className={stackCls}>{kidsEls}</Stagger>;
       return <div className={stackCls}>{kidsEls}</div>;
     }
@@ -529,7 +577,7 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
 
     case 'button': {
       type Variant = 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
-      const cls = cn(buttonVariants({ variant: (p.variant as Variant) || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }), surfaceClass(p));
+      const cls = cn(buttonVariants({ variant: (p.variant as Variant) || 'default', size: (p.size as 'default' | 'sm' | 'lg') || 'default' }), 'bn-btn', surfaceClass(p));
       const wrap = pick(TEXT_ALIGN, p.align, 'left');
       const st = hasResponsive(p) ? undefined : surfaceStyle(p);
       const inner =
@@ -630,7 +678,7 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
 
     case 'form':
       return (
-        <BuilderForm formId={p.formId || 'form'} submitText={p.submitText || t.submit} successMsg={p.successMsg || t.thanks}>
+        <BuilderForm formId={p.formId || 'form'} submitText={p.submitText || t.submit} successMsg={p.successMsg || t.thanks} webhook={p.webhook} notifyEmail={p.notifyEmail} redirect={p.redirect} honeypot={p.honeypot !== 'off'}>
           {kids.map((c) => (
             <RenderNode key={c.id} node={c} t={t} />
           ))}
@@ -708,7 +756,7 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
             ))}
           </ul>
           {p.cta ? (
-            <Link href={p.href || '#'} className={cn(buttonVariants({ variant: featured ? 'default' : 'outline' }), 'mt-auto')}>{p.cta}</Link>
+            <Link href={p.href || '#'} className={cn(buttonVariants({ variant: featured ? 'default' : 'outline' }), 'bn-btn mt-auto')}>{p.cta}</Link>
           ) : null}
         </div>
       );

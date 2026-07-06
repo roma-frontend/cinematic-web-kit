@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { NavLink } from '@/lib/builder/types';
+import type { ChromeBtnStyles } from '@/lib/builder/chrome-buttons';
 import { SiteAuthButtons } from './site-auth-blocks';
 import { useLocale } from '@/hooks/use-locale';
 import { siteRt } from '@/lib/site-runtime-dict';
 
 // Burger menu shown on mobile/tablet — nav links + auth buttons collapse into a
 // single dropdown. The theme toggle stays outside, always visible on the bar.
-export function MobileNav({ links, authBase, showAuth }: { links: NavLink[]; authBase?: string; showAuth?: boolean }) {
+export function MobileNav({ links, authBase, showAuth, authStyles }: { links: NavLink[]; authBase?: string; showAuth?: boolean; authStyles?: ChromeBtnStyles }) {
   const [open, setOpen] = useState(false);
   const t = siteRt(useLocale().locale);
   return (
@@ -46,7 +47,7 @@ export function MobileNav({ links, authBase, showAuth }: { links: NavLink[]; aut
               ))}
               {showAuth && authBase !== undefined && (
                 <div className="mt-2 flex flex-col gap-2 border-t border-border/60 pt-3" onClick={() => setOpen(false)}>
-                  <SiteAuthButtons base={authBase} stacked />
+                  <SiteAuthButtons base={authBase} styles={authStyles} stacked />
                 </div>
               )}
             </nav>

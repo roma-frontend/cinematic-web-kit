@@ -1,6 +1,24 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Per-breakpoint (tablet=md / desktop=lg) variants of the builder's class-based
+   style utilities. These are generated dynamically by the renderer, so Tailwind
+   would not otherwise see them in source. */
+@source inline("{md:,lg:}shadow-{sm,md,lg,2xl}");
+@source inline("{md:,lg:}mt-{3,6,12}");
+@source inline("{md:,lg:}mb-{3,6,12}");
+@source inline("{md:,lg:}self-{auto,start,center,end,stretch}");
+@source inline("{md:,lg:}justify-self-{auto,start,center,end,stretch}");
+@source inline("{md:,lg:}flex-{none,1}");
+@source inline("{md:,lg:}shrink");
+@source inline("{md:,lg:}w-{auto,full,fit}");
+@source inline("grid-cols-{1,2,3,4}");
+@source inline("{md:,lg:}grid-cols-{1,2,3,4}");
+@source inline("{md:,lg:}gap-{0,3,6,10}");
+@source inline("{md:,lg:}items-{start,center,end,stretch}");
+@source inline("{md:,lg:}justify-{start,center,end,between,around,evenly}");
+@source inline("{md:,lg:}justify-items-{start,center,end,stretch}");
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -167,7 +185,8 @@
   to { transform: rotate(360deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .marquee-row, .beams-rays { animation: none; }
+  .marquee-row, .beams-rays,
+  .b-aurora::before, .b-aurora::after, .b-shimmer::after { animation: none; }
 }
 
 /* Scroll indicator */
@@ -234,7 +253,52 @@
 .hover-pulse { transition: transform 0.2s ease; }
 .hover-pulse:hover { animation: b-pulse 0.6s ease-in-out; }
 
+/* Site-wide button shape: SiteChrome sets data-btn-round from the builder doc
+   so page CTAs (.bn-btn: button blocks, pricing CTA, form submit) share the
+   chrome buttons' corner radius — one design language across the whole site. */
+[data-btn-round='full'] .bn-btn { border-radius: 9999px; }
+[data-btn-round='lg'] .bn-btn { border-radius: var(--radius); }
+[data-btn-round='md'] .bn-btn { border-radius: calc(var(--radius) - 2px); }
+
+/* ── «Wow» primitives ────────────────────────────────────────────── */
+/* Animated aurora / gradient-mesh backdrop: drifting blurred color blobs. */
+.b-aurora { position: absolute; inset: -20%; z-index: 0; pointer-events: none; overflow: hidden; filter: blur(60px) saturate(1.2); opacity: 0.55; }
+.b-aurora::before, .b-aurora::after {
+  content: ''; position: absolute; width: 55%; height: 55%; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--primary), transparent 60%);
+}
+.b-aurora::before { top: 5%; left: 8%; animation: b-aurora-a 18s ease-in-out infinite; }
+.b-aurora::after { bottom: 0%; right: 6%; background: radial-gradient(circle at 70% 70%, color-mix(in oklch, var(--primary) 70%, #8b5cf6), transparent 60%); animation: b-aurora-b 22s ease-in-out infinite; }
+@keyframes b-aurora-a { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(18%,12%) scale(1.25); } }
+@keyframes b-aurora-b { 0%,100% { transform: translate(0,0) scale(1.1); } 50% { transform: translate(-16%,-10%) scale(0.85); } }
+
+/* Subtle repeating patterns behind section content. */
+.b-pattern-grid { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: linear-gradient(color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklch, var(--foreground) 8%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px; mask-image: radial-gradient(ellipse at center, #000 40%, transparent 78%); }
+.b-pattern-dots { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(color-mix(in oklch, var(--foreground) 14%, transparent) 1.4px, transparent 1.4px);
+  background-size: 22px 22px; mask-image: radial-gradient(ellipse at center, #000 35%, transparent 80%); }
+
+/* Gradient (clipped) text — high-impact for hero headlines. */
+.b-gradient-text { background-image: linear-gradient(120deg, var(--primary), color-mix(in oklch, var(--primary) 55%, #a855f7) 55%, color-mix(in oklch, var(--primary) 40%, #ec4899)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Frosted glassmorphism surface (dark-glass ready). */
+.b-glass { background: color-mix(in oklch, var(--card) 55%, transparent); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); border: 1px solid color-mix(in oklch, var(--foreground) 12%, transparent); box-shadow: 0 8px 40px -12px color-mix(in oklch, var(--primary) 40%, transparent); }
+
+/* Shimmer sweep for CTA buttons. */
+.b-shimmer { position: relative; overflow: hidden; }
+.b-shimmer::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%); transform: translateX(-120%); animation: b-shimmer 3.2s ease-in-out infinite; }
+@keyframes b-shimmer { 0% { transform: translateX(-120%); } 60%,100% { transform: translateX(120%); } }
+
 /* Builder edit-mode: highlight selectable elements on hover */
 .builder-edit [data-nid] { cursor: pointer; }
 .builder-edit [data-nid]:hover { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 2px; }
 .b-drop-target { outline: 2px dashed var(--primary) !important; outline-offset: 3px; background-color: color-mix(in oklch, var(--primary) 8%, transparent); }
+/* Readable text over an image/video backdrop. */
+.b-legible { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.35); }
+/* Frosted glassmorphism panel wrapping section content over a blurred backdrop. */
+.b-glass-panel { background: color-mix(in oklch, white 12%, transparent); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 1.25rem; padding-top: 2rem; padding-bottom: 2rem; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25); }
+/* Palette drag hovering a container in the live preview: scale down a touch +
+   dashed accent outline so it's obvious the element will drop INSIDE it. */
+.b-drop-into { outline: 2px dashed var(--primary) !important; outline-offset: -4px; background-color: color-mix(in oklch, var(--primary) 10%, transparent) !important; transform: scale(0.985); transition: transform 0.12s ease, background-color 0.12s ease, outline-color 0.12s ease; border-radius: 10px; }

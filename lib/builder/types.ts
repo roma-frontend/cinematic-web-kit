@@ -45,6 +45,14 @@ export interface NavLink {
   href: string;
 }
 
+/** A saved set of style props (typography/colors/borders/…, incl. per-breakpoint
+ *  variants) that can be applied to any element with one click. */
+export interface StylePreset {
+  id: string;
+  name: string;
+  props: Record<string, string>;
+}
+
 export interface BuilderPage {
   id: string;
   path: string; // '' = home (/site), 'about' = /site/about
@@ -56,6 +64,17 @@ export interface BuilderPage {
 export interface BuilderDoc {
   brand: string;
   themeId: string;
+  /** Optional brand logo image (URL). When set it can replace or accompany the
+   *  brand text in header/footer, per `brandMode`. */
+  logoUrl?: string;
+  /** What to show in the brand area: 'text' (default), 'logo', or 'both'. */
+  brandMode?: string;
+  /** Logo intrinsic size in px — used as width/height attributes so the image
+   *  reserves space (no CLS) and Lighthouse is happy. */
+  logoWidth?: string;
+  logoHeight?: string;
+  /** Accessible alt text for the logo (falls back to the brand name). */
+  logoAlt?: string;
   headerVariant?: string;
   headerBehavior?: string;
   footerVariant?: string;
@@ -64,6 +83,21 @@ export interface BuilderDoc {
   /** Show the built-in auth buttons (Войти / Начать бесплатно / Кабинет) in the
    *  header + footer. Default on for tenant sites; 'false' hides them. */
   authButtons?: string;
+  /** Style-only customization of the built-in chrome buttons. The hrefs of
+   *  these buttons are fixed by the platform and are NOT editable — only the
+   *  look changes. Variants map to theme tokens (see lib/builder/chrome-buttons.ts). */
+  authLoginVariant?: string; // «Войти»: default|secondary|outline|ghost|destructive|link ('outline')
+  authCtaVariant?: string; // «Начать бесплатно» / «Кабинет» ('default')
+  authBtnSize?: string; // sm|md|lg ('sm')
+  authBtnRounded?: string; // full|lg|md ('full')
+  footerBtnVariant?: string; // newsletter submit in the footer ('default')
+  /** Header nav link style: pills|underline|uppercase|plain ('pills'). */
+  navStyle?: string;
+  /** Header CTA button (shown by the 'cta' header variant). Its text/style are
+   *  editable; the href can only be picked from the site's own pages. */
+  headerCtaText?: string; // default 'Связаться'
+  headerCtaHref?: string; // '/site/...' page link, rebased for tenants; default contact
+  headerCtaVariant?: string; // default 'default'
   /** Transient link base set by rebaseDoc for tenant rendering (e.g. '/s/slug').
    *  Absent for the legacy /site route. Used by chrome for brand/CTA links. */
   base?: string;
@@ -73,6 +107,8 @@ export interface BuilderDoc {
   nav: NavLink[];
   footer: { text: string; links: NavLink[] };
   pages: BuilderPage[];
+  /** Reusable named style sets, applicable to any element. */
+  stylePresets?: StylePreset[];
 }
 
 /** Which node types accept children in the editor + renderer. */

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { BuilderDoc } from '@/lib/builder/types';
-import { chromeBtnClass, type ChromeBtnStyles } from '@/lib/builder/chrome-buttons';
+import { chromeBtnClass, navLinkClass, type ChromeBtnStyles } from '@/lib/builder/chrome-buttons';
 import { MobileNav } from './mobile-nav';
 import { ScrollHeader } from './scroll-header';
 import { SiteAuthButtons } from './site-auth-blocks';
@@ -68,7 +68,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
   const nav = (
     <nav className="hidden flex-wrap items-center gap-1 md:flex lg:gap-2">
       {doc.nav.map((l) => (
-        <Link key={l.href + l.label} href={l.href} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+        <Link key={l.href + l.label} href={l.href} className={navLinkClass(doc.navStyle)}>
           {l.label}
         </Link>
       ))}
@@ -76,10 +76,17 @@ export function Header({ doc }: { doc: BuilderDoc }) {
   );
   const auth = showAuth(doc) ? <SiteAuthButtons base={authBase(doc)} styles={authStyles(doc)} /> : null;
   const themeToggle = <SiteThemeToggle siteId={doc.siteId ?? ''} />;
-  void contactHref;
-
-  const shell = 'sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md';
-  void shell;
+  // Real CTA button for the 'cta' header variant. Text/style are editable in
+  // the builder; the href can only point at one of the site's own pages
+  // (defaults to the contact page).
+  const cta = variant === 'cta' ? (
+    <Link
+      href={doc.headerCtaHref || contactHref(doc)}
+      className={chromeBtnClass(doc.headerCtaVariant ?? 'default', doc.authBtnSize, doc.authBtnRounded)}
+    >
+      {doc.headerCtaText || 'Связаться'}
+    </Link>
+  ) : null;
 
   let desktop: React.ReactNode;
   if (variant === 'centered') {
@@ -104,6 +111,7 @@ export function Header({ doc }: { doc: BuilderDoc }) {
         <div className="flex items-center gap-3">
           {nav}
           {auth}
+          {cta}
           {themeToggle}
         </div>
       </div>
@@ -237,10 +245,14 @@ function Aside({ doc }: { doc: BuilderDoc }) {
 
 export function SiteChrome({ doc, children, t = RT_DEFAULT }: { doc: BuilderDoc; children: React.ReactNode; t?: SiteRtDict }) {
   const aside = doc.asideVariant && doc.asideVariant !== 'none' ? doc.asideVariant : null;
+  // Site-wide button shape: page CTAs (marked .bn-btn) inherit the chrome
+  // buttons' corner radius via globals.css, so the whole site reads as one
+  // design language. Unset → buttons keep their default rounded-lg.
+  const btnRound = doc.authBtnRounded || undefined;
 
   if (aside) {
     return (
-      <div className="flex min-h-dvh">
+      <div className="flex min-h-dvh" data-btn-round={btnRound}>
         {aside === 'left' && <Aside doc={doc} />}
         <div className="flex min-w-0 flex-1 flex-col">
           <Header doc={doc} />
@@ -253,7 +265,7 @@ export function SiteChrome({ doc, children, t = RT_DEFAULT }: { doc: BuilderDoc;
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col" data-btn-round={btnRound}>
       <Header doc={doc} />
       <main className="flex-1">{children}</main>
       <Footer doc={doc} t={t} />

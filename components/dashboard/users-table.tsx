@@ -180,7 +180,7 @@ export function UsersTable({ users, canEdit, meId }: { users: Row[]; canEdit: bo
                   {canEdit && (
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/dashboard/users/${u.id}`}><Button size="sm" variant="ghost" title={t.dossier}><IdCard className="h-3.5 w-3.5" /></Button></Link>
+                        <Link href={`/dashboard/users/${u.id}`}><Button size="sm" variant="ghost" title={t.dossierAction}><IdCard className="h-3.5 w-3.5" /></Button></Link>
                         {!self && (
                           <Button size="sm" variant="ghost" disabled={busy === `sus-${u.id}`} onClick={() => toggleActive(u)} className={u.isActive ? 'text-amber-500 hover:text-amber-600' : 'text-green-500 hover:text-green-600'} title={u.isActive ? t.block : t.unblock}>
                             {busy === `sus-${u.id}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : u.isActive ? <Ban className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}

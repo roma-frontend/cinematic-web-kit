@@ -16,6 +16,7 @@ const CRITICAL_ACTIONS: Record<string, string> = {
   'db.export': '💾 Скачан файл БД',
   'data.snapshot': '💾 Снят JSON-снапшот БД',
   'auth.lockout': '🔐 Аккаунт заблокирован на 15 мин (перебор пароля)',
+  'auth.password_reset': '🔑 Пароль сброшен по email-ссылке',
 };
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

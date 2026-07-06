@@ -12,22 +12,26 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Resetting query/highlight happens in the event handlers (not an effect):
+    // the palette always opens fresh, and resetting on close too is harmless.
+    const reset = () => { setQ(''); setIdx(0); };
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        reset();
         setOpen((o) => !o);
       } else if (e.key === 'Escape') {
         setOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
-    const onOpen = () => setOpen(true);
+    const onOpen = () => { reset(); setOpen(true); };
     window.addEventListener('cwk:open-palette', onOpen);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('cwk:open-palette', onOpen); };
   }, []);
 
   useEffect(() => {
-    if (open) { setQ(''); setIdx(0); setTimeout(() => inputRef.current?.focus(), 20); }
+    if (open) setTimeout(() => inputRef.current?.focus(), 20);
   }, [open]);
 
   const filtered = useMemo(() => {

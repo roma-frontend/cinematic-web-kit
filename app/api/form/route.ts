@@ -56,6 +56,17 @@ export async function POST(request: Request) {
   }
 
   const formId = typeof payload.formId === 'string' && payload.formId ? payload.formId : 'contact';
+  // Honeypot anti-spam: a hidden field only bots fill. Silently accept & drop.
+  if (typeof payload._hp === 'string' && payload._hp.trim() !== '') {
+    return NextResponse.json({ ok: true });
+  }
+  // Pull out control fields so they aren't stored as submission data.
+  const webhook = typeof payload._webhook === 'string' ? payload._webhook : '';
+  const notifyEmail = typeof payload._notifyEmail === 'string' ? payload._notifyEmail : '';
+  delete payload._hp;
+  delete payload._webhook;
+  delete payload._notifyEmail;
+
   // Cap payload size so a hostile client can't bloat the DB.
   const json = JSON.stringify(payload);
   if (json.length > 32_000) return NextResponse.json({ error: t.formTooLarge }, { status: 400 });
@@ -68,5 +79,42 @@ export async function POST(request: Request) {
   } catch {
     // Non-fatal: still acknowledge so the visitor-facing UX succeeds.
   }
+
+  // Forward to the site owner's webhook (fire-and-forget, SSRF-guarded).
+  if (webhook && isSafeWebhook(webhook)) {
+    void deliverWebhook(webhook, { formId, notifyEmail: notifyEmail || undefined, data: payload, at: new Date().toISOString() });
+  }
   return NextResponse.json({ ok: true });
+}
+
+/** Only allow public https endpoints — blocks SSRF to localhost/private ranges. */
+function isSafeWebhook(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:') return false;
+    const h = u.hostname.toLowerCase();
+    if (h === 'localhost' || h.endsWith('.local') || h === '0.0.0.0' || h === '::1') return false;
+    if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h) || /^169\.254\./.test(h)) return false;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function deliverWebhook(url: string, body: unknown) {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+      redirect: 'error',
+    });
+    clearTimeout(timer);
+  } catch {
+    /* best-effort: never fail the visitor's submission on webhook errors */
+  }
 }

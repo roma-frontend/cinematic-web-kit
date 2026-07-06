@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { useLocale } from '@/hooks/use-locale';
 import { siteRt } from '@/lib/site-runtime-dict';
+import { chromeBtnClass, type ChromeBtnStyles } from '@/lib/builder/chrome-buttons';
 
 const SiteAuthContext = createContext<string>('');
 export function SiteAuthProvider({ siteId, children }: { siteId: string; children: ReactNode }) {
@@ -16,17 +17,17 @@ export function SiteAuthProvider({ siteId, children }: { siteId: string; childre
 }
 const useSiteId = () => useContext(SiteAuthContext);
 
-/** Auto header/footer auth buttons. Not editable in the builder — they always
- *  point at the site's built-in /login and /register pages, and switch to a
- *  «Кабинет» link once the visitor is signed in. */
-export function SiteAuthButtons({ base, size = 'sm', stacked = false }: { base: string; size?: 'sm' | 'md'; stacked?: boolean }) {
+/** Auto header/footer auth buttons. Their hrefs are NOT editable in the
+ *  builder — they always point at the site's built-in /login and /register
+ *  pages, and switch to a «Кабинет» link once the visitor is signed in. Only
+ *  their look is configurable (doc.authLoginVariant & co → `styles`). */
+export function SiteAuthButtons({ base, styles, stacked = false }: { base: string; styles?: ChromeBtnStyles; stacked?: boolean }) {
   const siteId = useSiteId();
   const t = siteRt(useLocale().locale);
   const { user, loading } = useCurrentUser(siteId);
-  const pad = size === 'md' ? 'px-4 py-2 text-sm' : 'px-3 py-1.5 text-sm';
   const full = stacked ? 'w-full justify-center' : '';
-  const outlineCls = `inline-flex items-center rounded-full border border-border ${pad} ${full} font-medium text-foreground transition-colors hover:bg-muted`;
-  const solidCls = `inline-flex items-center rounded-full bg-primary ${pad} ${full} font-semibold text-primary-foreground transition-opacity hover:opacity-90`;
+  const outlineCls = chromeBtnClass(styles?.login ?? 'outline', styles?.size, styles?.rounded, full);
+  const solidCls = chromeBtnClass(styles?.cta ?? 'default', styles?.size, styles?.rounded, full);
 
   // Mobile burger: vertical, no fixed slot needed.
   if (stacked) {

@@ -7,23 +7,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playChime } from '@/components/dashboard/chime';
+import { usePref } from '@/hooks/use-user-prefs';
 
-const SEEN_KEY = 'cwk-site-members-seen';
 export const SITE_MEMBERS_SEEN_EVENT = 'cwk:site-members-seen';
-
-const readSeen = () => {
-  if (typeof window === 'undefined') return 0;
-  return Number(localStorage.getItem(SEEN_KEY) ?? '0') || 0;
-};
 
 export function SiteMembersBadge({ initialCount }: { initialCount: number }) {
   const [count, setCount] = useState(initialCount);
-  const [seen, setSeen] = useState(0);
+  const [seen, setSeen] = usePref<number>('site-members-seen', 0);
   const prev = useRef(initialCount);
-
-  useEffect(() => {
-    setSeen(readSeen());
-  }, []);
+  const seenRef = useRef(seen);
+  useEffect(() => { seenRef.current = seen; }, [seen]);
 
   const poll = useCallback(() => {
     fetch('/api/site-members')
@@ -31,7 +24,7 @@ export function SiteMembersBadge({ initialCount }: { initialCount: number }) {
       .then((d) => {
         const n = typeof d.pending === 'number' ? d.pending : 0;
         setCount(n);
-        if (n > prev.current && n > readSeen()) playChime();
+        if (n > prev.current && n > seenRef.current) playChime();
         prev.current = n;
       })
       .catch(() => {});
@@ -46,12 +39,11 @@ export function SiteMembersBadge({ initialCount }: { initialCount: number }) {
   useEffect(() => {
     const onSeen = (e: Event) => {
       const n = (e as CustomEvent<number>).detail ?? count;
-      localStorage.setItem(SEEN_KEY, String(n));
       setSeen(n);
     };
     window.addEventListener(SITE_MEMBERS_SEEN_EVENT, onSeen as EventListener);
     return () => window.removeEventListener(SITE_MEMBERS_SEEN_EVENT, onSeen as EventListener);
-  }, [count]);
+  }, [count, setSeen]);
 
   if (count <= 0) return null;
   const blink = count > seen;

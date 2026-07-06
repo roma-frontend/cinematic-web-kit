@@ -1,14 +1,14 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { setPref } from '@/hooks/use-user-prefs';
+import { useMounted } from '@/hooks/use-mounted';
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const isDark = resolvedTheme === 'dark';
   return (
@@ -17,7 +17,11 @@ export function ThemeToggle({ className }: { className?: string }) {
       size="icon"
       aria-label="Toggle theme"
       className={className}
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      onClick={() => {
+        const next = isDark ? 'light' : 'dark';
+        setTheme(next);
+        setPref('theme', next); // follows the account across browsers
+      }}
     >
       {mounted && isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
