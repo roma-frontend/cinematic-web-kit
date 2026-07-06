@@ -1,0 +1,43 @@
+{
+  "hero": {
+    "badge": "AI website platform",
+    "title": "Build and publish a website with AI",
+    "subtitle": "Describe your idea — the platform generates video and a theme, composes the pages in a visual builder, and publishes your site on your subdomain. No code, no designers.",
+    "ctaPrimaryLabel": "Start free",
+    "ctaPrimaryHref": "/register",
+    "ctaSecondaryLabel": "Open the Studio",
+    "ctaSecondaryHref": "/studio",
+    "note": "No card · live in a couple of minutes"
+  },
+  "steps": {
+    "title": "How it works",
+    "subtitle": "Three steps from idea to a published site.",
+    "items": [
+      { "n": "01", "title": "Describe the idea", "text": "Write a brief — the Studio builds a cinematic prompt, generates AI video and picks a theme for your product." },
+      { "n": "02", "title": "Compose the pages", "text": "A visual drag-and-drop builder with live preview and ready-made landings. No code required." },
+      { "n": "03", "title": "Publish", "text": "One click and the site is live on your subdomain. Edit content anytime — changes go online instantly." }
+    ]
+  },
+  "features": {
+    "title": "Features",
+    "subtitle": "Everything to launch a beautiful site — in one place.",
+    "items": [
+      { "title": "AI video", "text": "Cinematic clips from a text prompt, automatically optimized to .webm with a poster." },
+      { "title": "Auto themes", "text": "The engine picks palette, fonts, radii and motion character to match your site's content." },
+      { "title": "Visual builder", "text": "A multi-page editor: sections, styles, block variants, undo/redo, mobile responsiveness." },
+      { "title": "Subdomain publishing", "text": "Your own address like your-brand.site, instant updates and live preview." }
+    ]
+  },
+  "themesTeaser": {
+    "title": "Ready-made themes",
+    "subtitle": "Palette, fonts and animations are picked automatically to match your product."
+  },
+  "finalCta": {
+    "title": "Launch your site today",
+    "subtitle": "Describe the idea — the platform does the rest. One-click publishing to your subdomain.",
+    "ctaPrimaryLabel": "Start free",
+    "ctaPrimaryHref": "/register",
+    "ctaSecondaryLabel": "Open the builder",
+    "ctaSecondaryHref": "/studio/builder"
+  }
+}

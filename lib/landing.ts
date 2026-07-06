@@ -1,4 +1,6 @@
 import landingData from '@/data/landing.json';
+import landingDataEn from '@/data/landing.en.json';
+import type { Locale } from '@/lib/seo';
 
 export type LandingCta = {
   ctaPrimaryLabel: string;
@@ -14,7 +16,11 @@ export type LandingContent = {
   finalCta: { title: string; subtitle: string } & LandingCta;
 };
 
-/** The editable landing copy (data/landing.json), managed from the Studio. */
-export function getLanding(): LandingContent {
-  return landingData as LandingContent;
+/**
+ * The editable landing copy. Russian (data/landing.json) is the source managed
+ * from the Studio; English (data/landing.en.json) is the translation. Pass the
+ * active locale to render the matching copy.
+ */
+export function getLanding(locale: Locale = 'ru'): LandingContent {
+  return (locale === 'en' ? landingDataEn : landingData) as LandingContent;
 }

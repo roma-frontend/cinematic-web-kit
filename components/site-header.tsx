@@ -5,6 +5,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { useLocale } from '@/hooks/use-locale';
+import { ui, type UiDict } from '@/lib/ui-dict';
 import { Button } from '@/components/ui/button';
 import {
   Film, Sparkles, Menu, X, LogIn, LogOut, ChevronDown,
@@ -12,35 +15,36 @@ import {
 } from 'lucide-react';
 
 // App sections — only a superadmin sees these platform links in the top bar.
+// Labels are resolved from the active locale's dictionary at render time.
 const APP_NAV = [
-  { href: '/themes', label: 'Темы' },
-  { href: '/studio/builder', label: 'Конструктор' },
-  { href: '/studio', label: 'Студия' },
-  { href: '/presets', label: 'Пресеты' },
-];
+  { href: '/themes', key: 'themes' },
+  { href: '/studio/builder', key: 'builder' },
+  { href: '/studio', key: 'studio' },
+  { href: '/presets', key: 'presets' },
+] as const;
 
 // Landing anchors — shown to guests and non-superadmins; smooth-scroll to sections.
 const LANDING_NAV = [
-  { href: '/#how', label: 'Как это работает' },
-  { href: '/#features', label: 'Возможности' },
-  { href: '/#themes', label: 'Темы' },
-  { href: '/#examples', label: 'Примеры' },
-];
+  { href: '/#how', key: 'how' },
+  { href: '/#features', key: 'features' },
+  { href: '/#themes', key: 'themes' },
+  { href: '/#examples', key: 'examples' },
+] as const;
 
 type Role = 'customer' | 'admin' | 'superadmin';
 interface HeaderUser { name: string; email: string; role: Role }
 
-const ROLE_META: Record<Role, { label: string; cls: string; icon: React.ComponentType<{ className?: string }> } | null> = {
-  superadmin: { label: 'Суперадмин', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', icon: Crown },
-  admin: { label: 'Админ', cls: 'bg-primary/15 text-primary', icon: ShieldCheck },
+const ROLE_META: Record<Role, { cls: string; icon: React.ComponentType<{ className?: string }> } | null> = {
+  superadmin: { cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', icon: Crown },
+  admin: { cls: 'bg-primary/15 text-primary', icon: ShieldCheck },
   customer: null, // clients don't need a badge — the menu is theirs by default
 };
 
 const MENU = [
-  { href: '/dashboard', label: 'Дашборд', icon: LayoutDashboard },
-  { href: '/dashboard/sites', label: 'Мои сайты', icon: Globe },
-  { href: '/dashboard/account', label: 'Аккаунт', icon: UserCircle },
-];
+  { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/sites', key: 'sites', icon: Globe },
+  { href: '/dashboard/account', key: 'account', icon: UserCircle },
+] as const;
 
 function Avatar({ user, className = 'h-8 w-8 text-sm' }: { user: HeaderUser; className?: string }) {
   return (
@@ -51,10 +55,11 @@ function Avatar({ user, className = 'h-8 w-8 text-sm' }: { user: HeaderUser; cla
 }
 
 /** Avatar + dropdown for the signed-in user (desktop). */
-function UserMenu({ user, onLogout, busy }: { user: HeaderUser; onLogout: () => void; busy: boolean }) {
+function UserMenu({ user, onLogout, busy, t }: { user: HeaderUser; onLogout: () => void; busy: boolean; t: UiDict }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const role = ROLE_META[user.role];
+  const roleLabel = user.role === 'superadmin' ? t.roles.superadmin : user.role === 'admin' ? t.roles.admin : '';
 
   useEffect(() => {
     if (!open) return;
@@ -98,11 +103,11 @@ function UserMenu({ user, onLogout, busy }: { user: HeaderUser; onLogout: () => 
             <div className="flex items-center gap-3 border-b border-border/60 bg-muted/40 px-4 py-3">
               <Avatar user={user} className="h-10 w-10 text-base" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{user.name || 'Без имени'}</p>
+                <p className="truncate text-sm font-semibold">{user.name || t.header.noName}</p>
                 <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                 {role && (
                   <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${role.cls}`}>
-                    <role.icon className="h-3 w-3" /> {role.label}
+                    <role.icon className="h-3 w-3" /> {roleLabel}
                   </span>
                 )}
               </div>
@@ -116,7 +121,7 @@ function UserMenu({ user, onLogout, busy }: { user: HeaderUser; onLogout: () => 
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <item.icon className="h-4 w-4" /> {item.label}
+                  <item.icon className="h-4 w-4" /> {t.actions[item.key]}
                 </Link>
               ))}
             </nav>
@@ -127,7 +132,7 @@ function UserMenu({ user, onLogout, busy }: { user: HeaderUser; onLogout: () => 
                 disabled={busy}
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-50"
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} Выйти
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} {t.actions.logout}
               </button>
             </div>
           </motion.div>
@@ -142,6 +147,8 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { locale } = useLocale();
+  const t = ui(locale);
   const isActive = (href: string) => !href.includes('#') && (pathname === href || (href !== '/' && pathname?.startsWith(href)));
 
   // Session probe: `undefined` = still loading (render a skeleton so the
@@ -177,10 +184,10 @@ export function SiteHeader() {
   const guestActions = (
     <>
       <Link href="/login">
-        <Button variant="ghost" size="sm" className="gap-1.5"><LogIn className="h-4 w-4" /> Войти</Button>
+        <Button variant="ghost" size="sm" className="gap-1.5"><LogIn className="h-4 w-4" /> {t.actions.login}</Button>
       </Link>
       <Link href="/register">
-        <Button size="sm" className="gap-1.5 shadow-lg"><Sparkles className="h-4 w-4" /> Начать</Button>
+        <Button size="sm" className="gap-1.5 shadow-lg"><Sparkles className="h-4 w-4" /> {t.actions.start}</Button>
       </Link>
     </>
   );
@@ -194,7 +201,7 @@ export function SiteHeader() {
           </span>
           <span className="flex flex-col leading-none">
             <span className="text-sm font-black tracking-tight">Cinematic Kit</span>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">AI site builder</span>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t.header.tagline}</span>
           </span>
         </Link>
 
@@ -208,7 +215,7 @@ export function SiteHeader() {
                 isActive(item.href) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {item.label}
+              {t.nav[item.key]}
               {isActive(item.href) && (
                 <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-primary" />
               )}
@@ -218,11 +225,12 @@ export function SiteHeader() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
+          <LanguageSwitcher />
           <ThemeToggle />
           {user === undefined ? (
             <span className="h-10 w-28 animate-pulse rounded-full bg-muted/60" aria-hidden />
           ) : user ? (
-            <UserMenu user={user} onLogout={logout} busy={logoutBusy} />
+            <UserMenu user={user} onLogout={logout} busy={logoutBusy} t={t} />
           ) : (
             guestActions
           )}
@@ -230,10 +238,11 @@ export function SiteHeader() {
 
         {/* Mobile trigger */}
         <div className="flex items-center gap-2 md:hidden">
+          <LanguageSwitcher />
           <ThemeToggle />
           <button
             onClick={() => setOpen((o) => !o)}
-            aria-label={open ? 'Закрыть меню' : 'Открыть меню'}
+            aria-label={open ? t.a11y.closeMenu : t.a11y.openMenu}
             aria-expanded={open}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card/60 text-foreground"
           >
@@ -255,7 +264,7 @@ export function SiteHeader() {
                   isActive(item.href) ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
-                {item.label}
+                {t.nav[item.key]}
               </Link>
             ))}
             {user ? (
@@ -263,26 +272,26 @@ export function SiteHeader() {
                 <div className="mb-3 flex items-center gap-3 px-1">
                   <Avatar user={user} className="h-10 w-10 text-base" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">{user.name || 'Без имени'}</p>
+                    <p className="truncate text-sm font-semibold">{user.name || t.header.noName}</p>
                     <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Link href="/dashboard" onClick={() => setOpen(false)} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full gap-1.5"><LayoutDashboard className="h-4 w-4" /> Дашборд</Button>
+                    <Button variant="outline" size="sm" className="w-full gap-1.5"><LayoutDashboard className="h-4 w-4" /> {t.actions.dashboard}</Button>
                   </Link>
                   <Button variant="ghost" size="sm" onClick={logout} disabled={logoutBusy} className="flex-1 gap-1.5 text-red-500 hover:bg-red-500/10 hover:text-red-500">
-                    {logoutBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} Выйти
+                    {logoutBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} {t.actions.logout}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="mt-2 flex gap-2 border-t border-border/60 pt-3">
                 <Link href="/login" onClick={() => setOpen(false)} className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-1.5"><LogIn className="h-4 w-4" /> Войти</Button>
+                  <Button variant="outline" size="sm" className="w-full gap-1.5"><LogIn className="h-4 w-4" /> {t.actions.login}</Button>
                 </Link>
                 <Link href="/register" onClick={() => setOpen(false)} className="flex-1">
-                  <Button size="sm" className="w-full gap-1.5"><Sparkles className="h-4 w-4" /> Начать</Button>
+                  <Button size="sm" className="w-full gap-1.5"><Sparkles className="h-4 w-4" /> {t.actions.start}</Button>
                 </Link>
               </div>
             )}

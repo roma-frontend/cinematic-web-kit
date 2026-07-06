@@ -35,6 +35,17 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'ru';
 export const OG_LOCALE: Record<Locale, string> = { ru: 'ru_RU', en: 'en_US' };
 
+/** Cookie that persists the visitor's chosen UI locale. */
+export const LOCALE_COOKIE = 'NEXT_LOCALE';
+
+/** Narrowing guard: is the value one of the supported locales? */
+export function isLocale(v: string | undefined | null): v is Locale {
+  return !!v && (LOCALES as readonly string[]).includes(v);
+}
+
+/** BCP-47 tag for a locale (used for `<html lang>` and hreflang). */
+export const BCP47: Record<Locale, string> = { ru: 'ru-RU', en: 'en-US' };
+
 // ── URLs ──────────────────────────────────────────────────────────────────
 const APP_HOST = (process.env.NEXT_PUBLIC_APP_HOST || 'localhost:3000').toLowerCase();
 const IS_LOCAL = /^(localhost|127\.|\[::)/.test(APP_HOST);

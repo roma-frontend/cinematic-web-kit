@@ -12,6 +12,7 @@ import {
   DEFAULT_LOCALE,
   siteJsonLd,
 } from '@/lib/seo';
+import { getLocale } from '@/lib/i18n';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ['latin', 'cyrillic'], variable: '--font-serif' });
@@ -59,9 +60,10 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"

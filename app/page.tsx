@@ -9,6 +9,8 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { getLanding } from '@/lib/landing';
+import { getLocale } from '@/lib/i18n';
+import { ui } from '@/lib/ui-dict';
 import { getLandingSite } from '@/lib/landing-site';
 import { parseDoc, rebaseDoc } from '@/lib/sites';
 import { SiteRenderer, findPageByPath } from '@/components/builder/site-renderer';
@@ -24,7 +26,7 @@ const FEATURE_ICONS = [Video, Palette, LayoutTemplate, Globe];
 
 export const dynamic = 'force-dynamic';
 
-export default function Home() {
+export default async function Home() {
   // If the landing has been opened in the visual builder, it becomes a normal
   // builder site (reserved slug) and renders through the same renderer as
   // /s/<slug> — fully editable (chrome, variants, effects). Until then, the
@@ -40,7 +42,9 @@ export default function Home() {
   const media = mediaData as MediaEntry[];
   const theme = activeSiteTheme();
   const examples = media.slice(0, 6);
-  const L = getLanding();
+  const locale = await getLocale();
+  const L = getLanding(locale);
+  const dict = ui(locale);
 
   return (
     <main className="min-h-dvh">
@@ -131,7 +135,7 @@ export default function Home() {
             <p className="mt-2 max-w-xl text-muted-foreground">{L.themesTeaser.subtitle}</p>
           </div>
           <Link href="/themes">
-            <Button variant="outline" size="sm" className="gap-1.5">Все темы <ArrowRight className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" className="gap-1.5">{dict.actions.allThemes} <ArrowRight className="h-4 w-4" /></Button>
           </Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -149,7 +153,7 @@ export default function Home() {
                     <span className="text-base font-bold tracking-tight">{t.label}</span>
                     {t.id === theme.id && (
                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: ok(d.primary), color: ok(d['primary-foreground']) }}>
-                        <Check className="h-3 w-3" /> активна
+                        <Check className="h-3 w-3" /> {dict.active}
                       </span>
                     )}
                   </div>
@@ -171,11 +175,11 @@ export default function Home() {
         <section id="examples" className="mx-auto max-w-[var(--container-max)] scroll-mt-24 px-6 py-16 sm:px-10 sm:py-20">
           <div className="mb-12 text-center">
             <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <Video className="h-3.5 w-3.5 text-primary" /> Сделано на платформе
+              <Video className="h-3.5 w-3.5 text-primary" /> {dict.examples.badge}
             </span>
-            <h2 className="font-display text-3xl font-black tracking-tight sm:text-4xl">Пример живого сайта</h2>
+            <h2 className="font-display text-3xl font-black tracking-tight sm:text-4xl">{dict.examples.title}</h2>
             <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
-              Эти секции с ИИ-видео собраны прямо в Студии — так выглядит результат.
+              {dict.examples.subtitle}
             </p>
           </div>
           <VideoCardGrid entries={examples} />
