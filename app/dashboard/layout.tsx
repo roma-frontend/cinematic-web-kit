@@ -4,13 +4,18 @@ import { getCurrentUser, getUserByToken, isSuperadmin, ADMIN_RETURN_COOKIE } fro
 import { listSitesForUser } from '@/lib/sites';
 import { countPendingOrgRequests } from '@/lib/org-requests';
 import { countPendingMembersForOwner } from '@/lib/site-membership';
+import { getLocale } from '@/lib/i18n';
+import { dashDict } from '@/lib/dashboard-dict';
 import { DashboardShell, type Role } from '@/components/dashboard/shell';
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner';
 import { PageHeader } from '@/components/dashboard/ui';
 import { OrgOnboarding } from '@/components/dashboard/org-onboarding';
 
 // Private area — keep it out of search indexes.
-export const metadata = { title: 'Дашборд', robots: { index: false, follow: false } };
+export async function generateMetadata() {
+  const t = dashDict(await getLocale());
+  return { title: t.dashboard, robots: { index: false, follow: false } as const };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const gated = !isSuperadmin(user) && !hasOrg;
   const orgRequests = isSuperadmin(user) ? countPendingOrgRequests() : 0;
   const siteMembers = gated ? 0 : countPendingMembersForOwner(user);
+  const dashT = dashDict(await getLocale());
 
   return (
     <DashboardShell
@@ -41,7 +47,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     >
       {gated ? (
         <>
-          <PageHeader title="Добро пожаловать" description="Чтобы пользоваться платформой, создайте организацию или присоединитесь к существующей. Доступ откроется после одобрения суперадмином." />
+          <PageHeader title={dashT.org.welcomeTitle} description={dashT.org.welcomeDesc} />
           <OrgOnboarding />
         </>
       ) : (

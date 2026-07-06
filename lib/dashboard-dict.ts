@@ -96,6 +96,38 @@ export type DashDict = {
     untitled: string;
     delete: string;
   };
+  submissions: {
+    metaTitle: string;
+    title: string;
+    subtitle: string;
+    emptyTitle: string;
+    emptyDesc: string;
+  };
+  org: {
+    create: string;
+    join: string;
+    acceptedTitle: string;
+    acceptedDesc: string;
+    enterCabinet: string;
+    pendingTitle: string;
+    pendingCreate: string; // {name}
+    pendingJoin: string;
+    rejectedPrefix: string;
+    orgName: string;
+    orgNamePlaceholder: string;
+    slugLabel: string;
+    slugPlaceholder: string;
+    availableAt: string;
+    orgLabel: string;
+    chooseOrg: string;
+    messageLabel: string;
+    messagePlaceholder: string;
+    submit: string;
+    reviewedBySuper: string;
+    errGeneric: string;
+    welcomeTitle: string;
+    welcomeDesc: string;
+  };
 };
 
 const ru: DashDict = {
@@ -190,6 +222,38 @@ const ru: DashDict = {
     addMaterial: 'Добавить материал',
     untitled: 'Без названия',
     delete: 'Удалить',
+  },
+  submissions: {
+    metaTitle: 'Заявки',
+    title: 'Заявки',
+    subtitle: 'Все обращения из форм на ваших сайтах.',
+    emptyTitle: 'Пока нет заявок',
+    emptyDesc: 'Как только посетитель отправит форму, она появится здесь.',
+  },
+  org: {
+    create: 'Создать организацию',
+    join: 'Присоединиться',
+    acceptedTitle: 'Вы приняты в организацию',
+    acceptedDesc: 'Вы участник организации. Доступ к материалам — в кабинете на самом сайте (отдельный вход для участников).',
+    enterCabinet: 'Войти в кабинет участника',
+    pendingTitle: 'Заявка на рассмотрении',
+    pendingCreate: 'Ваша заявка на создание организации «{name}» отправлена суперадмину. Ожидайте одобрения.',
+    pendingJoin: 'Ваша заявка на присоединение к организации отправлена суперадмину. Ожидайте одобрения.',
+    rejectedPrefix: 'Прошлая заявка отклонена',
+    orgName: 'Название организации',
+    orgNamePlaceholder: 'Моя компания',
+    slugLabel: 'Адрес (slug)',
+    slugPlaceholder: 'my-company',
+    availableAt: 'Сайт будет доступен по',
+    orgLabel: 'Организация',
+    chooseOrg: 'Выберите организацию…',
+    messageLabel: 'Сообщение (необязательно)',
+    messagePlaceholder: 'Пара слов для суперадмина…',
+    submit: 'Отправить заявку',
+    reviewedBySuper: 'Заявку рассмотрит суперадмин.',
+    errGeneric: 'Ошибка',
+    welcomeTitle: 'Добро пожаловать',
+    welcomeDesc: 'Чтобы пользоваться платформой, создайте организацию или присоединитесь к существующей. Доступ откроется после одобрения суперадмином.',
   },
 };
 
@@ -286,6 +350,38 @@ const en: DashDict = {
     untitled: 'Untitled',
     delete: 'Delete',
   },
+  submissions: {
+    metaTitle: 'Submissions',
+    title: 'Submissions',
+    subtitle: 'All form submissions from your sites.',
+    emptyTitle: 'No submissions yet',
+    emptyDesc: 'As soon as a visitor submits a form, it appears here.',
+  },
+  org: {
+    create: 'Create organization',
+    join: 'Join',
+    acceptedTitle: 'You’ve joined the organization',
+    acceptedDesc: 'You are a member. Access materials from the member cabinet on the site itself (a separate member login).',
+    enterCabinet: 'Open member cabinet',
+    pendingTitle: 'Request under review',
+    pendingCreate: 'Your request to create the “{name}” organization has been sent to the superadmin. Please wait for approval.',
+    pendingJoin: 'Your request to join the organization has been sent to the superadmin. Please wait for approval.',
+    rejectedPrefix: 'Previous request rejected',
+    orgName: 'Organization name',
+    orgNamePlaceholder: 'My company',
+    slugLabel: 'Address (slug)',
+    slugPlaceholder: 'my-company',
+    availableAt: 'The site will be available at',
+    orgLabel: 'Organization',
+    chooseOrg: 'Choose an organization…',
+    messageLabel: 'Message (optional)',
+    messagePlaceholder: 'A few words for the superadmin…',
+    submit: 'Send request',
+    reviewedBySuper: 'A superadmin will review your request.',
+    errGeneric: 'Error',
+    welcomeTitle: 'Welcome',
+    welcomeDesc: 'To use the platform, create an organization or join an existing one. Access opens once a superadmin approves.',
+  },
 };
 
 const hy: DashDict = {
@@ -380,6 +476,38 @@ const hy: DashDict = {
     addMaterial: 'Ավելացնել նյութ',
     untitled: 'Առանց վերնագրի',
     delete: 'Ջնջել',
+  },
+  submissions: {
+    metaTitle: 'Հայտեր',
+    title: 'Հայտեր',
+    subtitle: 'Ձեր կայքերի ձևերից բոլոր դիմումները։',
+    emptyTitle: 'Դեռ հայտեր չկան',
+    emptyDesc: 'Հենց այցելուն ուղարկի ձևը, այն կհայտնվի այստեղ։',
+  },
+  org: {
+    create: 'Ստեղծել կազմակերպություն',
+    join: 'Միանալ',
+    acceptedTitle: 'Դուք ընդունվել եք կազմակերպություն',
+    acceptedDesc: 'Դուք մասնակից եք։ Նյութերի հասանելիությունը՝ կայքի մասնակիցների կաբինետում (առանձին մուտք մասնակիցների համար)։',
+    enterCabinet: 'Մուտք մասնակցի կաբինետ',
+    pendingTitle: 'Հայտը դիտարկման փուլում է',
+    pendingCreate: '«{name}» կազմակերպությունը ստեղծելու ձեր հայտն ուղարկվել է գերադմինին։ Սպասեք հաստատմանը։',
+    pendingJoin: 'Կազմակերպությանը միանալու ձեր հայտն ուղարկվել է գերադմինին։ Սպասեք հաստատմանը։',
+    rejectedPrefix: 'Նախորդ հայտը մերժվել է',
+    orgName: 'Կազմակերպության անվանում',
+    orgNamePlaceholder: 'Իմ ընկերությունը',
+    slugLabel: 'Հասցե (slug)',
+    slugPlaceholder: 'my-company',
+    availableAt: 'Կայքը հասանելի կլինի',
+    orgLabel: 'Կազմակերպություն',
+    chooseOrg: 'Ընտրեք կազմակերպությունը…',
+    messageLabel: 'Հաղորդագրություն (ըստ ցանկության)',
+    messagePlaceholder: 'Մի քանի բառ գերադմինի համար…',
+    submit: 'Ուղարկել հայտը',
+    reviewedBySuper: 'Հայտը կդիտարկի գերադմինը։',
+    errGeneric: 'Սխալ',
+    welcomeTitle: 'Բարի գալուստ',
+    welcomeDesc: 'Հարթակն օգտագործելու համար ստեղծեք կազմակերպություն կամ միացեք գոյություն ունեցողին։ Մուտքը կբացվի գերադմինի հաստատումից հետո։',
   },
 };
 

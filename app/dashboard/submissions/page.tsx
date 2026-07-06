@@ -3,8 +3,14 @@ import { Inbox } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { listSubmissionsForUser } from '@/lib/sites';
 import { PageHeader, EmptyState } from '@/components/dashboard/ui';
+import { getLocale } from '@/lib/i18n';
+import { dashDict } from '@/lib/dashboard-dict';
+import { BCP47 } from '@/lib/seo';
 
-export const metadata = { title: 'Заявки — Cinematic Kit' };
+export async function generateMetadata() {
+  const t = dashDict(await getLocale());
+  return { title: `${t.submissions.metaTitle} — Cinematic Kit` };
+}
 export const dynamic = 'force-dynamic';
 
 function fields(json: string): [string, string][] {
@@ -20,13 +26,15 @@ export default async function SubmissionsPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/dashboard/submissions');
 
+  const locale = await getLocale();
+  const t = dashDict(locale).submissions;
   const rows = listSubmissionsForUser(user.id);
 
   return (
     <>
-      <PageHeader title="Заявки" description="Все обращения из форм на ваших сайтах." />
+      <PageHeader title={t.title} description={t.subtitle} />
       {rows.length === 0 ? (
-        <EmptyState icon={Inbox} title="Пока нет заявок" description="Как только посетитель отправит форму, она появится здесь." />
+        <EmptyState icon={Inbox} title={t.emptyTitle} description={t.emptyDesc} />
       ) : (
         <div className="space-y-3">
           {rows.map((r) => (
@@ -35,7 +43,7 @@ export default async function SubmissionsPage() {
                 <span className="rounded-md bg-muted px-2 py-0.5 font-semibold uppercase">{r.formId}</span>
                 <span className="font-medium text-foreground">{r.siteName}</span>
                 <span className="text-muted-foreground/70">/s/{r.siteSlug}</span>
-                <span className="ml-auto">{r.createdAt.toLocaleString('ru-RU')}</span>
+                <span className="ml-auto">{r.createdAt.toLocaleString(BCP47[locale])}</span>
               </div>
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {fields(r.data).map(([k, v]) => (

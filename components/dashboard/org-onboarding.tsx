@@ -5,10 +5,11 @@
 // by a superadmin. Shows live status of the pending/approved/rejected request.
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Building2, Plus, LogIn, Loader2, Clock, Check, X, ArrowRight } from 'lucide-react';
+import { Plus, LogIn, Loader2, Clock, Check, X, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useLocale } from '@/hooks/use-locale';
+import { dashDict } from '@/lib/dashboard-dict';
 
 type Req = { id: string; type: string; requestedName: string; requestedSlug: string; targetSiteId: string | null; status: string; rejectionReason: string; resultSiteId: string | null; createdAt: string | number };
 type Org = { id: string; name: string; slug: string };
@@ -16,6 +17,7 @@ type Org = { id: string; name: string; slug: string };
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
 export function OrgOnboarding() {
+  const t = dashDict(useLocale().locale).org;
   const [requests, setRequests] = useState<Req[] | null>(null);
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [mode, setMode] = useState<'create' | 'join'>('create');
@@ -42,7 +44,7 @@ export function OrgOnboarding() {
     const res = await fetch('/api/org-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await res.json().catch(() => ({}));
     setBusy(false);
-    if (!res.ok) { setErr(d.error || 'Ошибка'); return; }
+    if (!res.ok) { setErr(d.error || t.errGeneric); return; }
     load();
   };
 
@@ -54,11 +56,11 @@ export function OrgOnboarding() {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-green-500/30 bg-green-500/5 p-8 text-center">
         <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-500/15 text-green-600"><Check className="h-7 w-7" /></span>
-        <h2 className="text-lg font-bold">Вы приняты в организацию{org ? ` «${org.name}»` : ''}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Вы участник организации. Доступ к материалам — в кабинете на самом сайте (отдельный вход для участников).</p>
+        <h2 className="text-lg font-bold">{t.acceptedTitle}{org ? ` «${org.name}»` : ''}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t.acceptedDesc}</p>
         {org && (
           <a href={`/s/${org.slug}/login`} target="_blank" rel="noreferrer" className="mt-5 inline-block">
-            <Button size="lg" className="gap-2">Войти в кабинет участника <ArrowRight className="h-4 w-4" /></Button>
+            <Button size="lg" className="gap-2">{t.enterCabinet} <ArrowRight className="h-4 w-4" /></Button>
           </a>
         )}
       </div>
@@ -69,11 +71,11 @@ export function OrgOnboarding() {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-amber-500/30 bg-amber-500/5 p-8 text-center">
         <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500"><Clock className="h-7 w-7" /></span>
-        <h2 className="text-lg font-bold">Заявка на рассмотрении</h2>
+        <h2 className="text-lg font-bold">{t.pendingTitle}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           {pending.type === 'create'
-            ? <>Ваша заявка на создание организации «{pending.requestedName}» отправлена суперадмину. Ожидайте одобрения.</>
-            : <>Ваша заявка на присоединение к организации отправлена суперадмину. Ожидайте одобрения.</>}
+            ? t.pendingCreate.replace('{name}', pending.requestedName)
+            : t.pendingJoin}
         </p>
       </div>
     );
@@ -84,16 +86,16 @@ export function OrgOnboarding() {
       {/* Last resolved request feedback */}
       {requests[0] && requests[0].status === 'rejected' && (
         <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">
-          <X className="h-4 w-4" /> Прошлая заявка отклонена{requests[0].rejectionReason ? `: ${requests[0].rejectionReason}` : '.'}
+          <X className="h-4 w-4" /> {t.rejectedPrefix}{requests[0].rejectionReason ? `: ${requests[0].rejectionReason}` : '.'}
         </div>
       )}
 
       <div className="flex gap-2 rounded-xl border border-border/60 bg-card p-1.5">
         <button onClick={() => setMode('create')} className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${mode === 'create' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
-          <Plus className="h-4 w-4" /> Создать организацию
+          <Plus className="h-4 w-4" /> {t.create}
         </button>
         <button onClick={() => setMode('join')} className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${mode === 'join' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
-          <LogIn className="h-4 w-4" /> Присоединиться
+          <LogIn className="h-4 w-4" /> {t.join}
         </button>
       </div>
 
@@ -101,33 +103,33 @@ export function OrgOnboarding() {
         {mode === 'create' ? (
           <>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Название организации</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Моя компания" className="h-11" />
+              <label className="text-sm font-medium">{t.orgName}</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.orgNamePlaceholder} className="h-11" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Адрес (slug)</label>
-              <Input value={slugTouched ? slug : slugify(name)} onChange={(e) => { setSlugTouched(true); setSlug(e.target.value); }} placeholder="my-company" className="h-11" />
-              <p className="text-xs text-muted-foreground">Сайт будет доступен по /s/{slugify(slugTouched ? slug : name) || '…'}</p>
+              <label className="text-sm font-medium">{t.slugLabel}</label>
+              <Input value={slugTouched ? slug : slugify(name)} onChange={(e) => { setSlugTouched(true); setSlug(e.target.value); }} placeholder={t.slugPlaceholder} className="h-11" />
+              <p className="text-xs text-muted-foreground">{t.availableAt} /s/{slugify(slugTouched ? slug : name) || '…'}</p>
             </div>
           </>
         ) : (
           <div className="space-y-2">
-            <label className="text-sm font-medium">Организация</label>
+            <label className="text-sm font-medium">{t.orgLabel}</label>
             <select value={targetSiteId} onChange={(e) => setTargetSiteId(e.target.value)} className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary">
-              <option value="">Выберите организацию…</option>
+              <option value="">{t.chooseOrg}</option>
               {orgs.map((o) => <option key={o.id} value={o.id}>{o.name} (/s/{o.slug})</option>)}
             </select>
           </div>
         )}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Сообщение (необязательно)</label>
-          <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} placeholder="Пара слов для суперадмина…" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+          <label className="text-sm font-medium">{t.messageLabel}</label>
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} placeholder={t.messagePlaceholder} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
         </div>
         {err && <p className="text-sm text-red-500">{err}</p>}
         <Button onClick={submit} disabled={busy || (mode === 'create' ? !name.trim() : !targetSiteId)} size="lg" className="w-full gap-2">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Отправить заявку
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} {t.submit}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">Заявку рассмотрит суперадмин.</p>
+        <p className="text-center text-xs text-muted-foreground">{t.reviewedBySuper}</p>
       </div>
     </div>
   );
