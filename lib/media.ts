@@ -22,3 +22,14 @@ export interface MediaEntry {
   /** Optional subtitle/eyebrow text. */
   subtitle?: string;
 }
+
+/** Pad a list to at least `n` items by cycling, giving each a unique id. */
+export function padEntries(entries: MediaEntry[], n: number): MediaEntry[] {
+  if (entries.length === 0) return [];
+  const out: MediaEntry[] = [];
+  for (let i = 0; i < n; i++) {
+    const base = entries[i % entries.length];
+    out.push({ ...base, id: `${base.id}-${i}` });
+  }
+  return out;
+}

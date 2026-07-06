@@ -1,5 +1,5 @@
 import mediaData from '@/data/media.json';
-import type { MediaEntry } from '@/lib/media';
+import { padEntries as pad, type MediaEntry } from '@/lib/media';
 import { SiteHeader } from '@/components/site-header';
 import { VideoHero } from '@/components/media/video-hero';
 import { SplitHero } from '@/components/media/split-hero';
@@ -16,17 +16,6 @@ export const metadata = {
   title: 'Пресет: продукт — Кинематографический кит',
   description: 'Готовый лендинг продукта, собранный из кинематографических блоков.',
 };
-
-/** Pad a list to at least `n` items by cycling, giving each a unique id. */
-function pad(entries: MediaEntry[], n: number): MediaEntry[] {
-  if (entries.length === 0) return [];
-  const out: MediaEntry[] = [];
-  for (let i = 0; i < n; i++) {
-    const base = entries[i % entries.length];
-    out.push({ ...base, id: `${base.id}-${i}` });
-  }
-  return out;
-}
 
 export default function ProductPreset() {
   const media = mediaData as MediaEntry[];
