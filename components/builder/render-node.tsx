@@ -5,6 +5,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { BuilderForm } from './builder-form';
 import { Accordion, Tabs } from './interactive';
 import { Reveal, Stagger, ParallaxBg } from './reveal';
+import { BgVideo } from './bg-video';
 import { CountUp } from './count-up';
 import type { BuilderNode } from '@/lib/builder/types';
 import { isContainer } from '@/lib/builder/types';
@@ -257,8 +258,7 @@ function renderInner(node: BuilderNode) {
       return (
         <section className={cn('relative overflow-hidden', tall && 'flex flex-col justify-center', pick(PAD, p.padding, 'lg'), pick(MINH, p.minH, 'none'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
           {p.bgVideo ? (
-            // eslint-disable-next-line jsx-a11y/media-has-caption
-            <video className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgVideo} autoPlay muted loop playsInline />
+            <BgVideo className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgVideo} />
           ) : bgImageSrc ? (
             p.parallax === 'true' ? (
               <ParallaxBg src={bgImageSrc} />
@@ -497,7 +497,6 @@ function renderInner(node: BuilderNode) {
       return isEmbed ? (
         <iframe src={src.replace('watch?v=', 'embed/')} title="video" className={cn('w-full border-0', rounded)} style={style} allowFullScreen />
       ) : (
-        // eslint-disable-next-line jsx-a11y/media-has-caption
         <video src={src} controls className={cn('w-full', rounded)} style={style} />
       );
     }

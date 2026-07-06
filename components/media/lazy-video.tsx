@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePrefersReducedMotion } from '@/hooks/use-media-query';
 
 /** Convert an "16:9" aspect string to a CSS aspect-ratio value. */
 function toAspect(ratio?: string) {
@@ -17,6 +18,10 @@ function toAspect(ratio?: string) {
  *
  * When `sound` is set, a floating toggle lets the viewer un-mute; volume is
  * ramped in/out with a short fade so it never pops.
+ *
+ * Viewers with `prefers-reduced-motion` never get an autoplaying loop: the
+ * poster stays put with an explicit play button, and the video only mounts
+ * once they opt in.
  */
 export function LazyVideo({
   src,
@@ -40,6 +45,9 @@ export function LazyVideo({
   const rafRef = useRef<number | null>(null);
   const [visible, setVisible] = useState(false);
   const [muted, setMuted] = useState(true);
+  const reducedMotion = usePrefersReducedMotion();
+  const [motionOptIn, setMotionOptIn] = useState(false);
+  const showVideo = visible && (!reducedMotion || motionOptIn);
 
   useEffect(() => {
     const el = ref.current;
@@ -97,7 +105,7 @@ export function LazyVideo({
       className={cn('relative overflow-hidden bg-muted', fill && 'h-full w-full', className)}
       style={fill ? undefined : { aspectRatio: toAspect(ratio) }}
     >
-      {visible ? (
+      {showVideo ? (
         <>
           <video
             ref={videoRef}
@@ -123,13 +131,31 @@ export function LazyVideo({
             </button>
           )}
         </>
-      ) : poster ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          <Play className="h-8 w-8 text-muted-foreground/40" />
-        </div>
+        <>
+          {poster ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Play className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+          )}
+          {visible && reducedMotion && (
+            // Reduced motion: the loop never starts on its own — the viewer
+            // presses play to opt in for this one clip.
+            <button
+              type="button"
+              onClick={() => setMotionOptIn(true)}
+              aria-label="Воспроизвести видео"
+              className="absolute inset-0 z-10 flex items-center justify-center"
+            >
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur transition-colors hover:bg-black/65">
+                <Play className="h-6 w-6 translate-x-0.5" />
+              </span>
+            </button>
+          )}
+        </>
       )}
     </div>
   );
