@@ -25,6 +25,7 @@ export type UiDict = {
     sites: string;
     account: string;
     allThemes: string;
+    openDashboard: string;
   };
   roles: { superadmin: string; admin: string };
   header: { tagline: string; noName: string };
@@ -80,6 +81,7 @@ const ru: UiDict = {
     sites: 'Мои сайты',
     account: 'Аккаунт',
     allThemes: 'Все темы',
+    openDashboard: 'Открыть дашборд',
   },
   roles: { superadmin: 'Суперадмин', admin: 'Админ' },
   header: { tagline: 'ИИ-конструктор сайтов', noName: 'Без имени' },
@@ -139,6 +141,7 @@ const en: UiDict = {
     sites: 'My sites',
     account: 'Account',
     allThemes: 'All themes',
+    openDashboard: 'Open dashboard',
   },
   roles: { superadmin: 'Superadmin', admin: 'Admin' },
   header: { tagline: 'AI website builder', noName: 'No name' },
@@ -198,6 +201,7 @@ const hy: UiDict = {
     sites: 'Իմ կայքերը',
     account: 'Հաշիվ',
     allThemes: 'Բոլոր թեմաները',
+    openDashboard: 'Բացել վահանակը',
   },
   roles: { superadmin: 'Գերադմին', admin: 'Ադմին' },
   header: { tagline: 'AI կայքերի կառուցիչ', noName: 'Առանց անվան' },

@@ -11,6 +11,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { VideoCardGrid } from '@/components/media/video-card';
 import { getLanding } from '@/lib/landing';
 import { getLocale } from '@/lib/i18n';
+import { getCurrentUser } from '@/lib/auth';
 import { ui } from '@/lib/ui-dict';
 import { getLandingSite } from '@/lib/landing-site';
 import { parseDoc, rebaseDoc } from '@/lib/sites';
@@ -47,6 +48,16 @@ export default async function Home() {
   const L = getLanding(locale);
   const dict = ui(locale);
 
+  // When a platform user is signed in, the marketing "sign up" CTAs make no
+  // sense — point them at the dashboard instead and relabel accordingly.
+  const me = await getCurrentUser();
+  const heroPrimary = me
+    ? { label: dict.actions.openDashboard, href: '/dashboard' }
+    : { label: L.hero.ctaPrimaryLabel, href: L.hero.ctaPrimaryHref };
+  const finalPrimary = me
+    ? { label: dict.actions.openDashboard, href: '/dashboard' }
+    : { label: L.finalCta.ctaPrimaryLabel, href: L.finalCta.ctaPrimaryHref };
+
   return (
     <main className="min-h-dvh">
       <ThemeStyle theme={theme} />
@@ -66,9 +77,9 @@ export default async function Home() {
             {L.hero.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href={L.hero.ctaPrimaryHref}>
+            <Link href={heroPrimary.href}>
               <Button size="lg" className="gap-2 shadow-lg">
-                <Sparkles className="h-5 w-5" /> {L.hero.ctaPrimaryLabel}
+                <Sparkles className="h-5 w-5" /> {heroPrimary.label}
               </Button>
             </Link>
             <Link href={L.hero.ctaSecondaryHref}>
@@ -199,8 +210,8 @@ export default async function Home() {
               {L.finalCta.subtitle}
             </p>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              <Link href={L.finalCta.ctaPrimaryHref}>
-                <Button size="lg" className="gap-2 shadow-lg"><Sparkles className="h-5 w-5" /> {L.finalCta.ctaPrimaryLabel}</Button>
+              <Link href={finalPrimary.href}>
+                <Button size="lg" className="gap-2 shadow-lg"><Sparkles className="h-5 w-5" /> {finalPrimary.label}</Button>
               </Link>
               <Link href={L.finalCta.ctaSecondaryHref}>
                 <Button size="lg" variant="outline" className="gap-2"><LayoutTemplate className="h-5 w-5" /> {L.finalCta.ctaSecondaryLabel}</Button>
