@@ -18,6 +18,7 @@ import { Sparkles, Upload, Wand2, Clapperboard, Copy, Check, Loader2, ArrowRight
 import { getLanding, type LandingContent } from '@/lib/landing';
 import { useLocale } from '@/hooks/use-locale';
 import { studioDict } from '@/lib/studio-dict';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 const ALL_BLOCKS = ['hero', 'split', 'cards', 'mosaic', 'sticky', 'background', 'beams', 'marquee'];
 
@@ -484,6 +485,7 @@ export default function StudioPage() {
           <div className="mx-2 h-6 w-px bg-border" />
           <span className="hidden text-sm text-muted-foreground sm:inline">{t.headerSub}</span>
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher />
             <ThemeToggle />
             <Link href="/studio/builder">
               <Button size="sm" className="gap-1.5"><LayoutList className="h-4 w-4" /> {t.builderBtn}</Button>

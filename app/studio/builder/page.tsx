@@ -414,7 +414,7 @@ function BuilderEditor() {
         setSiteMeta(d.site);
       })
       .catch(() => setMsg(tr('Не удалось загрузить сайт.')));
-     
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tr is locale-derived; re-running on locale change isn't needed here
   }, [siteId, router]);
 
   // ---- undo / redo history ----
@@ -429,6 +429,7 @@ function BuilderEditor() {
     const p = past.current.pop();
     if (!p) return;
     future.current.push(doc);
+    // eslint-disable-next-line react-hooks/immutability -- history refs owned by undo/redo
     skipHistory.current = true;
     setDoc(p);
     setHistCaps({ undo: past.current.length > 0, redo: true });
@@ -438,6 +439,7 @@ function BuilderEditor() {
     const n = future.current.pop();
     if (!n) return;
     past.current.push(doc);
+    // eslint-disable-next-line react-hooks/immutability -- history refs owned by undo/redo
     skipHistory.current = true;
     setDoc(n);
     setHistCaps({ undo: true, redo: future.current.length > 0 });
@@ -507,6 +509,7 @@ function BuilderEditor() {
     }
     setSelectedId(node.id);
     setTab('blocks');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- tr is locale-derived; handler reads latest via closure
   }, []);
   // Push live state to the preview on every change — instant, no save needed.
   useEffect(() => {

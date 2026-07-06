@@ -22,6 +22,7 @@ import { SiteThemeToggle } from '@/components/builder/site-theme-toggle';
 import { useLocale } from '@/hooks/use-locale';
 import { BCP47, type Locale } from '@/lib/seo';
 import { siteAccountDict, type SiteAccountDict } from '@/lib/site-account-dict';
+import { LanguageSwitcher } from '../language-switcher';
 
 type Me = {
   id: string; email: string; name: string; phone: string; avatarColor: string;
@@ -118,6 +119,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
   const [open, setOpen] = useState(false); // mobile sidebar
   const [unread, setUnread] = useState(0);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- setMe is a stable setter; siteId is the only real dep.
   const refresh = useCallback(() => {
     return fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}`)
       .then((r) => r.json()).then((d) => setMe(d.user ?? null)).catch(() => {});
@@ -250,6 +252,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
               <Button size="sm" variant="outline" className="gap-1.5">{t.toSite} <ExternalLink className="h-4 w-4" /></Button>
             </Link>
             <SiteThemeToggle siteId={siteId} />
+            <LanguageSwitcher />
           </div>
         </header>
 

@@ -18,6 +18,7 @@ import { OrgRequestsBadge } from '@/components/dashboard/org-requests-badge';
 import { SiteMembersBadge } from '@/components/dashboard/site-members-badge';
 import { useLocale } from '@/hooks/use-locale';
 import { dashDict } from '@/lib/dashboard-dict';
+import { LanguageSwitcher } from '../language-switcher';
 
 export type Role = 'customer' | 'admin' | 'superadmin';
 export interface ShellUser { name: string; email: string; role: Role }
@@ -206,6 +207,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
                 </Link>
               </>
             )}
+            <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </header>
