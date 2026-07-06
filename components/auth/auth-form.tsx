@@ -5,18 +5,23 @@
 // and password-strength meter) and wired to our own SQLite/scrypt auth API
 // (/api/auth/login | /api/auth/register). On success → ?next= or /dashboard.
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Mail, Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { REGEXP_ONLY_DIGITS } from 'input-otp';
+import { Mail, Lock, User, Loader2, Eye, EyeOff, ArrowRight, ArrowLeft, Check, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp';
 import { EMAIL_RE, iconCls, passwordScore, StrengthMeter, Stepper, Shell, Brand } from '@/components/auth/auth-ui';
+import { useLocale } from '@/hooks/use-locale';
+import { authDict } from '@/lib/auth-dict';
 
 function useAuthSubmit(mode: 'login' | 'register') {
   const router = useRouter();
   const search = useSearchParams();
+  const t = authDict(useLocale().locale);
   return async (payload: Record<string, string>): Promise<string | null> => {
     try {
       const res = await fetch(`/api/auth/${mode}`, {
@@ -25,79 +30,236 @@ function useAuthSubmit(mode: 'login' | 'register') {
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) return data.error || 'Что-то пошло не так.';
+      if (!res.ok) return data.error || t.genericError;
       const next = search.get('next');
       router.push(next && next.startsWith('/') ? next : '/dashboard');
       router.refresh();
       return null;
     } catch {
-      return 'Сеть недоступна, попробуйте ещё раз.';
+      return t.networkError;
     }
   };
 }
 
+const RESEND_COOLDOWN_S = 60;
+
 function LoginForm() {
-  const submitAuth = useAuthSubmit('login');
+  const router = useRouter();
+  const search = useSearchParams();
+  const t = authDict(useLocale().locale);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Second factor: the login API answered otpRequired → show the 6-digit step.
+  const [challenge, setChallenge] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [cooldown, setCooldown] = useState(0);
 
-  const submit = async (e: FormEvent) => {
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setInterval(() => setCooldown((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [cooldown]);
+
+  const goNext = () => {
+    const next = search.get('next');
+    router.push(next && next.startsWith('/') ? next : '/dashboard');
+    router.refresh();
+  };
+
+  const post = async (url: string, payload: Record<string, string>) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data } as { ok: boolean; data: Record<string, string> & { otpRequired?: boolean } };
+  };
+
+  const submitCreds = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setBusy(true);
-    const err = await submitAuth({ email, password });
-    if (err) { setError(err); setBusy(false); }
+    try {
+      const { ok, data } = await post('/api/auth/login', { email, password });
+      if (!ok) { setError(data.error || t.genericError); setBusy(false); return; }
+      if (data.otpRequired) {
+        setChallenge(data.challenge ?? '');
+        setMaskedEmail(data.email ?? '');
+        setCode('');
+        setCooldown(RESEND_COOLDOWN_S);
+        setBusy(false);
+        return;
+      }
+      goNext();
+    } catch {
+      setError(t.networkError);
+      setBusy(false);
+    }
   };
+
+  const submitCode = async (value?: string) => {
+    const otp = value ?? code;
+    if (otp.length !== 6 || busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const { ok, data } = await post('/api/auth/login/verify', { challenge, code: otp });
+      if (!ok) { setError(data.error || t.genericError); setCode(''); setBusy(false); return; }
+      goNext();
+    } catch {
+      setError(t.networkError);
+      setBusy(false);
+    }
+  };
+
+  const resend = async () => {
+    if (cooldown > 0 || busy) return;
+    setError('');
+    try {
+      const { ok, data } = await post('/api/auth/login/resend', { challenge });
+      if (!ok) { setError(data.error || t.sendCodeError); return; }
+      setChallenge(data.challenge ?? challenge);
+      setCode('');
+      setCooldown(RESEND_COOLDOWN_S);
+    } catch {
+      setError(t.networkError);
+    }
+  };
+
+  const backToCreds = () => {
+    setChallenge('');
+    setCode('');
+    setError('');
+    setPassword('');
+  };
+
+  const otpPhase = Boolean(challenge);
 
   return (
     <Shell>
-      <Brand title="Вход в аккаунт" subtitle="Продолжите работу над своими сайтами" />
-      <form onSubmit={submit} className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Email</label>
-          <div className="relative">
-            <Mail className={iconCls} />
-            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" className="h-11 pl-10" data-testid="login-email" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Пароль</label>
-          <div className="relative">
-            <Lock className={iconCls} />
-            <Input type={showPw ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" className="h-11 pl-10 pr-10" data-testid="login-password" />
-            <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground" aria-label="Показать пароль">
-              {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
+      {otpPhase ? (
+        <Brand icon={MailCheck} title={t.otpTitle} subtitle={`${t.otpSentTo} ${maskedEmail}`} />
+      ) : (
+        <Brand title={t.loginTitle} subtitle={t.loginSubtitle} />
+      )}
 
-        {error && (
-          <div role="alert" data-testid="login-error" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500 duration-200 animate-in fade-in slide-in-from-top-1">
-            {error}
-          </div>
+      <AnimatePresence mode="wait" initial={false}>
+        {!otpPhase ? (
+          <motion.div key="creds" initial={{ x: -40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -40, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+            <form onSubmit={submitCreds} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t.email}</label>
+                <div className="relative">
+                  <Mail className={iconCls} />
+                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" className="h-11 pl-10" data-testid="login-email" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">{t.password}</label>
+                  <Link href="/forgot-password" data-testid="to-forgot" className="text-xs font-medium text-primary hover:underline">
+                    {t.forgot}
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className={iconCls} />
+                  <Input type={showPw ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" className="h-11 pl-10 pr-10" data-testid="login-password" />
+                  <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground" aria-label={t.showPassword}>
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div role="alert" data-testid="login-error" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500 duration-200 animate-in fade-in slide-in-from-top-1">
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" disabled={busy} size="lg" className="w-full gap-2" data-testid="login-submit">
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t.signIn}
+              </Button>
+            </form>
+
+            <p className="mt-5 text-center text-sm text-muted-foreground">
+              {t.noAccount}{' '}
+              <Link href="/register" data-testid="to-register" className="font-medium text-primary hover:underline">{t.register}</Link>
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div key="otp" initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 40, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+            <form onSubmit={(e) => { e.preventDefault(); void submitCode(); }} className="space-y-4">
+              <div className="flex justify-center" data-testid="login-otp">
+                <InputOTP
+                  maxLength={6}
+                  pattern={REGEXP_ONLY_DIGITS}
+                  value={code}
+                  onChange={setCode}
+                  onComplete={(v: string) => void submitCode(v)}
+                  disabled={busy}
+                  autoFocus
+                  containerClassName="justify-center"
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                  </InputOTPGroup>
+                  <InputOTPSeparator />
+                  <InputOTPGroup>
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <p className="text-center text-xs text-muted-foreground">
+                {t.otpHint}
+              </p>
+
+              {error && (
+                <div role="alert" data-testid="login-otp-error" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500 duration-200 animate-in fade-in slide-in-from-top-1">
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" disabled={busy || code.length !== 6} size="lg" className="w-full gap-2" data-testid="login-otp-submit">
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t.verify}
+              </Button>
+
+              <div className="flex items-center justify-between text-sm">
+                <button type="button" onClick={backToCreds} className="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground" data-testid="login-otp-back">
+                  <ArrowLeft className="h-3.5 w-3.5" /> {t.back}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void resend()}
+                  disabled={cooldown > 0}
+                  className="font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+                  data-testid="login-otp-resend"
+                >
+                  {cooldown > 0 ? `${t.resendAgain} (${cooldown} ${t.sec})` : t.resendCode}
+                </button>
+              </div>
+            </form>
+          </motion.div>
         )}
-
-        <Button type="submit" disabled={busy} size="lg" className="w-full gap-2" data-testid="login-submit">
-          {busy && <Loader2 className="h-4 w-4 animate-spin" />} Войти
-        </Button>
-      </form>
-
-      <p className="mt-5 text-center text-sm text-muted-foreground">
-        Нет аккаунта?{' '}
-        <Link href="/register" data-testid="to-register" className="font-medium text-primary hover:underline">Регистрация</Link>
-      </p>
+      </AnimatePresence>
     </Shell>
   );
 }
 
-const STEP_TITLES = ['Ваши данные', 'Пароль', 'Подтверждение'];
-const STEP_DESCS = ['Как к вам обращаться и email для входа', 'Придумайте надёжный пароль', 'Проверьте данные и создайте аккаунт'];
-
 function RegisterWizard() {
   const submitAuth = useAuthSubmit('register');
+  const t = authDict(useLocale().locale);
+  const STEP_TITLES = t.stepTitles;
+  const STEP_DESCS = t.stepDescs;
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
@@ -111,12 +273,12 @@ function RegisterWizard() {
 
   const validate = (s: number): string | null => {
     if (s === 0) {
-      if (!form.name.trim()) return 'Укажите имя.';
-      if (!EMAIL_RE.test(form.email.trim())) return 'Некорректный email.';
+      if (!form.name.trim()) return t.errNameRequired;
+      if (!EMAIL_RE.test(form.email.trim())) return t.errBadEmail;
     }
     if (s === 1) {
-      if (form.password.length < 8) return 'Пароль должен быть не короче 8 символов.';
-      if (form.password !== form.confirm) return 'Пароли не совпадают.';
+      if (form.password.length < 8) return t.errPwShort;
+      if (form.password !== form.confirm) return t.errPwMismatch;
     }
     return null;
   };
@@ -146,8 +308,8 @@ function RegisterWizard() {
 
   return (
     <Shell maxWidth="28rem">
-      <Brand title="Создать аккаунт" />
-      <p className="-mt-3 mb-5 text-center text-xs font-medium text-muted-foreground">Шаг {step + 1} из {STEP_TITLES.length}</p>
+      <Brand title={t.createAccount} />
+      <p className="-mt-3 mb-5 text-center text-xs font-medium text-muted-foreground">{t.step} {step + 1} {t.of} {STEP_TITLES.length}</p>
       <Stepper step={step} count={STEP_TITLES.length} />
 
       <div className="mb-5 text-center">
@@ -170,17 +332,17 @@ function RegisterWizard() {
               {step === 0 && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Имя</label>
+                    <label className="text-sm font-medium">{t.name}</label>
                     <div className="relative">
                       <User className={iconCls} />
-                      <Input autoFocus value={form.name} onChange={set('name')} placeholder="Как к вам обращаться" autoComplete="name" className="h-11 pl-10" data-testid="register-name" />
+                      <Input autoFocus value={form.name} onChange={set('name')} placeholder={t.namePlaceholder} autoComplete="name" className="h-11 pl-10" data-testid="register-name" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Email</label>
+                    <label className="text-sm font-medium">{t.email}</label>
                     <div className="relative">
                       <Mail className={iconCls} />
-                      <Input type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" autoComplete="email" className="h-11 pl-10" data-testid="register-email" />
+                      <Input type="email" value={form.email} onChange={set('email')} placeholder={t.emailPlaceholder} autoComplete="email" className="h-11 pl-10" data-testid="register-email" />
                     </div>
                   </div>
                 </>
@@ -189,21 +351,21 @@ function RegisterWizard() {
               {step === 1 && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Пароль</label>
+                    <label className="text-sm font-medium">{t.password}</label>
                     <div className="relative">
                       <Lock className={iconCls} />
-                      <Input autoFocus type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder="Минимум 8 символов" autoComplete="new-password" className="h-11 pl-10 pr-10" data-testid="register-password" />
-                      <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground" aria-label="Показать пароль">
+                      <Input autoFocus type={showPw ? 'text' : 'password'} value={form.password} onChange={set('password')} placeholder={t.passwordPlaceholderMin} autoComplete="new-password" className="h-11 pl-10 pr-10" data-testid="register-password" />
+                      <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground" aria-label={t.showPassword}>
                         {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                     <StrengthMeter score={pwScore} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Повторите пароль</label>
+                    <label className="text-sm font-medium">{t.repeat}</label>
                     <div className="relative">
                       <Lock className={iconCls} />
-                      <Input type={showPw ? 'text' : 'password'} value={form.confirm} onChange={set('confirm')} placeholder="Ещё раз" autoComplete="new-password" className="h-11 pl-10 pr-10" data-testid="register-confirm" />
+                      <Input type={showPw ? 'text' : 'password'} value={form.confirm} onChange={set('confirm')} placeholder={t.repeatPlaceholder} autoComplete="new-password" className="h-11 pl-10 pr-10" data-testid="register-confirm" />
                       {form.confirm.length > 0 && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2">
                           {form.confirm === form.password ? <Check className="h-4 w-4 text-green-500" /> : <span className="block h-2 w-2 rounded-full bg-red-500" />}
@@ -212,7 +374,7 @@ function RegisterWizard() {
                     </div>
                     {form.confirm.length > 0 && (
                       <p className={`text-xs ${form.confirm === form.password ? 'text-green-600' : 'text-red-500'}`}>
-                        {form.confirm === form.password ? 'Пароли совпадают' : 'Пароли не совпадают'}
+                        {form.confirm === form.password ? t.pwMatch : t.pwNoMatch}
                       </p>
                     )}
                   </div>
@@ -222,15 +384,15 @@ function RegisterWizard() {
               {step === 2 && (
                 <div className="rounded-xl border border-border bg-muted/40 p-4 text-sm">
                   <div className="flex items-center justify-between gap-2 py-1">
-                    <span className="text-muted-foreground">Имя</span>
+                    <span className="text-muted-foreground">{t.name}</span>
                     <span className="truncate font-medium">{form.name}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2 py-1">
-                    <span className="text-muted-foreground">Email</span>
+                    <span className="text-muted-foreground">{t.email}</span>
                     <span className="truncate font-medium">{form.email}</span>
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">
-                    Регистрируясь, вы получаете дашборд, конструктор и публикацию на своём поддомене — бесплатно.
+                    {t.sumNote}
                   </p>
                 </div>
               )}
@@ -247,16 +409,16 @@ function RegisterWizard() {
         <div className="flex items-center gap-3 pt-2">
           {step > 0 && (
             <Button type="button" variant="outline" size="lg" className="gap-2" onClick={goBack} disabled={busy} data-testid="register-back">
-              <ArrowLeft className="h-4 w-4" /> Назад
+              <ArrowLeft className="h-4 w-4" /> {t.back}
             </Button>
           )}
           {step < STEP_TITLES.length - 1 ? (
             <Button type="submit" size="lg" className="flex-1 gap-2" data-testid="register-next">
-              Далее <ArrowRight className="h-4 w-4" />
+              {t.next} <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button type="submit" size="lg" disabled={busy} className="flex-1 gap-2" data-testid="register-submit">
-              {busy && <Loader2 className="h-4 w-4 animate-spin" />} Зарегистрироваться
+              {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t.submit}
             </Button>
           )}
         </div>
@@ -264,9 +426,9 @@ function RegisterWizard() {
 
       {step === 0 && (
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          Уже есть аккаунт?{' '}
+          {t.haveAccount}{' '}
           <Link href="/login" data-testid="to-login" className="font-medium text-primary hover:underline">
-            Войти <ArrowRight className="inline h-3 w-3" />
+            {t.signIn} <ArrowRight className="inline h-3 w-3" />
           </Link>
         </p>
       )}
