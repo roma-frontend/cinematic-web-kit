@@ -27,6 +27,8 @@ import {
 } from '@/lib/site-auth';
 import { listPublishedMaterials } from '@/lib/site-membership';
 import { recordAudit } from '@/lib/audit';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -55,19 +57,20 @@ const pub = (u: SiteUser) => ({
 });
 
 export async function GET(request: Request) {
+  const t = apiErrors(await getLocale());
   const url = new URL(request.url);
   const siteId = url.searchParams.get('site') ?? '';
   const resource = url.searchParams.get('resource') ?? 'profile';
   if (!siteId) return NextResponse.json({ user: null });
   const user = await getSiteUser(siteId);
   if (resource === 'profile') return NextResponse.json({ user: user ? pub(user) : null });
-  if (!user) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t.unauthorized }, { status: 401 });
   if (resource === 'sessions') return NextResponse.json({ sessions: await listSiteSessions(siteId, user.id) });
   if (resource === 'submissions') return NextResponse.json({ submissions: listSiteUserSubmissions(siteId, user.id, user.email) });
   if (resource === 'notifications') return NextResponse.json({ notifications: listNotifications(siteId, user.id), unread: countUnreadNotifications(siteId, user.id) });
   if (resource === 'materials') {
     // Org-isolation: only APPROVED members of THIS site can read its materials.
-    if (user.status !== 'approved') return NextResponse.json({ error: 'Доступ только для участников' }, { status: 403 });
+    if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
     return NextResponse.json({ materials: listPublishedMaterials(siteId) });
   }
   if (resource === 'overview') {
@@ -86,15 +89,16 @@ export async function GET(request: Request) {
       sessionsCount: sessions.length,
     });
   }
-  return NextResponse.json({ error: 'Неизвестный ресурс' }, { status: 400 });
+  return NextResponse.json({ error: t.unknownResource }, { status: 400 });
 }
 
 export async function POST(request: Request) {
+  const t = apiErrors(await getLocale());
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return NextResponse.json({ error: t.badRequest }, { status: 400 });
   }
   const action = typeof body.action === 'string' ? body.action : '';
   const siteId = (typeof body.siteId === 'string' ? body.siteId : '').trim();
@@ -106,21 +110,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (!siteId) return NextResponse.json({ error: 'Сайт не найден' }, { status: 404 });
+  if (!siteId) return NextResponse.json({ error: t.siteNotFound }, { status: 404 });
   const site = getSite(siteId);
-  if (!site) return NextResponse.json({ error: 'Сайт не найден' }, { status: 404 });
+  if (!site) return NextResponse.json({ error: t.siteNotFound }, { status: 404 });
 
   // ── Unauthenticated actions ───────────────────────────────────────────
   const ip = siteRequestMeta(request).ip || 'local';
 
   if (action === 'register') {
     if (!rateLimit(`site-register:${ip}`, 10)) {
-      return NextResponse.json({ error: 'Слишком много попыток, подождите немного' }, { status: 429 });
+      return NextResponse.json({ error: t.tooManyAttempts }, { status: 429 });
     }
     const email = str('email').trim();
     const password = str('password');
-    if (!emailOk(email)) return NextResponse.json({ error: 'Введите корректный email' }, { status: 400 });
-    if (password.length < 8) return NextResponse.json({ error: 'Пароль должен быть не короче 8 символов' }, { status: 400 });
+    if (!emailOk(email)) return NextResponse.json({ error: t.enterValidEmail }, { status: 400 });
+    if (password.length < 8) return NextResponse.json({ error: t.passwordMin8 }, { status: 400 });
     try {
       // Org-isolation: if the site requires approval, new members start 'pending'.
       const status = site.memberApproval ? 'pending' : 'approved';
@@ -134,15 +138,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, user: pub(user) });
     } catch (e) {
       if (e instanceof Error && e.message === 'EMAIL_TAKEN') {
-        return NextResponse.json({ error: 'Пользователь с таким email уже зарегистрирован' }, { status: 409 });
+        return NextResponse.json({ error: t.emailTaken }, { status: 409 });
       }
-      return NextResponse.json({ error: 'Не удалось зарегистрировать' }, { status: 500 });
+      return NextResponse.json({ error: t.registerFailed }, { status: 500 });
     }
   }
 
   if (action === 'login') {
     if (!rateLimit(`site-login:${ip}`, 15)) {
-      return NextResponse.json({ error: 'Слишком много попыток, подождите немного' }, { status: 429 });
+      return NextResponse.json({ error: t.tooManyAttempts }, { status: 429 });
     }
     const email = str('email').trim();
     const existing = getSiteUserByEmail(siteId, email);
@@ -152,7 +156,7 @@ export async function POST(request: Request) {
       if (remaining > 0) {
         const minutes = Math.ceil(remaining / 60_000);
         return NextResponse.json(
-          { error: `Аккаунт временно заблокирован из-за неудачных попыток входа. Попробуйте через ${minutes} мин.` },
+          { error: t.accountLocked.replace('{minutes}', String(minutes)) },
           { status: 429 },
         );
       }
@@ -178,7 +182,7 @@ export async function POST(request: Request) {
       if (p && verifyPassword(str('password'), p.passwordHash)) {
         return NextResponse.json({ ok: true, redirect: '/login' });
       }
-      return NextResponse.json({ error: 'Неверный email или пароль' }, { status: 401 });
+      return NextResponse.json({ error: t.invalidCredentials }, { status: 401 });
     }
     clearSiteLoginFailures(user);
     await createSiteSession(user.id, siteId, siteRequestMeta(request));
@@ -188,7 +192,7 @@ export async function POST(request: Request) {
 
   // ── Authenticated account actions ─────────────────────────────────────
   const me = await getSiteUser(siteId);
-  if (!me) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
+  if (!me) return NextResponse.json({ error: t.unauthorized }, { status: 401 });
 
   if (action === 'update-profile') {
     const updated = updateSiteProfile(siteId, me.id, {
@@ -206,15 +210,15 @@ export async function POST(request: Request) {
   if (action === 'change-password') {
     const current = str('currentPassword');
     const next = str('newPassword');
-    if (next.length < 8) return NextResponse.json({ error: 'Новый пароль должен быть не короче 8 символов' }, { status: 400 });
+    if (next.length < 8) return NextResponse.json({ error: t.newPasswordMin8 }, { status: 400 });
     try {
       changeSitePassword(siteId, me.id, current, next);
       return NextResponse.json({ ok: true });
     } catch (e) {
       if (e instanceof Error && e.message === 'WRONG_PASSWORD') {
-        return NextResponse.json({ error: 'Текущий пароль неверный' }, { status: 403 });
+        return NextResponse.json({ error: t.wrongCurrentPassword }, { status: 403 });
       }
-      return NextResponse.json({ error: 'Не удалось изменить пароль' }, { status: 500 });
+      return NextResponse.json({ error: t.changePasswordFailed }, { status: 500 });
     }
   }
 
@@ -238,5 +242,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 });
+  return NextResponse.json({ error: t.unknownAction }, { status: 400 });
 }

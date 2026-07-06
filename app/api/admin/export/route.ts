@@ -5,6 +5,8 @@ import { recordAudit } from '@/lib/audit';
 import { buildStyledWorkbook } from '@/lib/xlsx-style';
 import { deviceLabel } from '@/lib/admin';
 import { getDb, users, sites, sessions, submissions, audit } from '@/lib/db';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -96,15 +98,16 @@ function buildExport(type: string): { title: string; header: string[]; rows: unk
 }
 
 export async function GET(request: Request) {
+  const t = apiErrors(await getLocale());
   const me = await getCurrentUser();
-  if (!me) return NextResponse.json({ error: 'Не авторизован.' }, { status: 401 });
-  if (!isSuperadmin(me)) return NextResponse.json({ error: 'Недостаточно прав.' }, { status: 403 });
+  if (!me) return NextResponse.json({ error: t.unauthorizedDot }, { status: 401 });
+  if (!isSuperadmin(me)) return NextResponse.json({ error: t.forbidden }, { status: 403 });
 
   const url = new URL(request.url);
   const type = url.searchParams.get('type') ?? '';
   const format = url.searchParams.get('format') === 'csv' ? 'csv' : 'xlsx';
   const data = buildExport(type);
-  if (!data) return NextResponse.json({ error: 'Неизвестный тип экспорта.' }, { status: 400 });
+  if (!data) return NextResponse.json({ error: t.unknownExportType }, { status: 400 });
 
   recordAudit({ id: me.id, email: me.email }, 'data.export', type, `${format}, ${data.rows.length} строк`);
   const stamp = new Date().toISOString().slice(0, 10);

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { THEMES, pickTheme, getTheme } from '@/lib/themes';
 import { requireUser, unauthorized } from '@/lib/api-guard';
 import { rateLimit } from '@/lib/auth';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -55,8 +57,9 @@ export async function POST(request: Request) {
   // May call the configured LLM on the server's key — signed-in users only.
   const user = await requireUser();
   if (!user) return unauthorized();
+  const msgs = apiErrors(await getLocale());
   if (!rateLimit(`pick-theme:${user.id}`, 30)) {
-    return NextResponse.json({ error: 'Слишком много запросов подряд, подождите немного.' }, { status: 429 });
+    return NextResponse.json({ error: msgs.tooManyRequests }, { status: 429 });
   }
   let brief = '';
   try {

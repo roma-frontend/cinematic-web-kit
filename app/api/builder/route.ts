@@ -4,6 +4,8 @@ import { getSiteForUser, parseDoc, saveDraft, publishSite } from '@/lib/sites';
 import { gcUploads } from '@/lib/uploads-gc';
 import type { BuilderDoc } from '@/lib/builder/types';
 import { DEFAULT_DOC } from '@/lib/builder/types';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -12,12 +14,13 @@ export const runtime = 'nodejs';
 // POST overwrites the draft (publishing is a separate endpoint).
 
 async function resolveSite(request: Request) {
+  const t = apiErrors(await getLocale());
   const user = await getCurrentUser();
-  if (!user) return { error: NextResponse.json({ error: 'Требуется вход.' }, { status: 401 }) };
+  if (!user) return { error: NextResponse.json({ error: t.loginRequired }, { status: 401 }) };
   const siteId = new URL(request.url).searchParams.get('site');
-  if (!siteId) return { error: NextResponse.json({ error: 'Не указан сайт (?site=).' }, { status: 400 }) };
+  if (!siteId) return { error: NextResponse.json({ error: t.siteNotSpecified }, { status: 400 }) };
   const site = getSiteForUser(user.id, siteId);
-  if (!site) return { error: NextResponse.json({ error: 'Сайт не найден.' }, { status: 404 }) };
+  if (!site) return { error: NextResponse.json({ error: t.siteNotFoundDot }, { status: 404 }) };
   return { site };
 }
 
@@ -32,6 +35,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const t = apiErrors(await getLocale());
   const { site, error } = await resolveSite(request);
   if (error) return error;
 
@@ -51,7 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Malformed page in document' }, { status: 400 });
     }
     if (paths.has(p.path)) {
-      return NextResponse.json({ error: `Дублирующийся путь страницы: "${p.path}"` }, { status: 400 });
+      return NextResponse.json({ error: t.duplicatePagePath.replace('{path}', p.path) }, { status: 400 });
     }
     paths.add(p.path);
   }

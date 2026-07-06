@@ -4,6 +4,8 @@ import path from 'node:path';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
 import { recordAudit } from '@/lib/audit';
 import { getDb, users, sites, sessions, submissions, domains, audit } from '@/lib/db';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -13,9 +15,10 @@ export const runtime = 'nodejs';
 //   (password hashes and session tokens are redacted — the snapshot is for
 //    inspection/archival, not for restoring auth state)
 export async function GET(request: Request) {
+  const t = apiErrors(await getLocale());
   const me = await getCurrentUser();
-  if (!me) return NextResponse.json({ error: 'Не авторизован.' }, { status: 401 });
-  if (!isSuperadmin(me)) return NextResponse.json({ error: 'Недостаточно прав.' }, { status: 403 });
+  if (!me) return NextResponse.json({ error: t.unauthorizedDot }, { status: 401 });
+  if (!isSuperadmin(me)) return NextResponse.json({ error: t.forbidden }, { status: 403 });
 
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
 
@@ -47,7 +50,7 @@ export async function GET(request: Request) {
   try {
     buf = await readFile(dbFile);
   } catch {
-    return NextResponse.json({ error: 'Файл БД не найден.' }, { status: 404 });
+    return NextResponse.json({ error: t.dbFileNotFound }, { status: 404 });
   }
 
   recordAudit({ id: me.id, email: me.email }, 'db.export', '', `${Math.round(buf.length / 1024)} КБ`);

@@ -6,24 +6,27 @@ import {
 } from '@/lib/auth';
 import { getUserById } from '@/lib/admin';
 import { recordAudit } from '@/lib/audit';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
 // Superadmin "login as" (the backdoor): start a session as another user while
 // stashing the superadmin's own token so they can return. Guarded strictly.
 export async function POST(request: Request) {
+  const t = apiErrors(await getLocale());
   const me = await getCurrentUser();
-  if (!me) return NextResponse.json({ error: 'Не авторизован.' }, { status: 401 });
-  if (!isSuperadmin(me)) return NextResponse.json({ error: 'Недостаточно прав.' }, { status: 403 });
+  if (!me) return NextResponse.json({ error: t.unauthorizedDot }, { status: 401 });
+  if (!isSuperadmin(me)) return NextResponse.json({ error: t.forbidden }, { status: 403 });
 
   let body: { userId?: string };
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   if (!body.userId || body.userId === me.id) {
-    return NextResponse.json({ error: 'Некорректный пользователь.' }, { status: 400 });
+    return NextResponse.json({ error: t.invalidUser }, { status: 400 });
   }
   const target = getUserById(body.userId);
-  if (!target) return NextResponse.json({ error: 'Пользователь не найден.' }, { status: 404 });
-  if (!target.isActive) return NextResponse.json({ error: 'Пользователь заблокирован — сначала разблокируйте его.' }, { status: 400 });
+  if (!target) return NextResponse.json({ error: t.userNotFound }, { status: 404 });
+  if (!target.isActive) return NextResponse.json({ error: t.userBlockedUnblockFirst }, { status: 400 });
 
   const myToken = await getSessionToken();
   const { token, expiresAt } = createSession(target.id, requestMeta(request));

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSiteBySlug, getSiteByHostname, addSubmission, APP_HOST } from '@/lib/sites';
 import { getSiteUser } from '@/lib/site-auth';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -39,6 +41,7 @@ function resolveSiteId(request: Request): string | null {
 }
 
 export async function POST(request: Request) {
+  const t = apiErrors(await getLocale());
   let payload: Record<string, unknown> = {};
   const ct = request.headers.get('content-type') ?? '';
   try {
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
   const formId = typeof payload.formId === 'string' && payload.formId ? payload.formId : 'contact';
   // Cap payload size so a hostile client can't bloat the DB.
   const json = JSON.stringify(payload);
-  if (json.length > 32_000) return NextResponse.json({ error: 'Слишком большая форма.' }, { status: 400 });
+  if (json.length > 32_000) return NextResponse.json({ error: t.formTooLarge }, { status: 400 });
 
   try {
     const siteId = resolveSiteId(request);

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { makeNode, newId, type BuilderNode, type NodeType } from '@/lib/builder/types';
 import { requireUser, unauthorized } from '@/lib/api-guard';
 import { rateLimit } from '@/lib/auth';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
@@ -119,8 +121,9 @@ export async function POST(request: Request) {
   // May call the configured LLM on the server's key — signed-in users only.
   const user = await requireUser();
   if (!user) return unauthorized();
+  const t = apiErrors(await getLocale());
   if (!rateLimit(`generate-page:${user.id}`, 10)) {
-    return NextResponse.json({ error: 'Слишком много генераций подряд, подождите немного.' }, { status: 429 });
+    return NextResponse.json({ error: t.tooManyGenerations }, { status: 429 });
   }
   let brief = '';
   let title = 'Новая страница';
@@ -133,7 +136,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
-  if (!brief.trim()) return NextResponse.json({ error: 'Пустой бриф' }, { status: 400 });
+  if (!brief.trim()) return NextResponse.json({ error: t.emptyBrief }, { status: 400 });
 
   const viaLlm = await llmBlocks(brief);
   const blocks = viaLlm ?? fallbackBlocks(brief);
