@@ -90,3 +90,33 @@ describe('renderNewMemberEmail', () => {
     expect(html).toContain('&lt;script&gt;');
   });
 });
+
+describe('email localization (ru/en/hy)', () => {
+  it('OTP subject and body switch to English', () => {
+    const { subject, html } = renderLoginOtpEmail({ name: 'Anna', code: '482913', ttlMinutes: 10 }, 'en');
+    expect(subject).toContain('sign-in verification code');
+    expect(html).toContain('lang="en"');
+    expect(html).toContain('Hello, ');
+    expect(html).toContain('the cinematic website builder');
+  });
+
+  it('password reset switches to Armenian script', () => {
+    const { subject, html } = renderPasswordResetEmail({ name: '', link: 'https://kit.example/r', ttlMinutes: 60 }, 'hy');
+    expect(subject).toContain('Գաղտնաբառի վերականգնում');
+    expect(html).toContain('lang="hy"');
+    expect(html).toContain('Բարև Ձեզ');
+  });
+
+  it('new-member subject localizes to English while keeping the site name', () => {
+    const { subject } = renderNewMemberEmail(
+      { ownerName: 'R', siteName: 'Coffee', memberEmail: 'a@b.c', memberName: 'G', reviewUrl: 'https://k/x' },
+      'en',
+    );
+    expect(subject).toBe('New membership request — Coffee');
+  });
+
+  it('defaults to Russian when no locale is passed', () => {
+    const { subject } = renderLoginOtpEmail({ name: '', code: '000000', ttlMinutes: 10 });
+    expect(subject).toBe(OTP_SUBJECT);
+  });
+});

@@ -5,7 +5,7 @@
 // (= oklch(0.55 0.18 265)), cyan #22b0d0 accent glow, Russian copy.
 // Dependency-free (no DB / no server-only) so templates are unit-testable.
 
-import { SITE_NAME, APP_URL } from '@/lib/seo';
+import { SITE_NAME, APP_URL, DEFAULT_LOCALE, type Locale } from '@/lib/seo';
 
 // Brand palette (hex twins of the oklch tokens in app/globals.css).
 const C = {
@@ -27,6 +27,200 @@ const esc = (s: string) =>
 
 const FONT = "'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif";
 
+// ── i18n ────────────────────────────────────────────────────────────────────
+// Every user-facing string for the three transactional emails, per locale.
+// RU is the exact original copy; EN is natural English; HY is Armenian script.
+// Placeholders: {name} {code} {min} {site} {siteName} {who} {link} — filled via
+// fmt() below. `{site}`/`{whoB}`/`{siteB}`/`{minB}` receive already-built HTML.
+interface EmailI18n {
+  greeting: string;
+  greetingNamed: string; // {name}
+  minutes: string; // plural word used inside the bolded duration
+  footerTagline: string;
+  footerAuto: string;
+  otp: {
+    subject: string; // {siteName}
+    preheader: string; // {code} {min}
+    heading: string;
+    intro: string; // {site}
+    note: string; // {minB}
+    footnote: string; // {link}
+    changePwdLabel: string;
+    textTitle: string; // {siteName}
+    textCode: string; // {code}
+    textNote: string; // {min}
+    textFootnote: string; // {link}
+  };
+  reset: {
+    subject: string; // {siteName}
+    preheader: string; // {min}
+    heading: string;
+    intro: string; // {site}
+    buttonLabel: string;
+    note: string; // {minB}
+    fallbackNote: string;
+    footnote: string;
+    textTitle: string; // {siteName}
+    textIntro: string;
+    textNote: string; // {min}
+    textFootnote: string;
+  };
+  member: {
+    subject: string; // {siteName}
+    preheader: string; // {who} {siteName}
+    heading: string;
+    intro: string; // {whoB} {siteB}
+    buttonLabel: string;
+    footnote: string;
+    textTitle: string; // {siteName}
+    textIntro: string; // {who} {siteName}
+    textReview: string; // {link}
+  };
+}
+
+const EMAIL_I18N: Record<Locale, EmailI18n> = {
+  ru: {
+    greeting: 'Здравствуйте!',
+    greetingNamed: 'Здравствуйте, {name}!',
+    minutes: 'минут',
+    footerTagline: 'кинематографичный конструктор сайтов',
+    footerAuto: 'Это автоматическое письмо, отправленное с',
+    otp: {
+      subject: 'Код подтверждения входа — {siteName}',
+      preheader: 'Ваш код входа: {code} (действует {min} мин)',
+      heading: 'Подтвердите вход',
+      intro: 'Кто-то (надеемся, что вы) входит в ваш аккаунт {site}. Введите этот код на странице входа, чтобы продолжить:',
+      note: 'Код действует {minB} и сработает только один раз.',
+      footnote: 'Если это были не вы — просто проигнорируйте письмо: без кода войти невозможно. На всякий случай рекомендуем {link}.',
+      changePwdLabel: 'сменить пароль',
+      textTitle: 'Подтвердите вход — {siteName}',
+      textCode: 'Ваш код: {code}',
+      textNote: 'Он действует {min} минут и сработает только один раз.',
+      textFootnote: 'Если это были не вы, проигнорируйте письмо или смените пароль: {link}',
+    },
+    reset: {
+      subject: 'Сброс пароля — {siteName}',
+      preheader: 'Ссылка для сброса пароля (действует {min} мин)',
+      heading: 'Сброс пароля',
+      intro: 'Мы получили запрос на сброс пароля вашего аккаунта {site}. Нажмите кнопку ниже, чтобы задать новый пароль:',
+      buttonLabel: 'Задать новый пароль&nbsp;&rarr;',
+      note: 'Ссылка действует {minB} и сработает только один раз.',
+      fallbackNote: 'Если кнопка не работает, откройте ссылку вручную:',
+      footnote: 'Если вы не запрашивали сброс — просто проигнорируйте это письмо, ваш пароль останется прежним.',
+      textTitle: 'Сброс пароля — {siteName}',
+      textIntro: 'Мы получили запрос на сброс пароля вашего аккаунта.',
+      textNote: 'Откройте ссылку, чтобы задать новый пароль (действует {min} минут, одноразовая):',
+      textFootnote: 'Если вы не запрашивали сброс, проигнорируйте это письмо.',
+    },
+    member: {
+      subject: 'Новая заявка на вступление — {siteName}',
+      preheader: '{who} хочет присоединиться к «{siteName}»',
+      heading: 'Новая заявка на вступление',
+      intro: 'Новый пользователь {whoB} подал заявку на вступление в вашу организацию {siteB} и ожидает одобрения.',
+      buttonLabel: 'Рассмотреть заявку&nbsp;&rarr;',
+      footnote: 'Одобрить или отклонить заявку можно в настройках сайта → «Заявки на вступление».',
+      textTitle: 'Новая заявка на вступление — {siteName}',
+      textIntro: '{who} подал(а) заявку на вступление в вашу организацию «{siteName}» и ожидает одобрения.',
+      textReview: 'Рассмотреть: {link}',
+    },
+  },
+  en: {
+    greeting: 'Hello!',
+    greetingNamed: 'Hello, {name}!',
+    minutes: 'minutes',
+    footerTagline: 'the cinematic website builder',
+    footerAuto: 'This is an automated message sent from',
+    otp: {
+      subject: 'Your sign-in verification code — {siteName}',
+      preheader: 'Your sign-in code: {code} (valid for {min} min)',
+      heading: 'Confirm your sign-in',
+      intro: 'Someone (hopefully you) is signing in to your {site} account. Enter this code on the sign-in page to continue:',
+      note: 'The code is valid for {minB} and works only once.',
+      footnote: "If this wasn't you, simply ignore this email — signing in is impossible without the code. To be safe, we recommend {link}.",
+      changePwdLabel: 'changing your password',
+      textTitle: 'Confirm your sign-in — {siteName}',
+      textCode: 'Your code: {code}',
+      textNote: 'It is valid for {min} minutes and works only once.',
+      textFootnote: "If this wasn't you, ignore this email or change your password: {link}",
+    },
+    reset: {
+      subject: 'Password reset — {siteName}',
+      preheader: 'Password reset link (valid for {min} min)',
+      heading: 'Password reset',
+      intro: 'We received a request to reset the password for your {site} account. Click the button below to set a new password:',
+      buttonLabel: 'Set a new password&nbsp;&rarr;',
+      note: 'The link is valid for {minB} and works only once.',
+      fallbackNote: "If the button doesn't work, open the link manually:",
+      footnote: "If you didn't request a reset, simply ignore this email — your password will stay the same.",
+      textTitle: 'Password reset — {siteName}',
+      textIntro: 'We received a request to reset your account password.',
+      textNote: 'Open the link to set a new password (valid for {min} minutes, single-use):',
+      textFootnote: "If you didn't request a reset, ignore this email.",
+    },
+    member: {
+      subject: 'New membership request — {siteName}',
+      preheader: '{who} wants to join "{siteName}"',
+      heading: 'New membership request',
+      intro: 'A new user {whoB} has requested to join your organization {siteB} and is awaiting approval.',
+      buttonLabel: 'Review request&nbsp;&rarr;',
+      footnote: 'You can approve or reject the request in the site settings → "Membership requests".',
+      textTitle: 'New membership request — {siteName}',
+      textIntro: '{who} has requested to join your organization "{siteName}" and is awaiting approval.',
+      textReview: 'Review: {link}',
+    },
+  },
+  hy: {
+    greeting: 'Բարև Ձեզ!',
+    greetingNamed: 'Բարև Ձեզ, {name}!',
+    minutes: 'րոպե',
+    footerTagline: 'կինեմատոգրաֆիկ կայքերի կառուցիչ',
+    footerAuto: 'Սա ավտոմատ նամակ է, ուղարկված',
+    otp: {
+      subject: 'Մուտքի հաստատման կոդ — {siteName}',
+      preheader: 'Ձեր մուտքի կոդը՝ {code} (գործում է {min} րոպե)',
+      heading: 'Հաստատեք մուտքը',
+      intro: 'Ինչ-որ մեկը (հուսով ենք՝ Դուք) մուտք է գործում Ձեր {site} հաշիվ։ Շարունակելու համար մուտքագրեք այս կոդը մուտքի էջում.',
+      note: 'Կոդը գործում է {minB} և կաշխատի միայն մեկ անգամ։',
+      footnote: 'Եթե դա Դուք չէիք, պարզապես անտեսեք նամակը. առանց կոդի մուտք գործել հնարավոր չէ։ Ամեն դեպքում խորհուրդ ենք տալիս {link}։',
+      changePwdLabel: 'փոխել գաղտնաբառը',
+      textTitle: 'Հաստատեք մուտքը — {siteName}',
+      textCode: 'Ձեր կոդը՝ {code}',
+      textNote: 'Այն գործում է {min} րոպե և կաշխատի միայն մեկ անգամ։',
+      textFootnote: 'Եթե դա Դուք չէիք, անտեսեք նամակը կամ փոխեք գաղտնաբառը՝ {link}',
+    },
+    reset: {
+      subject: 'Գաղտնաբառի վերականգնում — {siteName}',
+      preheader: 'Գաղտնաբառի վերականգնման հղում (գործում է {min} րոպե)',
+      heading: 'Գաղտնաբառի վերականգնում',
+      intro: 'Մենք ստացել ենք Ձեր {site} հաշվի գաղտնաբառը վերականգնելու հարցում։ Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև կոճակը.',
+      buttonLabel: 'Սահմանել նոր գաղտնաբառ&nbsp;&rarr;',
+      note: 'Հղումը գործում է {minB} և կաշխատի միայն մեկ անգամ։',
+      fallbackNote: 'Եթե կոճակը չի աշխատում, բացեք հղումը ձեռքով.',
+      footnote: 'Եթե Դուք չեք պահանջել վերականգնում, պարզապես անտեսեք այս նամակը. Ձեր գաղտնաբառը կմնա անփոփոխ։',
+      textTitle: 'Գաղտնաբառի վերականգնում — {siteName}',
+      textIntro: 'Մենք ստացել ենք Ձեր հաշվի գաղտնաբառը վերականգնելու հարցում։',
+      textNote: 'Բացեք հղումը նոր գաղտնաբառ սահմանելու համար (գործում է {min} րոպե, մեկանգամյա).',
+      textFootnote: 'Եթե Դուք չեք պահանջել վերականգնում, անտեսեք այս նամակը։',
+    },
+    member: {
+      subject: 'Անդամակցության նոր հայտ — {siteName}',
+      preheader: '{who}-ը ցանկանում է միանալ «{siteName}»-ին',
+      heading: 'Անդամակցության նոր հայտ',
+      intro: 'Նոր օգտատեր {whoB}-ը հայտ է ներկայացրել Ձեր {siteB} կազմակերպությանը միանալու համար և սպասում է հաստատման։',
+      buttonLabel: 'Դիտարկել հայտը&nbsp;&rarr;',
+      footnote: 'Հայտը կարող եք հաստատել կամ մերժել կայքի կարգավորումներում → «Անդամակցության հայտեր»։',
+      textTitle: 'Անդամակցության նոր հայտ — {siteName}',
+      textIntro: '{who}-ը հայտ է ներկայացրել Ձեր «{siteName}» կազմակերպությանը միանալու համար և սպասում է հաստատման։',
+      textReview: 'Դիտարկել՝ {link}',
+    },
+  },
+};
+
+/** Fill {placeholder} tokens. Unknown tokens are left intact. */
+function fmt(tpl: string, vars: Record<string, string | number>): string {
+  return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+}
+
 /** Contact addresses for the footer, derived from the sending domain. */
 function contactEmails(): { info: string; support: string; sales: string } | null {
   const from = process.env.EMAIL_FROM || '';
@@ -36,6 +230,7 @@ function contactEmails(): { info: string; support: string; sales: string } | nul
 }
 
 interface LayoutOpts {
+  locale: Locale;
   /** Hidden inbox-preview line. */
   preheader: string;
   heading: string;
@@ -51,6 +246,7 @@ interface LayoutOpts {
 function layout(o: LayoutOpts): string {
   const contacts = contactEmails();
   const year = new Date().getFullYear();
+  const S = EMAIL_I18N[o.locale];
   const contactRow = contacts
     ? `<a href="mailto:${contacts.info}" style="color:${C.muted};text-decoration:none;">${contacts.info}</a>
        &nbsp;·&nbsp;<a href="mailto:${contacts.support}" style="color:${C.muted};text-decoration:none;">${contacts.support}</a>
@@ -58,7 +254,7 @@ function layout(o: LayoutOpts): string {
     : `<a href="${APP_URL}" style="color:${C.muted};text-decoration:none;">${APP_URL.replace(/^https?:\/\//, '')}</a>`;
 
   return `<!doctype html>
-<html lang="ru">
+<html lang="${o.locale}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -101,8 +297,8 @@ function layout(o: LayoutOpts): string {
     <tr><td align="center" style="padding:26px 20px 0;">
       <p style="margin:0 0 6px;font-size:12px;line-height:1.6;color:${C.muted};">${contactRow}</p>
       <p style="margin:0;font-size:11px;line-height:1.6;color:${C.faint};">
-        &copy; ${year} ${SITE_NAME} — кинематографичный конструктор сайтов.<br>
-        Это автоматическое письмо, отправленное с <a href="${APP_URL}" style="color:${C.faint};">${APP_URL.replace(/^https?:\/\//, '')}</a>.
+        &copy; ${year} ${SITE_NAME} — ${esc(S.footerTagline)}.<br>
+        ${esc(S.footerAuto)} <a href="${APP_URL}" style="color:${C.faint};">${APP_URL.replace(/^https?:\/\//, '')}</a>.
       </p>
     </td></tr>
 
@@ -113,17 +309,31 @@ function layout(o: LayoutOpts): string {
 </html>`;
 }
 
-const greet = (name: string) => (name.trim() ? `Здравствуйте, <span style="color:${C.text};font-weight:600;">${esc(name.trim())}</span>!` : 'Здравствуйте!');
+const greet = (name: string, locale: Locale) => {
+  const S = EMAIL_I18N[locale];
+  const n = name.trim();
+  return n
+    ? fmt(S.greetingNamed, { name: `<span style="color:${C.text};font-weight:600;">${esc(n)}</span>` })
+    : S.greeting;
+};
 
 // ── Login OTP ───────────────────────────────────────────────────────────────
 
-export const OTP_SUBJECT = `Код подтверждения входа — ${SITE_NAME}`;
+export const OTP_SUBJECT = fmt(EMAIL_I18N[DEFAULT_LOCALE].otp.subject, { siteName: SITE_NAME });
 
-export function renderLoginOtpEmail(opts: { name: string; code: string; ttlMinutes: number }): {
+export function renderLoginOtpEmail(
+  opts: { name: string; code: string; ttlMinutes: number },
+  locale: Locale = DEFAULT_LOCALE,
+): {
   subject: string;
   html: string;
   text: string;
 } {
+  const S = EMAIL_I18N[locale].otp;
+  const siteB = `<b style="color:${C.text};">${SITE_NAME}</b>`;
+  const minB = `<b style="color:${C.muted};">${opts.ttlMinutes} ${EMAIL_I18N[locale].minutes}</b>`;
+  const changePwd = `<a href="${APP_URL}/forgot-password" style="color:${C.accent};">${esc(S.changePwdLabel)}</a>`;
+
   const digits = opts.code
     .split('')
     .map(
@@ -133,100 +343,113 @@ export function renderLoginOtpEmail(opts: { name: string; code: string; ttlMinut
     .join('');
 
   const html = layout({
-    preheader: `Ваш код входа: ${opts.code} (действует ${opts.ttlMinutes} мин)`,
-    heading: 'Подтвердите вход',
-    introHtml: `<p style="margin:0 0 8px;">${greet(opts.name)}</p>
-<p style="margin:0;">Кто-то (надеемся, что вы) входит в ваш аккаунт <b style="color:${C.text};">${SITE_NAME}</b>.
-Введите этот код на странице входа, чтобы продолжить:</p>`,
+    locale,
+    preheader: fmt(S.preheader, { code: opts.code, min: opts.ttlMinutes }),
+    heading: S.heading,
+    introHtml: `<p style="margin:0 0 8px;">${greet(opts.name, locale)}</p>
+<p style="margin:0;">${fmt(S.intro, { site: siteB })}</p>`,
     bodyHtml: `<div>${digits}</div>
-<p style="margin:14px 0 0;font-size:12px;color:${C.faint};">Код действует <b style="color:${C.muted};">${opts.ttlMinutes} минут</b> и сработает только один раз.</p>`,
-    footnoteHtml: `Если это были не вы — просто проигнорируйте письмо: без кода войти невозможно. На всякий случай рекомендуем <a href="${APP_URL}/forgot-password" style="color:${C.accent};">сменить пароль</a>.`,
+<p style="margin:14px 0 0;font-size:12px;color:${C.faint};">${fmt(S.note, { minB })}</p>`,
+    footnoteHtml: fmt(S.footnote, { link: changePwd }),
   });
 
   const text = [
-    `Подтвердите вход — ${SITE_NAME}`,
+    fmt(S.textTitle, { siteName: SITE_NAME }),
     '',
-    `Ваш код: ${opts.code}`,
-    `Он действует ${opts.ttlMinutes} минут и сработает только один раз.`,
+    fmt(S.textCode, { code: opts.code }),
+    fmt(S.textNote, { min: opts.ttlMinutes }),
     '',
-    `Если это были не вы, проигнорируйте письмо или смените пароль: ${APP_URL}/forgot-password`,
+    fmt(S.textFootnote, { link: `${APP_URL}/forgot-password` }),
   ].join('\n');
 
-  return { subject: OTP_SUBJECT, html, text };
+  return { subject: fmt(S.subject, { siteName: SITE_NAME }), html, text };
 }
 
 // ── Password reset ──────────────────────────────────────────────────────────
 
-export const RESET_SUBJECT = `Сброс пароля — ${SITE_NAME}`;
+export const RESET_SUBJECT = fmt(EMAIL_I18N[DEFAULT_LOCALE].reset.subject, { siteName: SITE_NAME });
 
-export function renderPasswordResetEmail(opts: { name: string; link: string; ttlMinutes: number }): {
+export function renderPasswordResetEmail(
+  opts: { name: string; link: string; ttlMinutes: number },
+  locale: Locale = DEFAULT_LOCALE,
+): {
   subject: string;
   html: string;
   text: string;
 } {
+  const S = EMAIL_I18N[locale].reset;
+  const siteB = `<b style="color:${C.text};">${SITE_NAME}</b>`;
+  const minB = `<b style="color:${C.muted};">${opts.ttlMinutes} ${EMAIL_I18N[locale].minutes}</b>`;
+
   const html = layout({
-    preheader: `Ссылка для сброса пароля (действует ${opts.ttlMinutes} мин)`,
-    heading: 'Сброс пароля',
-    introHtml: `<p style="margin:0 0 8px;">${greet(opts.name)}</p>
-<p style="margin:0;">Мы получили запрос на сброс пароля вашего аккаунта <b style="color:${C.text};">${SITE_NAME}</b>.
-Нажмите кнопку ниже, чтобы задать новый пароль:</p>`,
+    locale,
+    preheader: fmt(S.preheader, { min: opts.ttlMinutes }),
+    heading: S.heading,
+    introHtml: `<p style="margin:0 0 8px;">${greet(opts.name, locale)}</p>
+<p style="margin:0;">${fmt(S.intro, { site: siteB })}</p>`,
     bodyHtml: `<a href="${esc(opts.link)}"
       style="display:inline-block;padding:15px 40px;border-radius:14px;background-color:${C.primary};
              background:linear-gradient(135deg,${C.primary} 0%,${C.primaryDark} 100%);
              box-shadow:0 6px 24px rgba(60,104,217,.4);
-             font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Задать новый пароль&nbsp;&rarr;</a>
-<p style="margin:16px 0 0;font-size:12px;color:${C.faint};">Ссылка действует <b style="color:${C.muted};">${opts.ttlMinutes} минут</b> и сработает только один раз.</p>
-<p style="margin:10px 0 0;font-size:11px;word-break:break-all;color:${C.faint};">Если кнопка не работает, откройте ссылку вручную:<br>
+             font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">${S.buttonLabel}</a>
+<p style="margin:16px 0 0;font-size:12px;color:${C.faint};">${fmt(S.note, { minB })}</p>
+<p style="margin:10px 0 0;font-size:11px;word-break:break-all;color:${C.faint};">${esc(S.fallbackNote)}<br>
 <a href="${esc(opts.link)}" style="color:${C.accent};">${esc(opts.link)}</a></p>`,
-    footnoteHtml: `Если вы не запрашивали сброс — просто проигнорируйте это письмо, ваш пароль останется прежним.`,
+    footnoteHtml: esc(S.footnote),
   });
 
   const text = [
-    `Сброс пароля — ${SITE_NAME}`,
+    fmt(S.textTitle, { siteName: SITE_NAME }),
     '',
-    'Мы получили запрос на сброс пароля вашего аккаунта.',
-    `Откройте ссылку, чтобы задать новый пароль (действует ${opts.ttlMinutes} минут, одноразовая):`,
+    S.textIntro,
+    fmt(S.textNote, { min: opts.ttlMinutes }),
     opts.link,
     '',
-    'Если вы не запрашивали сброс, проигнорируйте это письмо.',
+    S.textFootnote,
   ].join('\n');
 
-  return { subject: RESET_SUBJECT, html, text };
+  return { subject: fmt(S.subject, { siteName: SITE_NAME }), html, text };
 }
 
 
 // ── New member awaiting approval (to the site owner) ─────────────────────────
 
-export function renderNewMemberEmail(opts: {
-  ownerName: string;
-  siteName: string;
-  memberEmail: string;
-  memberName: string;
-  reviewUrl: string;
-}): { subject: string; html: string; text: string } {
+export function renderNewMemberEmail(
+  opts: {
+    ownerName: string;
+    siteName: string;
+    memberEmail: string;
+    memberName: string;
+    reviewUrl: string;
+  },
+  locale: Locale = DEFAULT_LOCALE,
+): { subject: string; html: string; text: string } {
+  const S = EMAIL_I18N[locale].member;
   const who = opts.memberName ? `${opts.memberName} (${opts.memberEmail})` : opts.memberEmail;
-  const subject = `Новая заявка на вступление — ${opts.siteName}`;
+  const whoB = `<b style="color:${C.text};">${esc(who)}</b>`;
+  const siteB = `<b style="color:${C.text};">${esc(opts.siteName)}</b>`;
 
   const html = layout({
-    preheader: `${who} хочет присоединиться к «${opts.siteName}»`,
-    heading: 'Новая заявка на вступление',
-    introHtml: `<p style="margin:0 0 8px;">${greet(opts.ownerName)}</p>
-<p style="margin:0;">Новый пользователь <b style="color:${C.text};">${esc(who)}</b> подал заявку на вступление в вашу организацию <b style="color:${C.text};">${esc(opts.siteName)}</b> и ожидает одобрения.</p>`,
+    locale,
+    preheader: fmt(S.preheader, { who, siteName: opts.siteName }),
+    heading: S.heading,
+    introHtml: `<p style="margin:0 0 8px;">${greet(opts.ownerName, locale)}</p>
+<p style="margin:0;">${fmt(S.intro, { whoB, siteB })}</p>`,
     bodyHtml: `<a href="${esc(opts.reviewUrl)}"
       style="display:inline-block;padding:15px 40px;border-radius:14px;background-color:${C.primary};
              background:linear-gradient(135deg,${C.primary} 0%,${C.primaryDark} 100%);
              box-shadow:0 6px 24px rgba(60,104,217,.4);
-             font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">Рассмотреть заявку&nbsp;&rarr;</a>`,
-    footnoteHtml: `Одобрить или отклонить заявку можно в настройках сайта → «Заявки на вступление».`,
+             font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">${S.buttonLabel}</a>`,
+    footnoteHtml: esc(S.footnote),
   });
 
   const text = [
-    `Новая заявка на вступление — ${opts.siteName}`,
+    fmt(S.textTitle, { siteName: opts.siteName }),
     '',
-    `${who} подал(а) заявку на вступление в вашу организацию «${opts.siteName}» и ожидает одобрения.`,
+    fmt(S.textIntro, { who, siteName: opts.siteName }),
     '',
-    `Рассмотреть: ${opts.reviewUrl}`,
+    fmt(S.textReview, { link: opts.reviewUrl }),
   ].join('\n');
 
-  return { subject, html, text };
+  return { subject: fmt(S.subject, { siteName: opts.siteName }), html, text };
 }

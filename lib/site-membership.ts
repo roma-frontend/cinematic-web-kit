@@ -5,7 +5,7 @@ import { isSuperadmin } from '@/lib/auth';
 import { getUserById } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 import { renderNewMemberEmail } from '@/lib/email-templates';
-import { APP_URL } from '@/lib/seo';
+import { APP_URL, DEFAULT_LOCALE } from '@/lib/seo';
 
 // Org-isolation (variant A): a tenant SITE is an organization, its owner (the
 // platform user) is the admin, and site_users are members "under" the admin.
@@ -93,13 +93,17 @@ export async function notifyOwnerOfPendingMember(siteId: string, memberEmail: st
     if (!site) return;
     const owner = getUserById(site.userId);
     if (!owner?.email) return;
+    // This notification goes to the site OWNER, whose UI locale isn't part of
+    // the triggering request (a member is registering). Use the platform
+    // default locale rather than adding a DB lookup for the owner's preference.
     const mail = renderNewMemberEmail({
       ownerName: owner.name ?? '',
       siteName: site.name,
       memberEmail,
       memberName,
       reviewUrl: `${APP_URL}/dashboard/sites/${site.id}`,
-    });
+    }, DEFAULT_LOCALE);
+
     await sendEmail({ to: owner.email, ...mail });
   } catch {
     /* notification is best-effort — never block registration */

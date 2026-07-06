@@ -6,6 +6,7 @@ import { findUserByEmail, rateLimit, normalizeEmail } from '@/lib/auth';
 import { createPasswordReset, RESET_TTL_MIN } from '@/lib/auth-codes';
 import { sendEmail } from '@/lib/email';
 import { renderPasswordResetEmail } from '@/lib/email-templates';
+import { getLocale } from '@/lib/i18n';
 import { recordAudit } from '@/lib/audit';
 import { APP_URL } from '@/lib/seo';
 
@@ -39,7 +40,8 @@ export async function POST(request: Request) {
   if (user && user.isActive) {
     const { token } = createPasswordReset(user);
     const link = `${APP_URL}/reset-password?token=${token}`;
-    const mail = renderPasswordResetEmail({ name: user.name, link, ttlMinutes: RESET_TTL_MIN });
+    const locale = await getLocale();
+    const mail = renderPasswordResetEmail({ name: user.name, link, ttlMinutes: RESET_TTL_MIN }, locale);
     const sent = await sendEmail({ to: user.email, ...mail });
     recordAudit(
       { id: user.id, email: user.email },

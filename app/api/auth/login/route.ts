@@ -15,6 +15,7 @@ import { recordAudit } from '@/lib/audit';
 import { createLoginOtp, maskEmail, OTP_TTL_MIN } from '@/lib/auth-codes';
 import { loginOtpEnabled, sendEmail } from '@/lib/email';
 import { renderLoginOtpEmail } from '@/lib/email-templates';
+import { getLocale } from '@/lib/i18n';
 
 export const runtime = 'nodejs';
 
@@ -75,7 +76,8 @@ export async function POST(request: Request) {
   // must degrade security gracefully, never lock every user out.
   if (loginOtpEnabled()) {
     const { challengeId, code } = createLoginOtp(user);
-    const mail = renderLoginOtpEmail({ name: user.name, code, ttlMinutes: OTP_TTL_MIN });
+    const locale = await getLocale();
+    const mail = renderLoginOtpEmail({ name: user.name, code, ttlMinutes: OTP_TTL_MIN }, locale);
     const sent = await sendEmail({ to: user.email, ...mail });
     if (sent.ok) {
       recordAudit({ id: user.id, email: user.email }, 'auth.otp_sent', user.email, `ip=${ip} provider=${sent.provider}`);

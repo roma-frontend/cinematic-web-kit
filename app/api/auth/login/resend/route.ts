@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/auth';
 import { challengeUser, createLoginOtp, maskEmail, OTP_TTL_MIN } from '@/lib/auth-codes';
 import { sendEmail } from '@/lib/email';
 import { renderLoginOtpEmail } from '@/lib/email-templates';
+import { getLocale } from '@/lib/i18n';
 import { recordAudit } from '@/lib/audit';
 
 export const runtime = 'nodejs';
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
   }
 
   const { challengeId, code } = createLoginOtp(user);
-  const mail = renderLoginOtpEmail({ name: user.name, code, ttlMinutes: OTP_TTL_MIN });
+  const locale = await getLocale();
+  const mail = renderLoginOtpEmail({ name: user.name, code, ttlMinutes: OTP_TTL_MIN }, locale);
   const sent = await sendEmail({ to: user.email, ...mail });
   if (!sent.ok) {
     return NextResponse.json({ error: 'Не удалось отправить письмо. Попробуйте позже.' }, { status: 502 });
