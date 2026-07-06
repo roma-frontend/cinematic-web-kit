@@ -407,6 +407,19 @@ export const starterPage = (brand: string): BuilderPage => ({
   ],
 });
 
+// Unique marker text of the auto-generated starter home page — lets the builder
+// detect an untouched home and replace it in place when a landing is applied.
+export const STARTER_MARKER = 'Эта страница создана автоматически';
+
+/** True when a page is still the untouched auto-generated starter (by marker). */
+export function isPristineStarter(page: BuilderPage): boolean {
+  try {
+    return JSON.stringify(page.blocks).includes(STARTER_MARKER);
+  } catch {
+    return false;
+  }
+}
+
 const landingPage = (title: string, blocks: BuilderNode[], description: string): BuilderPage => ({
   id: newId('page'),
   path: '',

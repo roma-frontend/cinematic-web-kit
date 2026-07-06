@@ -4,6 +4,7 @@ import {
   LANDINGS,
   SECTION_PRESETS,
   starterPage,
+  isPristineStarter,
 } from '@/lib/builder/templates';
 import type { BuilderNode, BuilderPage } from '@/lib/builder/types';
 
@@ -91,5 +92,22 @@ describe('starterPage()', () => {
     expect(ids.length).toBeGreaterThan(3);
     // fresh ids each call
     expect(starterPage('X').id).not.toBe(p.id);
+  });
+});
+
+
+describe('isPristineStarter', () => {
+  it('is true for a freshly created starter home page', () => {
+    expect(isPristineStarter(starterPage('Acme'))).toBe(true);
+  });
+
+  it('is false for any ready-made landing', () => {
+    for (const t of LANDINGS) expect(isPristineStarter(t.build())).toBe(false);
+  });
+
+  it('is false once the starter marker is gone (page edited)', () => {
+    const p = starterPage('Acme');
+    const edited = { ...p, blocks: LANDINGS[0].build().blocks };
+    expect(isPristineStarter(edited)).toBe(false);
   });
 });

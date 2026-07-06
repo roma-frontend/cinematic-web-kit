@@ -14,11 +14,12 @@ import {
   Undo2, Redo2, LayoutGrid, ChevronDown, Maximize2, Minimize2, Sun, Moon, Rocket, Home,
 } from 'lucide-react';
 import seed from '@/data/builder.json';
+import { usePrefs, setPref } from '@/hooks/use-user-prefs';
 import { THEMES, getTheme, themeCss } from '@/lib/themes';
 import { RenderNode } from '@/components/builder/render-node';
 import { RevealDisabled } from '@/components/builder/reveal';
 import { Header as ChromeHeader, Footer as ChromeFooter } from '@/components/builder/site-chrome';
-import { TEMPLATES, LANDINGS, SECTION_PRESETS } from '@/lib/builder/templates';
+import { TEMPLATES, LANDINGS, SECTION_PRESETS, isPristineStarter } from '@/lib/builder/templates';
 import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
   NODE_LABELS, isContainer, makeNode, newId,
@@ -289,6 +290,30 @@ function BuilderEditor() {
   const [msg, setMsg] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newPath, setNewPath] = useState('');
+
+  // ---- editor chrome persistence (per user, per site: user_prefs) ----
+  // Open page, panel tab, preview device/width/scheme and collapsed tree groups
+  // survive a reload and follow the account. Applied once when both the prefs
+  // snapshot and the site doc have arrived; saved (debounced) on every change.
+  const prefs = usePrefs();
+  const chromeApplied = useRef(false);
+  useEffect(() => {
+    if (chromeApplied.current || !prefs || !siteMeta || !siteId) return;
+    chromeApplied.current = true;
+    const c = prefs[`builder:${siteId}`] as Record<string, unknown> | undefined;
+    if (!c || typeof c !== 'object') return;
+    if (c.tab === 'pages' || c.tab === 'blocks' || c.tab === 'design') setTab(c.tab);
+    if (typeof c.device === 'string' && c.device in DEVICE) setDevice(c.device as keyof typeof DEVICE);
+    if (typeof c.previewWidth === 'number') setPreviewWidth(Math.min(1100, Math.max(300, c.previewWidth)));
+    if (typeof c.previewDark === 'boolean') setPreviewDark(c.previewDark);
+    if (Array.isArray(c.collapsed)) setCollapsed(new Set(c.collapsed.filter((x): x is string => typeof x === 'string')));
+    if (typeof c.pageId === 'string' && doc.pages.some((p) => p.id === c.pageId)) setPageId(c.pageId);
+  }, [prefs, siteMeta, siteId, doc]);
+
+  useEffect(() => {
+    if (!chromeApplied.current || !siteId) return;
+    setPref(`builder:${siteId}`, { pageId, tab, device, previewWidth, previewDark, collapsed: [...collapsed] });
+  }, [siteId, pageId, tab, device, previewWidth, previewDark, collapsed]);
 
   // Load the tenant's draft doc. The builder always works on a concrete site
   // (?site=<id>); without it we send the user to the dashboard to pick one.
@@ -585,7 +610,29 @@ function BuilderEditor() {
   const addTemplate = (id: string) => {
     const t = [...LANDINGS, ...TEMPLATES].find((x) => x.id === id);
     if (!t) return;
-    const created = addPageDoc(t.build());
+    const built = t.build();
+
+    // If the current home page (path '') is still the untouched auto-generated
+    // starter, replace it in place so the landing becomes the site root
+    // (/s/<slug>) — no stray /home-N page, and the logo/home link shows it
+    // immediately. Any edit to the home page opts out of this (adds a page).
+    const home = doc.pages.find((p) => p.path === '');
+    if (home && isPristineStarter(home)) {
+      setDoc((d) => ({
+        ...d,
+        pages: d.pages.map((p) =>
+          p.path === '' ? { ...p, title: built.title, description: built.description, blocks: built.blocks } : p,
+        ),
+        ...(t.themeId ? { themeId: t.themeId } : {}),
+        ...(t.asideVariant ? { asideVariant: t.asideVariant } : {}),
+      }));
+      setPageId(home.id);
+      setSelectedId(null);
+      setMsg(`«${t.label}» стал главной страницей сайта${t.themeId ? ' (тема применена)' : ''}.`);
+      return;
+    }
+
+    const created = addPageDoc(built);
     if (t.themeId) setDoc((d) => ({ ...d, themeId: t.themeId! }));
     if (t.asideVariant) setDoc((d) => ({ ...d, asideVariant: t.asideVariant! }));
     setMsg(created.path === ''
