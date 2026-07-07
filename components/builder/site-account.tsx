@@ -13,7 +13,7 @@ import {
   User, Shield, FileText, Settings, LogOut, Loader2, Check, Mail, Phone, Lock,
   Eye, EyeOff, Monitor, Smartphone, Trash2, Save, CalendarDays, ShieldCheck, X,
   Store, Menu, ExternalLink, Library, Clock, Ban, LinkIcon, Bell,
-  LayoutDashboard, ChevronRight, Search, Copy, Wand2, KeyRound,
+  LayoutDashboard, ChevronRight, ChevronLeft, Search, Copy, Wand2, KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +107,9 @@ const TABS = [
   { id: 'settings', icon: Settings },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
+// Tabs that live under the drill-in "Account" parent (mirrors the platform
+// dashboard's Staff/Superadmin sub-nav). The rest are top-level.
+const ACCOUNT_TAB_IDS = new Set<TabId>(['profile', 'security', 'settings']);
 
 export function SiteAccount({ siteId, base, brand }: { siteId: string; base: string; brand: string }) {
   const router = useRouter();
@@ -118,6 +121,20 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
   const [loggingOut, setLoggingOut] = useState(false);
   const [open, setOpen] = useState(false); // mobile sidebar
   const [unread, setUnread] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const [query, setQuery] = useState('');
+  const [subNav, setSubNav] = useState<'account' | null>(null);
+
+  // Persist the desktop collapse preference; a collapsed rail can't drill in.
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem('cwk:site-sidebar-collapsed') === '1'); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { if (collapsed) setSubNav(null); }, [collapsed]);
+  const toggleCollapsed = () => setCollapsed((c) => {
+    const n = !c;
+    try { localStorage.setItem('cwk:site-sidebar-collapsed', n ? '1' : '0'); } catch { /* ignore */ }
+    return n;
+  });
 
   // eslint-disable-next-line react-hooks/preserve-manual-memoization -- setMe is a stable setter; siteId is the only real dep.
   const refresh = useCallback(() => {
@@ -135,6 +152,8 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
 
   const openTab = (id: TabId) => {
     setTab(id); setOpen(false);
+    // Selecting an Account sub-tab reveals the drill-in panel; a top-level tab closes it.
+    setSubNav(ACCOUNT_TAB_IDS.has(id) ? 'account' : null);
     if (id === 'notifications' && unread > 0) { api('mark-notifications-read', { siteId }, t.networkError); setUnread(0); }
   };
 
@@ -163,64 +182,186 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
   const color = me.avatarColor || AVATAR_COLORS[0];
   const activeLabel = t.tabs[tab] ?? t.accountFallback;
 
-  const SidebarBody = (
-    <>
-      <div className="flex h-16 items-center gap-2.5 border-b border-border/60 px-5">
-        <Link href={base || '/'} className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-lg shadow-primary/20">
-            <Store className="h-5 w-5" />
-          </span>
-          <span className="flex flex-col leading-none">
-            <span className="truncate text-sm font-black tracking-tight">{brand}</span>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t.cabinet}</span>
-          </span>
-        </Link>
-      </div>
+  const renderSidebar = (col: boolean) => {
+    const q = col ? '' : query.trim().toLowerCase();
+    const topTabs = TABS.filter((x) => !ACCOUNT_TAB_IDS.has(x.id));
+    const accTabs = TABS.filter((x) => ACCOUNT_TAB_IDS.has(x.id));
+    const matched = q ? TABS.filter((x) => t.tabs[x.id].toLowerCase().includes(q)) : [];
+    const accountActive = ACCOUNT_TAB_IDS.has(tab);
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {TABS.map((tabDef) => {
-          const Icon = tabDef.icon;
-          const on = tab === tabDef.id;
-          return (
-            <button
-              key={tabDef.id}
-              onClick={() => openTab(tabDef.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                on ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{t.tabs[tabDef.id]}</span>
-              {tabDef.id === 'notifications' && unread > 0 && (
-                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{unread}</span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+    const tabRow = (tabDef: (typeof TABS)[number]) => {
+      const Icon = tabDef.icon;
+      const on = tab === tabDef.id;
+      return (
+        <button
+          key={tabDef.id}
+          onClick={() => openTab(tabDef.id)}
+          className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${on ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+        >
+          {on && <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-primary" />}
+          <Icon className={`h-4 w-4 shrink-0 transition-transform ${on ? 'scale-110' : ''}`} />
+          <span className="truncate">{t.tabs[tabDef.id]}</span>
+          {tabDef.id === 'notifications' && unread > 0 && (
+            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{unread}</span>
+          )}
+        </button>
+      );
+    };
 
-      <div className="border-t border-border/60 p-3">
-        <div className="mb-2 flex items-center gap-2.5 px-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: color }}>
-            {initials(me.name, me.email)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{me.name || t.noName}</p>
-            <p className="truncate text-xs text-muted-foreground">{me.email}</p>
-          </div>
+    return (
+      <>
+        {/* Header: brand + desktop collapse toggle */}
+        <div className={`flex h-16 items-center border-b border-border/60 ${col ? 'justify-center px-2' : 'gap-2.5 px-4'}`}>
+          {!col && (
+            <Link href={base || '/'} className="flex min-w-0 items-center gap-2.5" onClick={() => setOpen(false)}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-lg shadow-primary/20">
+                <Store className="h-5 w-5" />
+              </span>
+              <span className="flex min-w-0 flex-col leading-none">
+                <span className="truncate text-sm font-black tracking-tight">{brand}</span>
+                <span className="truncate text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t.cabinet}</span>
+              </span>
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={col ? t.sidebar.expand : t.sidebar.collapse}
+            title={col ? t.sidebar.expand : t.sidebar.collapse}
+            className={`hidden h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex ${col ? '' : 'ml-auto'}`}
+          >
+            {col ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
         </div>
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={logout} disabled={loggingOut}>
-          {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} {t.logout}
-        </Button>
-      </div>
-    </>
-  );
+
+        {/* Section search */}
+        {!col && !subNav && (
+          <div className="border-b border-border/60 p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t.sidebar.search}
+                className="w-full rounded-lg border border-border bg-background/60 py-2 pl-9 pr-8 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/30"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery('')} aria-label={t.closeMenu} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation: collapsed rail · search results · drill-in */}
+        {col ? (
+          <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3">
+            {TABS.map((tabDef, i) => {
+              const Icon = tabDef.icon;
+              const on = tab === tabDef.id;
+              return (
+                <div key={tabDef.id}>
+                  {i === topTabs.length && <div className="mx-auto my-2 h-px w-8 bg-border/60" />}
+                  <button
+                    onClick={() => openTab(tabDef.id)}
+                    title={t.tabs[tabDef.id]}
+                    aria-label={t.tabs[tabDef.id]}
+                    className={`group relative my-1 flex w-full items-center justify-center rounded-lg px-2 py-2.5 transition-colors ${on ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                  >
+                    {on && <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-primary" />}
+                    <Icon className={`h-4 w-4 shrink-0 transition-transform ${on ? 'scale-110' : ''}`} />
+                    {tabDef.id === 'notifications' && unread > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
+                  </button>
+                </div>
+              );
+            })}
+          </nav>
+        ) : q ? (
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+            {matched.length === 0
+              ? <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t.sidebar.noResults}</p>
+              : matched.map((x) => tabRow(x))}
+          </nav>
+        ) : (
+          <nav className="relative flex-1 overflow-hidden">
+            {/* Main level */}
+            <div
+              className="absolute inset-0 space-y-1 overflow-y-auto p-3 transition-all duration-300 ease-out"
+              style={{ transform: subNav ? 'translateX(-100%)' : 'translateX(0)', opacity: subNav ? 0 : 1, pointerEvents: subNav ? 'none' : 'auto' }}
+            >
+              <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t.sidebar.groupWorkspace}</p>
+              {topTabs.map((x) => tabRow(x))}
+              <div className="my-2 h-px bg-border/60" />
+              <div className={`group relative flex items-center rounded-lg text-sm font-medium transition-colors ${accountActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+                {accountActive && <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-primary" />}
+                <button type="button" onClick={() => setSubNav('account')} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+                  <Settings className={`h-4 w-4 shrink-0 transition-transform ${accountActive ? 'scale-110' : ''}`} />
+                  <span className="truncate text-left">{t.sidebar.groupAccount}</span>
+                </button>
+                <button type="button" onClick={() => setSubNav('account')} aria-label={t.sidebar.groupAccount} className="flex items-center self-stretch rounded-r-lg px-2 text-muted-foreground transition-colors hover:text-foreground">
+                  <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Sub level (Account) — slides in with a staggered reveal */}
+            <div
+              className="absolute inset-0 space-y-1 overflow-y-auto p-3 transition-all duration-300 ease-out"
+              style={{ transform: subNav ? 'translateX(0)' : 'translateX(100%)', opacity: subNav ? 1 : 0, pointerEvents: subNav ? 'auto' : 'none' }}
+            >
+              <button type="button" onClick={() => setSubNav(null)}
+                className="group/back mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <ChevronLeft className="h-4 w-4 transition-transform group-hover/back:-translate-x-0.5" />
+                <span>{t.sidebar.groupAccount}</span>
+              </button>
+              {accTabs.map((x, idx) => (
+                <div key={x.id} style={{ opacity: subNav ? 1 : 0, transform: subNav ? 'translateX(0)' : 'translateX(16px)', transition: `opacity 280ms ease ${80 + idx * 40}ms, transform 320ms cubic-bezier(0.34,1.56,0.64,1) ${80 + idx * 40}ms` }}>
+                  {tabRow(x)}
+                </div>
+              ))}
+            </div>
+          </nav>
+        )}
+
+        {/* Footer: user + logout */}
+        <div className="border-t border-border/60 p-3">
+          {col ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: color }} title={me.name || me.email}>
+                {initials(me.name, me.email)}
+              </div>
+              <Button variant="ghost" size="icon" aria-label={t.logout} title={t.logout} onClick={logout} disabled={loggingOut} className="text-muted-foreground">
+                {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="mb-2 flex items-center gap-2.5 px-2">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: color }}>
+                  {initials(me.name, me.email)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{me.name || t.noName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{me.email}</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground" onClick={logout} disabled={loggingOut}>
+                {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />} {t.logout}
+              </Button>
+            </>
+          )}
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-border/60 bg-muted/30 lg:flex">
-        {SidebarBody}
+      <aside className={`hidden shrink-0 flex-col border-r border-border/60 bg-muted/30 transition-[width] duration-300 lg:flex ${collapsed ? 'w-[4.75rem]' : 'w-64'}`}>
+        {renderSidebar(collapsed)}
       </aside>
 
       {/* Mobile slide-over */}
@@ -228,10 +369,10 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-border/60 bg-background shadow-2xl">
-            <button onClick={() => setOpen(false)} aria-label={t.closeMenu} className="absolute right-3 top-4 rounded-lg p-1.5 text-muted-foreground hover:bg-muted">
+            <button onClick={() => setOpen(false)} aria-label={t.closeMenu} className="absolute right-3 top-4 z-10 rounded-lg p-1.5 text-muted-foreground hover:bg-muted">
               <X className="h-5 w-5" />
             </button>
-            {SidebarBody}
+            {renderSidebar(false)}
           </aside>
         </div>
       )}
@@ -256,7 +397,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
           <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div

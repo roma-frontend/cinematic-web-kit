@@ -17,6 +17,15 @@ export type SiteAccountDict = {
   openMenu: string;
   noName: string;
   noTitle: string;
+  // sidebar (collapsible + drill-in, mirrors the platform dashboard)
+  sidebar: {
+    groupWorkspace: string;
+    groupAccount: string;
+    collapse: string;
+    expand: string;
+    search: string;
+    noResults: string;
+  };
   // feedback
   networkError: string;
   // tabs
@@ -153,6 +162,14 @@ const ru: SiteAccountDict = {
   openMenu: 'Меню',
   noName: 'Без имени',
   noTitle: 'Без названия',
+  sidebar: {
+    groupWorkspace: 'Кабинет',
+    groupAccount: 'Аккаунт',
+    collapse: 'Свернуть меню',
+    expand: 'Развернуть меню',
+    search: 'Поиск разделов…',
+    noResults: 'Ничего не найдено',
+  },
   networkError: 'Сеть недоступна, попробуйте ещё раз.',
   tabs: {
     overview: 'Обзор',
@@ -277,6 +294,14 @@ const en: SiteAccountDict = {
   openMenu: 'Menu',
   noName: 'No name',
   noTitle: 'Untitled',
+  sidebar: {
+    groupWorkspace: 'Workspace',
+    groupAccount: 'Account',
+    collapse: 'Collapse menu',
+    expand: 'Expand menu',
+    search: 'Search sections…',
+    noResults: 'Nothing found',
+  },
   networkError: 'Network unavailable, please try again.',
   tabs: {
     overview: 'Overview',
@@ -401,6 +426,14 @@ const hy: SiteAccountDict = {
   openMenu: 'Մենյու',
   noName: 'Առանց անվան',
   noTitle: 'Առանց վերնագրի',
+  sidebar: {
+    groupWorkspace: 'Կաբինետ',
+    groupAccount: 'Հաշիվ',
+    collapse: 'Ծալել ընտրացանկը',
+    expand: 'Բացել ընտրացանկը',
+    search: 'Բաժինների որոնում…',
+    noResults: 'Ոչինչ չի գտնվել',
+  },
   networkError: 'Ցանցն անհասանելի է, փորձեք կրկին։',
   tabs: {
     overview: 'Ակնարկ',
