@@ -15,6 +15,7 @@ import {
   listCoursesForAdmin, createCourse, updateCourse, deleteCourse,
   listLessonsForAdmin, createLesson, updateLesson, deleteLesson,
 } from '@/lib/site-learning';
+import { listDocumentsForAdmin, deleteDocument } from '@/lib/site-documents';
 import { getDb, sites } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { getLocale } from '@/lib/i18n';
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
   if (courseId) {
     return NextResponse.json({ lessons: listLessonsForAdmin(siteId, courseId) });
   }
-  return NextResponse.json({ members: listMembers(siteId), materials: listMaterialsForAdmin(siteId), courses: listCoursesForAdmin(siteId) });
+  return NextResponse.json({ members: listMembers(siteId), materials: listMaterialsForAdmin(siteId), courses: listCoursesForAdmin(siteId), documents: listDocumentsForAdmin(siteId) });
 }
 
 export async function POST(request: Request) {
@@ -115,6 +116,10 @@ export async function POST(request: Request) {
     }
     case 'lesson-delete': {
       deleteLesson(siteId, str('lessonId'));
+      return NextResponse.json({ ok: true });
+    }
+    case 'document-delete': {
+      await deleteDocument(siteId, str('documentId'));
       return NextResponse.json({ ok: true });
     }
     case 'set-approval-policy': {

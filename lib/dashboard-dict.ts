@@ -225,6 +225,9 @@ export type DashDict = {
     draft: string; manage: string; lessonTitle: string; lessonBody: string; lessonVideo: string;
     lessonAttach: string; addLesson: string; noLessons: string; delete: string;
   };
+  documents: {
+    title: string; desc: string; upload: string; uploading: string; noDocuments: string; titlePh: string; delete: string;
+  };
 };
 
 const ru: DashDict = {
@@ -462,6 +465,15 @@ const ru: DashDict = {
     lessonAttach: 'Ссылка на материал (необязательно)',
     addLesson: 'Добавить урок',
     noLessons: 'В курсе пока нет уроков.',
+    delete: 'Удалить',
+  },
+  documents: {
+    title: 'Файлы и документы',
+    desc: 'Загрузите файлы (PDF, видео и др.) — участники смогут скачать их в кабинете.',
+    upload: 'Загрузить файл',
+    uploading: 'Загрузка…',
+    noDocuments: 'Файлов пока нет.',
+    titlePh: 'Название (необязательно)',
     delete: 'Удалить',
   },
 };
@@ -703,6 +715,15 @@ const en: DashDict = {
     noLessons: 'This course has no lessons yet.',
     delete: 'Delete',
   },
+  documents: {
+    title: 'Files & documents',
+    desc: 'Upload files (PDF, video, etc.) — members can download them in their cabinet.',
+    upload: 'Upload file',
+    uploading: 'Uploading…',
+    noDocuments: 'No files yet.',
+    titlePh: 'Title (optional)',
+    delete: 'Delete',
+  },
 };
 
 const hy: DashDict = {
@@ -940,6 +961,15 @@ const hy: DashDict = {
     lessonAttach: 'Նյութի հղում (ըստ ցանկության)',
     addLesson: 'Ավելացնել դաս',
     noLessons: 'Այս դասընթացը դեռ դասեր չունի։',
+    delete: 'Ջնջել',
+  },
+  documents: {
+    title: 'Ֆայլեր և փաստաթղթեր',
+    desc: 'Վերբեռնեք ֆայլեր (PDF, տեսանյութ և այլն) — մասնակիցները կկարողանան ներբեռնել դրանք կաբինետում։',
+    upload: 'Վերբեռնել ֆայլ',
+    uploading: 'Վերբեռնում…',
+    noDocuments: 'Ֆայլեր դեռ չկան։',
+    titlePh: 'Անվանում (ըստ ցանկության)',
     delete: 'Ջնջել',
   },
 };

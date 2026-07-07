@@ -35,6 +35,7 @@ export type SiteAccountDict = {
     profile: string;
     materials: string;
     courses: string;
+    documents: string;
     notifications: string;
     security: string;
     activity: string;
@@ -45,6 +46,7 @@ export type SiteAccountDict = {
     completedOf: string; open: string; back: string; markDone: string; markUndone: string;
     done: string; watchVideo: string; openAttachment: string; noLessons: string; allDone: string; lesson: string;
   };
+  documents: { title: string; desc: string; empty: string; download: string };
   // greeting words (by time of day)
   greetNight: string;
   greetMorning: string;
@@ -184,6 +186,7 @@ const ru: SiteAccountDict = {
     profile: 'Профиль',
     materials: 'Материалы',
     courses: 'Обучение',
+    documents: 'Файлы',
     notifications: 'Уведомления',
     security: 'Безопасность',
     activity: 'Обращения',
@@ -206,6 +209,12 @@ const ru: SiteAccountDict = {
     noLessons: 'В этом курсе пока нет уроков.',
     allDone: 'Курс пройден полностью!',
     lesson: 'Урок',
+  },
+  documents: {
+    title: 'Файлы и документы',
+    desc: 'Материалы для скачивания от команды: PDF, видео и другие файлы.',
+    empty: 'Пока нет файлов.',
+    download: 'Скачать',
   },
   greetNight: 'Доброй ночи',
   greetMorning: 'Доброе утро',
@@ -336,6 +345,7 @@ const en: SiteAccountDict = {
     profile: 'Profile',
     materials: 'Materials',
     courses: 'Learning',
+    documents: 'Files',
     notifications: 'Notifications',
     security: 'Security',
     activity: 'Requests',
@@ -358,6 +368,12 @@ const en: SiteAccountDict = {
     noLessons: 'This course has no lessons yet.',
     allDone: 'Course fully completed!',
     lesson: 'Lesson',
+  },
+  documents: {
+    title: 'Files & documents',
+    desc: 'Downloadable materials from the team: PDFs, videos and other files.',
+    empty: 'No files yet.',
+    download: 'Download',
   },
   greetNight: 'Good night',
   greetMorning: 'Good morning',
@@ -488,6 +504,7 @@ const hy: SiteAccountDict = {
     profile: 'Պրոֆիլ',
     materials: 'Նյութեր',
     courses: 'Ուսուցում',
+    documents: 'Ֆայլեր',
     notifications: 'Ծանուցումներ',
     security: 'Անվտանգություն',
     activity: 'Դիմումներ',
@@ -510,6 +527,12 @@ const hy: SiteAccountDict = {
     noLessons: 'Այս դասընթացը դեռ դասեր չունի։',
     allDone: 'Դասընթացն ամբողջությամբ անցված է։',
     lesson: 'Դաս',
+  },
+  documents: {
+    title: 'Ֆայլեր և փաստաթղթեր',
+    desc: 'Ներբեռնվող նյութեր թիմից՝ PDF, տեսանյութեր և այլ ֆայլեր։',
+    empty: 'Դեռ ֆայլեր չկան։',
+    download: 'Ներբեռնել',
   },
   greetNight: 'Բարի գիշեր',
   greetMorning: 'Բարի լույս',

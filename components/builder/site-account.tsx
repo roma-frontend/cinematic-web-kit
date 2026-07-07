@@ -16,6 +16,7 @@ import {
   LayoutDashboard, ChevronRight, ChevronLeft, Search, Copy, Wand2, KeyRound,
   LogIn, UserPlus,
   GraduationCap, PlayCircle, ArrowLeft, CheckCircle2, Circle,
+  FolderOpen, Download, FileType,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +106,7 @@ const TABS = [
   { id: 'profile', icon: User },
   { id: 'materials', icon: Library },
   { id: 'courses', icon: GraduationCap },
+  { id: 'documents', icon: FolderOpen },
   { id: 'notifications', icon: Bell },
   { id: 'security', icon: Shield },
   { id: 'activity', icon: FileText },
@@ -463,6 +465,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
                     {tab === 'profile' && <ProfileTab siteId={siteId} me={me} onSaved={setMe} />}
                     {tab === 'materials' && <MaterialsTab siteId={siteId} />}
                     {tab === 'courses' && <CoursesTab siteId={siteId} />}
+                    {tab === 'documents' && <DocumentsTab siteId={siteId} />}
                     {tab === 'notifications' && <NotificationsTab siteId={siteId} />}
                     {tab === 'security' && <SecurityTab siteId={siteId} />}
                     {tab === 'activity' && <ActivityTab siteId={siteId} />}
@@ -483,6 +486,7 @@ type Overview = {
   unread: number; notificationsCount: number; recentNotifications: Notif[];
   materialsCount: number; recentMaterials: Material[];
   coursesCount: number;
+  documentsCount: number;
   submissionsCount: number; sessionsCount: number;
 };
 
@@ -513,6 +517,7 @@ function OverviewTab({ siteId, me, unread, onNavigate }: { siteId: string; me: M
   const stats: { id: TabId; label: string; value: number | null; icon: React.ComponentType<{ className?: string }>; badge?: number }[] = [
     { id: 'materials', label: t.statMaterials, value: ov?.materialsCount ?? null, icon: Library },
     { id: 'courses', label: t.tabs.courses, value: ov?.coursesCount ?? null, icon: GraduationCap },
+    { id: 'documents', label: t.tabs.documents, value: ov?.documentsCount ?? null, icon: FolderOpen },
     { id: 'notifications', label: t.statNotifications, value: ov?.notificationsCount ?? null, icon: Bell, badge: unread },
     { id: 'activity', label: t.statActivity, value: ov?.submissionsCount ?? null, icon: FileText },
     { id: 'security', label: t.statDevices, value: ov?.sessionsCount ?? null, icon: Monitor },
@@ -999,6 +1004,72 @@ function CoursesTab({ siteId }: { siteId: string }) {
               </li>
             );
           })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+type MDoc = { id: string; title: string; fileName: string; url: string; contentType: string; size: number; createdAt: string | number | Date };
+
+function fmtSize(bytes: number): string {
+  if (!bytes) return '';
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0; let n = bytes;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${u[i]}`;
+}
+
+function DocumentsTab({ siteId }: { siteId: string }) {
+  const locale = useLocale().locale;
+  const t = siteAccountDict(locale);
+  const td = t.documents;
+  const [items, setItems] = useState<MDoc[] | null>(null);
+  const [q, setQ] = useState('');
+  useEffect(() => {
+    fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=documents`)
+      .then((r) => r.json()).then((d) => setItems(d.documents ?? [])).catch(() => setItems([]));
+  }, [siteId]);
+
+  const filtered = useMemo(() => {
+    if (!items) return null;
+    const needle = q.trim().toLowerCase();
+    if (!needle) return items;
+    return items.filter((m) => `${m.title} ${m.fileName}`.toLowerCase().includes(needle));
+  }, [items, q]);
+
+  return (
+    <div>
+      <SectionTitle title={td.title} desc={td.desc} />
+      {items && items.length > 0 && (
+        <div className="relative mb-4">
+          <Search className={iconCls} />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.courses.title} className="h-11 pl-10" />
+        </div>
+      )}
+      {!filtered ? (
+        <div className="py-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border py-10 text-center">
+          <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground/50" />
+          <p className="mt-2 text-sm text-muted-foreground">{q ? t.nothingFound : td.empty}</p>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {filtered.map((m) => (
+            <li key={m.id} className="flex items-center gap-3 rounded-xl border border-border bg-background/60 p-4 transition-colors hover:border-primary/40">
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <FileType className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{m.title || m.fileName}</p>
+                <p className="truncate text-xs text-muted-foreground">{m.fileName}{m.size ? ` · ${fmtSize(m.size)}` : ''} · {fmtDay(m.createdAt, locale)}</p>
+              </div>
+              <a href={m.url} target="_blank" rel="noreferrer" download className="inline-flex flex-none items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
+                <Download className="h-4 w-4" /> <span className="hidden sm:inline">{td.download}</span>
+              </a>
+            </li>
+          ))}
         </ul>
       )}
     </div>

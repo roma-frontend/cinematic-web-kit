@@ -4,8 +4,8 @@
 // members and create member-only materials. Talks to /api/site-members
 // (platform-authenticated + ownership-checked). Fully siteId-scoped.
 
-import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Check, X, Ban, Clock, Plus, Trash2, Users, Library, ShieldCheck, GraduationCap, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Loader2, Check, X, Ban, Clock, Plus, Trash2, Users, Library, ShieldCheck, GraduationCap, ChevronRight, Eye, EyeOff, Upload, FileType } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SITE_MEMBERS_SEEN_EVENT } from '@/components/dashboard/site-members-badge';
@@ -16,6 +16,7 @@ type Member = { id: string; email: string; name: string; status: string; rejecti
 type Material = { id: string; title: string; body: string; url: string; published: boolean; createdAt: string | number };
 type Course = { id: string; title: string; description: string; accent: string; published: boolean; lessonCount: number; createdAt: string | number };
 type Lesson = { id: string; title: string; body: string; videoUrl: string; attachmentUrl: string; position: number };
+type Document = { id: string; title: string; fileName: string; url: string; size: number; createdAt: string | number };
 
 const STATUS_CLS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-600',
@@ -34,6 +35,7 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
   const [members, setMembers] = useState<Member[] | null>(null);
   const [materials, setMaterials] = useState<Material[] | null>(null);
   const [courses, setCourses] = useState<Course[] | null>(null);
+  const [documents, setDocuments] = useState<Document[] | null>(null);
   const [approval, setApproval] = useState(memberApproval);
   const [busy, setBusy] = useState('');
 
@@ -44,10 +46,11 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
         setMembers(d.members ?? []);
         setMaterials(d.materials ?? []);
         setCourses(d.courses ?? []);
+        setDocuments(d.documents ?? []);
         // Owner opened the members panel → clear the nav badge blink.
         window.dispatchEvent(new CustomEvent(SITE_MEMBERS_SEEN_EVENT));
       })
-      .catch(() => { setMembers([]); setMaterials([]); setCourses([]); });
+      .catch(() => { setMembers([]); setMaterials([]); setCourses([]); setDocuments([]); });
   }, [siteId]);
   useEffect(() => { load(); }, [load]);
 
@@ -137,6 +140,7 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
 
       <MaterialsEditor siteId={siteId} materials={materials} reload={load} />
       <CoursesEditor siteId={siteId} courses={courses} reload={load} />
+      <DocumentsEditor siteId={siteId} documents={documents} reload={load} />
     </div>
   );
 }
@@ -307,5 +311,60 @@ function LessonsEditor({ siteId, courseId, reload }: { siteId: string; courseId:
         </Button>
       </div>
     </div>
+  );
+}
+
+
+function DocumentsEditor({ siteId, documents, reload }: { siteId: string; documents: Document[] | null; reload: () => void }) {
+  const t = dashDict(useLocale().locale).documents;
+  const [title, setTitle] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [delBusy, setDelBusy] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('siteId', siteId);
+      fd.append('title', title);
+      fd.append('file', file);
+      await fetch('/api/site-documents', { method: 'POST', body: fd });
+    } catch { /* surfaced by reload showing no change */ }
+    setUploading(false); setTitle('');
+    if (inputRef.current) inputRef.current.value = '';
+    reload();
+  };
+  const del = async (id: string) => { setDelBusy(id); await post({ action: 'document-delete', siteId, documentId: id }); setDelBusy(''); reload(); };
+
+  return (
+    <section>
+      <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold"><FileType className="h-4 w-4" /> {t.title}</h3>
+      <p className="mb-3 text-xs text-muted-foreground">{t.desc}</p>
+      <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.titlePh} className="h-10" />
+        <input ref={inputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); }} />
+        <Button size="sm" className="gap-1.5" disabled={uploading} onClick={() => inputRef.current?.click()}>
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} {uploading ? t.uploading : t.upload}
+        </Button>
+      </div>
+      {!documents ? (
+        <div className="mt-3"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : documents.length === 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">{t.noDocuments}</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {documents.map((d) => (
+            <li key={d.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+              <FileType className="h-4 w-4 flex-none text-muted-foreground" />
+              <a href={d.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">{d.title || d.fileName}</a>
+              <button type="button" onClick={() => del(d.id)} disabled={delBusy === d.id} aria-label={t.delete} className="flex-none rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
+                {delBusy === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

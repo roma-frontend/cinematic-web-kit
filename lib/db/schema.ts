@@ -336,6 +336,33 @@ export const siteLessonProgress = sqliteTable(
 );
 export type SiteLessonProgress = typeof siteLessonProgress.$inferSelect;
 
+// Admin-uploaded documents/files for members (PDF, video, etc.). Stored in R2
+// when configured, else under public/uploads; only the URL + metadata live here.
+export const siteDocuments = sqliteTable(
+  'site_documents',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    title: text('title').notNull().default(''),
+    /** Original filename (for display + download). */
+    fileName: text('file_name').notNull().default(''),
+    /** Public URL (R2 or /uploads/…). */
+    url: text('url').notNull().default(''),
+    /** Storage key (R2 object key or local path) for deletion. */
+    storageKey: text('storage_key').notNull().default(''),
+    contentType: text('content_type').notNull().default(''),
+    size: integer('size').notNull().default(0),
+    published: integer('published', { mode: 'boolean' }).notNull().default(true),
+    uploadedBy: text('uploaded_by').notNull().default(''),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('site_documents_site_idx').on(t.siteId)],
+);
+export type SiteDocument = typeof siteDocuments.$inferSelect;
+
+
 
 // Per-member notifications (join approved/rejected/suspended, new material, …).
 // Scoped by siteId + siteUserId — a member only ever sees their own.

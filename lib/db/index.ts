@@ -167,6 +167,22 @@ CREATE TABLE IF NOT EXISTS site_lesson_progress (
 CREATE UNIQUE INDEX IF NOT EXISTS site_lesson_progress_uq ON site_lesson_progress (site_user_id, lesson_id);
 CREATE INDEX IF NOT EXISTS site_lesson_progress_user_idx ON site_lesson_progress (site_user_id);
 
+CREATE TABLE IF NOT EXISTS site_documents (
+  id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT '',
+  file_name TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '',
+  storage_key TEXT NOT NULL DEFAULT '',
+  content_type TEXT NOT NULL DEFAULT '',
+  size INTEGER NOT NULL DEFAULT 0,
+  published INTEGER NOT NULL DEFAULT 1,
+  uploaded_by TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS site_documents_site_idx ON site_documents (site_id);
+
+
 
 CREATE TABLE IF NOT EXISTS site_notifications (
   id TEXT PRIMARY KEY,

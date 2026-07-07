@@ -28,6 +28,7 @@ import {
 } from '@/lib/site-auth';
 import { listPublishedMaterials } from '@/lib/site-membership';
 import { listPublishedCourses, getCourseForMember, setLessonProgress } from '@/lib/site-learning';
+import { listPublishedDocuments } from '@/lib/site-documents';
 import {
   createSiteLoginOtp,
   verifySiteLoginOtp,
@@ -92,6 +93,10 @@ export async function GET(request: Request) {
     if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
     return NextResponse.json({ courses: listPublishedCourses(siteId, user.id) });
   }
+  if (resource === 'documents') {
+    if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
+    return NextResponse.json({ documents: listPublishedDocuments(siteId) });
+  }
   if (resource === 'course') {
     if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
     const course = getCourseForMember(siteId, user.id, url.searchParams.get('id') ?? '');
@@ -102,6 +107,7 @@ export async function GET(request: Request) {
     // Everything the account home screen needs in one round-trip.
     const materials = user.status === 'approved' ? listPublishedMaterials(siteId) : [];
     const courses = user.status === 'approved' ? listPublishedCourses(siteId, user.id) : [];
+    const documents = user.status === 'approved' ? listPublishedDocuments(siteId) : [];
     const notifications = listNotifications(siteId, user.id);
     const submissions = listSiteUserSubmissions(siteId, user.id, user.email);
     const sessions = await listSiteSessions(siteId, user.id);
@@ -113,6 +119,7 @@ export async function GET(request: Request) {
       recentMaterials: materials.slice(0, 3),
       coursesCount: courses.length,
       recentCourses: courses.slice(0, 3),
+      documentsCount: documents.length,
       submissionsCount: submissions.length,
       sessionsCount: sessions.length,
     });
