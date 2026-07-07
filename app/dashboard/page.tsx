@@ -4,6 +4,7 @@ import { Globe, Rocket, Inbox, Users, Pencil, ExternalLink, CircleDashed, Plus }
 import { getCurrentUser, isStaff } from '@/lib/auth';
 import { listSitesForUser, statsForUser } from '@/lib/sites';
 import { platformStats } from '@/lib/admin';
+import { disabledCapabilitiesFor } from '@/lib/access';
 import { Button } from '@/components/ui/button';
 import { PageHeader, StatCard, EmptyState } from '@/components/dashboard/ui';
 import { getLocale } from '@/lib/i18n';
@@ -25,7 +26,13 @@ export default async function DashboardOverview() {
   const stats = statsForUser(user.id);
   const sites = listSitesForUser(user.id).slice(0, 4);
   const staff = isStaff(user);
-  const platform = staff ? platformStats() : null;
+  // Respect the superadmin's role-access matrix: an admin only sees the platform
+  // (staff) metrics whose section they're actually allowed to open. The
+  // superadmin is never restricted (disabledCapabilitiesFor → []).
+  const disabled = staff ? new Set(disabledCapabilitiesFor(user.role)) : new Set<string>();
+  const canUsers = staff && !disabled.has('users');
+  const canAllSites = staff && !disabled.has('allSites');
+  const platform = canUsers || canAllSites ? platformStats() : null;
 
   return (
     <>
@@ -47,10 +54,10 @@ export default async function DashboardOverview() {
             <Users className="h-4 w-4 text-amber-500" /> {t.platformStaff}
           </h2>
           <div className="grid gap-4 sm:grid-cols-4">
-            <StatCard label={t.statUsers} value={platform.users} icon={Users} href="/dashboard/users" />
-            <StatCard label={t.statAllSites} value={platform.sites} icon={Globe} href="/dashboard/all-sites" />
-            <StatCard label={t.statPublished} value={platform.published} icon={Rocket} />
-            <StatCard label={t.statSubmissions} value={platform.submissions} icon={Inbox} />
+            {canUsers && <StatCard label={t.statUsers} value={platform.users} icon={Users} href="/dashboard/users" />}
+            {canAllSites && <StatCard label={t.statAllSites} value={platform.sites} icon={Globe} href="/dashboard/all-sites" />}
+            {canAllSites && <StatCard label={t.statPublished} value={platform.published} icon={Rocket} />}
+            {canAllSites && <StatCard label={t.statSubmissions} value={platform.submissions} icon={Inbox} />}
           </div>
         </>
       )}
