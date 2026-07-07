@@ -1,4 +1,4 @@
-# Cinematic Web Kit
+# Builder Studio
 
 A **Next.js starter** for building modern, good-looking web projects whose sections are driven by **AI-generated cinematic video** (hero banners, full-bleed backgrounds, product-style cards).
 

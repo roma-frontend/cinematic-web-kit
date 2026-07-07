@@ -53,7 +53,7 @@ describe('sendEmail', () => {
   it('sends via Resend with the Bearer key and sender identity', async () => {
     process.env.RESEND_API_KEY = 'resend-key';
     process.env.EMAIL_FROM = 'info@kit.dev';
-    process.env.EMAIL_FROM_NAME = 'Cinematic Web Kit';
+    process.env.EMAIL_FROM_NAME = 'Builder Studio';
     process.env.EMAIL_REPLY_TO = 'support@kit.dev';
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal('fetch', fetchMock);
@@ -64,7 +64,7 @@ describe('sendEmail', () => {
     expect(url).toBe('https://api.resend.com/emails');
     expect(init.headers.Authorization).toBe('Bearer resend-key');
     const body = JSON.parse(init.body);
-    expect(body.from).toBe('Cinematic Web Kit <info@kit.dev>');
+    expect(body.from).toBe('Builder Studio <info@kit.dev>');
     expect(body.to).toEqual(['user@example.com']);
     expect(body.reply_to).toBe('support@kit.dev');
     expect(body.subject).toBe('Тест');

@@ -12,7 +12,7 @@ import { TourLauncher } from '@/components/tour/tour-launcher';
 
 export async function generateMetadata() {
   const t = dashDict(await getLocale());
-  return { title: `${t.overview.metaTitle} — Cinematic Kit` };
+  return { title: `${t.overview.metaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

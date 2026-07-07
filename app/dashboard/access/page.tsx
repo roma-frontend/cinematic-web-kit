@@ -12,7 +12,7 @@ const DICT = {
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  return { title: `${(DICT[locale] ?? DICT.en).title} — Cinematic Kit`, robots: { index: false, follow: false } as const };
+  return { title: `${(DICT[locale] ?? DICT.en).title} — Builder Studio`, robots: { index: false, follow: false } as const };
 }
 export const dynamic = 'force-dynamic';
 

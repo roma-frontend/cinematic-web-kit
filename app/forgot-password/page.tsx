@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { ForgotPasswordForm } from '@/components/auth/password-reset';
 
-export const metadata = { title: 'Восстановление пароля — Cinematic Kit' };
+export const metadata = { title: 'Восстановление пароля — Builder Studio' };
 export const dynamic = 'force-dynamic';
 
 export default async function ForgotPasswordPage() {

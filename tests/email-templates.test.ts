@@ -13,7 +13,7 @@ describe('renderLoginOtpEmail', () => {
   it('renders the code, brand and TTL in Russian', () => {
     const { subject, html, text } = renderLoginOtpEmail({ name: 'Анна', code: '482913', ttlMinutes: 10 });
     expect(subject).toBe(OTP_SUBJECT);
-    expect(subject).toContain('Cinematic Web Kit');
+    expect(subject).toContain('Builder Studio');
     // each digit is rendered as its own styled cell
     for (const d of '482913') expect(html).toContain(`>${d}</span>`);
     expect(html).toContain('Анна');

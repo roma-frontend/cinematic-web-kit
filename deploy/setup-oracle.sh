@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-shot setup for Cinematic Web Kit on a fresh Ubuntu 22.04 VM
+# One-shot setup for Builder Studio on a fresh Ubuntu 22.04 VM
 # (Oracle Cloud Always Free — VM.Standard.A1.Flex, ARM). Installs Node 20, the
 # app (systemd service) and Caddy (automatic HTTPS + tenant custom domains via
 # on-demand TLS). Data + uploads persist under /var/cwk.
@@ -43,7 +43,7 @@ SECRET="$(openssl rand -hex 32)"
 echo "==> systemd service"
 sudo tee /etc/systemd/system/cwk.service >/dev/null <<EOF
 [Unit]
-Description=Cinematic Web Kit
+Description=Builder Studio
 After=network.target
 
 [Service]

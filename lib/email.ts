@@ -29,7 +29,7 @@ const TIMEOUT_MS = 10_000;
 function sender() {
   return {
     email: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-    name: process.env.EMAIL_FROM_NAME || 'Cinematic Web Kit',
+    name: process.env.EMAIL_FROM_NAME || 'Builder Studio',
     replyTo: process.env.EMAIL_REPLY_TO || '',
   };
 }

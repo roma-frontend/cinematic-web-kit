@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Film, Sparkles, ArrowRight } from 'lucide-react';
+import { Blocks, Sparkles, ArrowRight } from 'lucide-react';
 import { getLocale } from '@/lib/i18n';
 import { getCurrentUser } from '@/lib/auth';
 import { ui } from '@/lib/ui-dict';
@@ -65,10 +65,10 @@ export async function SiteFooter() {
           <div>
             <Link href="/" className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-lg shadow-primary/20">
-                <Film className="h-5 w-5" />
+                <Blocks className="h-5 w-5" />
               </span>
               <span className="flex flex-col leading-none">
-                <span className="text-sm font-black tracking-tight">Cinematic Kit</span>
+                <span className="text-sm font-black tracking-tight">Builder Studio</span>
                 <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">AI site builder</span>
               </span>
             </Link>
@@ -98,7 +98,7 @@ export async function SiteFooter() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row">
-          <span>© {new Date().getFullYear()} Cinematic Web Kit. {t.footer.rights}</span>
+          <span>© {new Date().getFullYear()} Builder Studio. {t.footer.rights}</span>
           <span className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" /> {t.footer.madeOn}
           </span>

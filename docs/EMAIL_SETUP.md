@@ -1,6 +1,6 @@
 # Почта проекта: бесплатно, без лимитов на приём, с info@ / support@ / sales@
 
-Эта инструкция настраивает **всю** почтовую инфраструктуру Cinematic Web Kit
+Эта инструкция настраивает **всю** почтовую инфраструктуру Builder Studio
 на бесплатных тарифах:
 
 | Задача | Сервис | Цена | Лимиты |
@@ -53,7 +53,7 @@
    ```ini
    RESEND_API_KEY=re_ваш_ключ
    EMAIL_FROM=info@ваш-домен
-   EMAIL_FROM_NAME=Cinematic Web Kit
+   EMAIL_FROM_NAME=Builder Studio
    EMAIL_REPLY_TO=support@ваш-домен
    ```
 

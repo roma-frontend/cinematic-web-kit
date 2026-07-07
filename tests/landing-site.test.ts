@@ -27,7 +27,7 @@ describe('getOrCreateLandingSite', () => {
     expect(site.publishedAt).toBeNull();
     const doc = parseDoc(site.draftDoc);
     expect(doc?.pages.length).toBeGreaterThan(0);
-    expect((doc as any)?.brand).toBe('Cinematic Web Kit');
+    expect((doc as any)?.brand).toBe('Builder Studio');
   });
 
   it('is idempotent — returns the existing landing on subsequent calls', () => {

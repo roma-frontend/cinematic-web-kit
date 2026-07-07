@@ -395,7 +395,7 @@ const ru: DashDict = {
     errGeneric: 'Ошибка',
     welcomeTitle: 'Добро пожаловать',
     welcomeDesc: 'Чтобы пользоваться платформой, создайте организацию или присоединитесь к существующей. Доступ откроется после одобрения суперадмином.',
-    joinMetaTitle: 'Организация — Cinematic Kit',
+    joinMetaTitle: 'Организация — Builder Studio',
     joinDesc: 'Создайте свою организацию или присоединитесь к существующей. Заявку рассмотрит суперадмин.',
   },
   account: {
@@ -668,7 +668,7 @@ const en: DashDict = {
     errGeneric: 'Error',
     welcomeTitle: 'Welcome',
     welcomeDesc: 'To use the platform, create an organization or join an existing one. Access opens once a superadmin approves.',
-    joinMetaTitle: 'Organization — Cinematic Kit',
+    joinMetaTitle: 'Organization — Builder Studio',
     joinDesc: 'Create your own organization or join an existing one. A superadmin will review your request.',
   },
   account: {
@@ -941,7 +941,7 @@ const hy: DashDict = {
     errGeneric: 'Սխալ',
     welcomeTitle: 'Բարի գալուստ',
     welcomeDesc: 'Հարթակն օգտագործելու համար ստեղծեք կազմակերպություն կամ միացեք գոյություն ունեցողին։ Մուտքը կբացվի գերադմինի հաստատումից հետո։',
-    joinMetaTitle: 'Կազմակերպություն — Cinematic Kit',
+    joinMetaTitle: 'Կազմակերպություն — Builder Studio',
     joinDesc: 'Ստեղծեք ձեր կազմակերպությունը կամ միացեք գոյություն ունեցողին։ Հայտը կդիտարկի գերադմինը։',
   },
   account: {

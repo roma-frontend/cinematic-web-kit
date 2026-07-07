@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { AuthForm } from '@/components/auth/auth-form';
 
-export const metadata = { title: 'Вход — Cinematic Kit' };
+export const metadata = { title: 'Вход — Builder Studio' };
 export const dynamic = 'force-dynamic';
 
 export default async function LoginPage() {

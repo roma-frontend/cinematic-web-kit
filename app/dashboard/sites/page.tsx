@@ -7,7 +7,7 @@ import { getLocale } from '@/lib/i18n';
 import { dashDict } from '@/lib/dashboard-dict';
 
 export async function generateMetadata() {
-  return { title: `${dashDict(await getLocale()).nav.sites} — Cinematic Kit` };
+  return { title: `${dashDict(await getLocale()).nav.sites} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

@@ -11,7 +11,7 @@ import { dashDict } from '@/lib/dashboard-dict';
 
 export async function generateMetadata() {
   const t = dashDict(await getLocale());
-  return { title: `${t.orgConsole.metaTitle} — Cinematic Kit` };
+  return { title: `${t.orgConsole.metaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

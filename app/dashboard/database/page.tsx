@@ -9,7 +9,7 @@ import { staffDict } from '@/lib/staff-dict';
 
 export async function generateMetadata() {
   const t = staffDict(await getLocale());
-  return { title: `${t.dbMetaTitle} — Cinematic Kit` };
+  return { title: `${t.dbMetaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

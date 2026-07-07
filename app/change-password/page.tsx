@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { ForcePasswordChange } from '@/components/auth/force-password-change';
 
-export const metadata = { title: 'Смена пароля — Cinematic Kit', robots: { index: false, follow: false } as const };
+export const metadata = { title: 'Смена пароля — Builder Studio', robots: { index: false, follow: false } as const };
 export const dynamic = 'force-dynamic';
 
 export default async function ChangePasswordPage() {

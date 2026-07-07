@@ -75,7 +75,7 @@ const ru: PagesDict = {
 
 const en: PagesDict = {
   presets: {
-    metaTitle: 'Page presets — Cinematic Kit',
+    metaTitle: 'Page presets — Builder Studio',
     metaDesc: 'Ready-made page templates assembled from cinematic blocks.',
     title: 'Page presets',
     intro: 'Six ready-made landings — one per industry, each in its own theme with its own character. Every preset below is shown live in a scaled preview; open any of them to view full screen.',
@@ -83,7 +83,7 @@ const en: PagesDict = {
     customTitle: 'Want your own preset? Add an entry to lib/presets.ts and localized content to lib/preset-demo-dict.ts — the /presets/[slug] page builds itself.',
   },
   themes: {
-    metaTitle: 'Themes / templates — Cinematic Kit',
+    metaTitle: 'Themes / templates — Builder Studio',
     metaDesc: 'A gallery of design themes the engine matches to the site topic.',
     title: 'Themes / templates',
     intro: 'The engine automatically matches a theme to the site content (palette, heading font, radii, motion character). Below are live previews in the current scheme (light or dark — they follow the site toggle) and the keywords each theme is selected by. The theme “{label}” is currently active on the site — it is marked below.',
@@ -95,7 +95,7 @@ const en: PagesDict = {
     defaultWhenNoMatch: 'default (if nothing matched)',
   },
   vitals: {
-    metaTitle: 'Web Vitals — Cinematic Kit',
+    metaTitle: 'Web Vitals — Builder Studio',
     metaDesc: 'A live dashboard of Core Web Vitals (LCP, INP, CLS) for this page.',
     title: 'Web Vitals — live',
     intro: 'The same performance metrics Cloudflare Web Analytics collects — measured right in your browser via next/web-vitals. Values appear as you interact with the page (INP — after the first click/scroll). Thresholds match Core Web Vitals.',
@@ -113,7 +113,7 @@ const en: PagesDict = {
 
 const hy: PagesDict = {
   presets: {
-    metaTitle: 'Էջերի նախակարգեր — Cinematic Kit',
+    metaTitle: 'Էջերի նախակարգեր — Builder Studio',
     metaDesc: 'Պատրաստի էջերի ձևանմուշներ՝ հավաքված կինեմատոգրաֆիկ բլոկներից։',
     title: 'Էջերի նախակարգեր',
     intro: 'Վեց պատրաստի լենդինգ — յուրաքանչյուրն ինդուստրիայի համար, իր թեմայով և բնավորությամբ։ Ստորև յուրաքանչյուրը ցուցադրված է կենդանի՝ մասշտաբավորված նախադիտմամբ. բացեք ցանկացածը՝ ամբողջ էկրանով դիտելու համար։',
@@ -121,7 +121,7 @@ const hy: PagesDict = {
     customTitle: 'Ուզո՞ւմ եք ձեր նախակարգը։ Ավելացրեք գրառում lib/presets.ts-ում և տեղայնացված բովանդակություն lib/preset-demo-dict.ts-ում — /presets/[slug] էջը կհավաքվի ինքնուրույն։',
   },
   themes: {
-    metaTitle: 'Թեմաներ / ձևանմուշներ — Cinematic Kit',
+    metaTitle: 'Թեմաներ / ձևանմուշներ — Builder Studio',
     metaDesc: 'Դիզայն-թեմաների պատկերասրահ, որ շարժիչն ընտրում է կայքի թեմայի համար։',
     title: 'Թեմաներ / ձևանմուշներ',
     intro: 'Շարժիչն ավտոմատ ընտրում է թեմա՝ ըստ կայքի բովանդակության (գունապնակ, վերնագրերի տառատեսակ, շառավիղներ, անիմացիաների բնույթ)։ Ստորև՝ նախադիտումներ ընթացիկ սխեմայում (բաց կամ մուգ՝ փոխվում է կայքի հետ) և բանալի բառերը, որոնցով ընտրվում է թեման։ Այժմ կայքում ակտիվ է «{label}» թեման — այն նշված է ստորև։',
@@ -133,7 +133,7 @@ const hy: PagesDict = {
     defaultWhenNoMatch: 'ըստ լռելյայնի (եթե ոչինչ չհամընկավ)',
   },
   vitals: {
-    metaTitle: 'Web Vitals — Cinematic Kit',
+    metaTitle: 'Web Vitals — Builder Studio',
     metaDesc: 'Այս էջի Core Web Vitals-ի (LCP, INP, CLS) կենդանի վահանակ։',
     title: 'Web Vitals — կենդանի',
     intro: 'Նույն արտադրողականության մետրիկները, որ հավաքում է Cloudflare Web Analytics-ը — չափվում են անմիջապես ձեր բրաուզերում next/web-vitals-ի միջոցով։ Արժեքները հայտնվում են էջի հետ փոխազդեցության ընթացքում (INP — առաջին սեղմումից/սքրոլից հետո)։ Շեմերը համընկնում են Core Web Vitals-ի հետ։',

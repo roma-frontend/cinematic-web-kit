@@ -94,7 +94,7 @@ function seedLandingDoc(): BuilderDoc {
   };
 
   return {
-    brand: 'Cinematic Web Kit',
+    brand: 'Builder Studio',
     themeId: (siteConfig as { theme?: string }).theme || 'editorial-coffee',
     headerVariant: 'split',
     headerBehavior: 'sticky',
@@ -108,7 +108,7 @@ function seedLandingDoc(): BuilderDoc {
       { label: 'Войти', href: '/login' },
     ],
     footer: {
-      text: `© ${year} Cinematic Web Kit. Все права защищены.`,
+      text: `© ${year} Builder Studio. Все права защищены.`,
       links: [
         { label: 'Темы', href: '/themes' },
         { label: 'Студия', href: '/studio' },

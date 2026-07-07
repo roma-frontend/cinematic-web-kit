@@ -10,7 +10,7 @@ import { getLocale } from '@/lib/i18n';
 import { ccDict } from '@/lib/control-center-dict';
 
 export async function generateMetadata() {
-  return { title: `${ccDict(await getLocale()).title} — Cinematic Kit` };
+  return { title: `${ccDict(await getLocale()).title} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

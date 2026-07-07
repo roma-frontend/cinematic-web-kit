@@ -12,7 +12,7 @@ import { BCP47 } from '@/lib/seo';
 
 export async function generateMetadata() {
   const t = staffDict(await getLocale());
-  return { title: `${t.allMetaTitle} — Cinematic Kit` };
+  return { title: `${t.allMetaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

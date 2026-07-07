@@ -6,7 +6,7 @@
 // (components/builder/site-auth-page.tsx) so they look identical.
 
 import Link from 'next/link';
-import { Film, User, Lock, ShieldCheck, Check, type LucideIcon } from 'lucide-react';
+import { Blocks, User, Lock, ShieldCheck, Check, type LucideIcon } from 'lucide-react';
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const iconCls = 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground';
@@ -90,7 +90,7 @@ export function Shell({ children, maxWidth = '26rem' }: { children: React.ReactN
   );
 }
 
-export function Brand({ title, subtitle, href = '/', label, icon: Icon = Film }: {
+export function Brand({ title, subtitle, href = '/', label, icon: Icon = Blocks }: {
   title: string;
   subtitle?: string;
   href?: string;

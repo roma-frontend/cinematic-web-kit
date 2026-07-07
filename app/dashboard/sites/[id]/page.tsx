@@ -10,7 +10,7 @@ import { siteSettingsDict } from '@/lib/site-settings-dict';
 
 export async function generateMetadata() {
   const t = siteSettingsDict(await getLocale());
-  return { title: `${t.metaTitle} — Cinematic Kit` };
+  return { title: `${t.metaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

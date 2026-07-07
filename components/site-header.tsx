@@ -11,7 +11,7 @@ import { useScrollDirection } from '@/hooks/use-scroll-direction';
 import { ui, type UiDict } from '@/lib/ui-dict';
 import { Button } from '@/components/ui/button';
 import {
-  Film, Sparkles, Menu, X, LogIn, LogOut, ChevronDown,
+  Blocks, Sparkles, Menu, X, LogIn, LogOut, ChevronDown,
   LayoutDashboard, Globe, UserCircle, Crown, ShieldCheck, Loader2,
 } from 'lucide-react';
 
@@ -200,10 +200,10 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-[var(--container-max)] items-center justify-between gap-4 px-6 sm:px-10">
         <Link href="/" className="group flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
-            <Film className="h-5 w-5" />
+            <Blocks className="h-5 w-5" />
           </span>
           <span className="flex flex-col leading-none">
-            <span className="text-sm font-black tracking-tight">Cinematic Kit</span>
+            <span className="text-sm font-black tracking-tight">Builder Studio</span>
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t.header.tagline}</span>
           </span>
         </Link>

@@ -11,7 +11,7 @@ import { BCP47 } from '@/lib/seo';
 
 export async function generateMetadata() {
   const t = dashDict(await getLocale());
-  return { title: `${t.account.metaTitle} — Cinematic Kit` };
+  return { title: `${t.account.metaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

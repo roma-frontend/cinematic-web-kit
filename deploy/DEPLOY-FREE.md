@@ -1,4 +1,4 @@
-# Бесплатный деплой Cinematic Web Kit
+# Бесплатный деплой Builder Studio
 
 > **Рекомендация: Oracle Cloud Always Free VM + Cloudflare + Caddy.** Реально
 > бесплатно навсегда, постоянный диск (данные/загрузки не теряются), и идеально
@@ -82,7 +82,7 @@ sudo ln -sfn /var/cwk/uploads public/uploads
 `/etc/systemd/system/cwk.service`:
 ```ini
 [Unit]
-Description=Cinematic Web Kit
+Description=Builder Studio
 After=network.target
 
 [Service]

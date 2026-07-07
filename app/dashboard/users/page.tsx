@@ -10,7 +10,7 @@ import { staffDict } from '@/lib/staff-dict';
 
 export async function generateMetadata() {
   const t = staffDict(await getLocale());
-  return { title: `${t.usersMetaTitle} — Cinematic Kit` };
+  return { title: `${t.usersMetaTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

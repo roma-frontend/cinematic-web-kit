@@ -75,7 +75,7 @@ export function verifyTotp(secret: string, token: string, window = 1, timeMs: nu
 }
 
 /** otpauth:// URI for QR/manual entry in an authenticator app. */
-export function otpauthUrl(secret: string, account: string, issuer = 'Cinematic Kit'): string {
+export function otpauthUrl(secret: string, account: string, issuer = 'Builder Studio'): string {
   const label = encodeURIComponent(`${issuer}:${account}`);
   const params = new URLSearchParams({ secret, issuer, algorithm: 'SHA1', digits: '6', period: '30' });
   return `otpauth://totp/${label}?${params.toString()}`;

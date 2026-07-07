@@ -9,7 +9,7 @@
 
 import type { Metadata } from 'next';
 
-export const SITE_NAME = 'Cinematic Web Kit';
+export const SITE_NAME = 'Builder Studio';
 
 export const DEFAULT_DESCRIPTION =
   'Конструктор сайтов с кинематографичными видео-секциями. Соберите лендинг из AI-видео, ' +

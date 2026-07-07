@@ -13,7 +13,15 @@ app = "builder-studio"
 primary_region = "fra"
 
 [build]
-
+  # NEXT_PUBLIC_* are inlined into the client bundle at BUILD time (see
+  # Dockerfile ARGs). Fly runtime secrets are too late for these, so set them
+  # here (they are public, not secrets). Re-run `fly deploy` after changing.
+  [build.args]
+    NEXT_PUBLIC_APP_HOST = "builder-studio.fly.dev"
+    NEXT_PUBLIC_MEDIA_BASE_URL = "https://pub-c7b94333a6814d959cfc04029d2925aa.r2.dev"
+    # Serve tutorial media (videos/images) from R2 — your bucket public base,
+    # NO trailing slash and NO /media (the app adds /media/...). Uncomment+fill:
+    # NEXT_PUBLIC_MEDIA_BASE_URL = "https://pub-xxxxxxxx.r2.dev"
 [env]
   PORT = "3000"
   NODE_ENV = "production"

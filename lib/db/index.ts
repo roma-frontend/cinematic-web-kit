@@ -350,6 +350,58 @@ CREATE TABLE IF NOT EXISTS saved_views (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS saved_views_user_route_idx ON saved_views (user_id, route);
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plan_id TEXT NOT NULL,
+  interval TEXT NOT NULL DEFAULT 'month',
+  status TEXT NOT NULL DEFAULT 'incomplete',
+  provider TEXT NOT NULL DEFAULT 'manual',
+  provider_customer_id TEXT NOT NULL DEFAULT '',
+  provider_sub_id TEXT NOT NULL DEFAULT '',
+  amount INTEGER NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'usd',
+  current_period_start INTEGER,
+  current_period_end INTEGER,
+  cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+  canceled_at INTEGER,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS subscriptions_user_idx ON subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS subscriptions_status_idx ON subscriptions (status);
+CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_provider_sub_idx ON subscriptions (provider_sub_id);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subscription_id TEXT,
+  plan_id TEXT NOT NULL DEFAULT '',
+  amount INTEGER NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'usd',
+  status TEXT NOT NULL DEFAULT 'pending',
+  provider TEXT NOT NULL DEFAULT 'manual',
+  provider_invoice_id TEXT NOT NULL DEFAULT '',
+  provider_payment_id TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  invoice_number TEXT NOT NULL DEFAULT '',
+  period_start INTEGER,
+  period_end INTEGER,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS payments_user_idx ON payments (user_id);
+CREATE INDEX IF NOT EXISTS payments_status_idx ON payments (status);
+CREATE INDEX IF NOT EXISTS payments_created_idx ON payments (created_at);
+
+CREATE TABLE IF NOT EXISTS billing_events (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL DEFAULT '',
+  provider TEXT NOT NULL DEFAULT 'stripe',
+  payload TEXT NOT NULL DEFAULT '',
+  processed_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS billing_events_type_idx ON billing_events (type);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;

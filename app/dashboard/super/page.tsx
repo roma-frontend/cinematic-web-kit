@@ -6,7 +6,7 @@ import { dashDict } from '@/lib/dashboard-dict';
 import { SectionHub, type HubCard } from '@/components/dashboard/section-hub';
 
 export async function generateMetadata() {
-  return { title: `${dashDict(await getLocale()).hub.superTitle} — Cinematic Kit` };
+  return { title: `${dashDict(await getLocale()).hub.superTitle} — Builder Studio` };
 }
 export const dynamic = 'force-dynamic';
 

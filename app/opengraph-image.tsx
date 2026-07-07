@@ -50,11 +50,11 @@ export default function OpengraphImage() {
               letterSpacing: -1,
             }}
           >
-            <span>Cinematic website</span>
-            <span>builder</span>
+            <span>Build websites</span>
+            <span>visually</span>
           </div>
           <div style={{ fontSize: 30, color: '#a5b4fc', maxWidth: 900 }}>
-            Compose a landing page from AI-video sections and publish it to your own domain — no code.
+            Compose pages from ready-made blocks and cinematic AI-video sections, then publish to your own domain — no code.
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Film, LayoutDashboard, Globe, Inbox, UserCircle, Users, LayoutList,
+  Film, Blocks, LayoutDashboard, Globe, Inbox, UserCircle, Users, LayoutList,
   LogOut, Menu, X, ExternalLink, Crown, ShieldCheck, Plus, Search, Building2, Database,
   ScrollText, KeyRound, Activity, Trash2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -164,10 +164,10 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
           {!col && (
             <Link href="/" className="flex min-w-0 items-center gap-2.5" onClick={() => setOpen(false)}>
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-lg shadow-primary/20">
-                <Film className="h-5 w-5" />
+                <Blocks className="h-5 w-5" />
               </span>
               <span className="flex min-w-0 flex-col leading-none">
-                <span className="truncate text-sm font-black tracking-tight">Cinematic Kit</span>
+                <span className="truncate text-sm font-black tracking-tight">Builder Studio</span>
                 <span className="truncate text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{t.brandSub}</span>
               </span>
             </Link>

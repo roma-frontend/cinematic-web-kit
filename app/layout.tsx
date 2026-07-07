@@ -56,7 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
   },
-  icons: { icon: '/icon.svg', apple: '/icon.svg' },
+  icons: { icon: '/icon.svg', apple: '/apple-icon' },
   };
 }
 

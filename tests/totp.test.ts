@@ -31,7 +31,7 @@ describe('totp core', () => {
     const url = otpauthUrl('ABC234', 'user@example.com');
     expect(url).toContain('otpauth://totp/');
     expect(url).toContain('secret=ABC234');
-    expect(url).toContain('issuer=Cinematic+Kit');
+    expect(url).toContain('issuer=Builder+Studio');
   });
 });
 

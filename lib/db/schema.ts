@@ -632,3 +632,96 @@ export type Site = typeof sites.$inferSelect;
 export type Domain = typeof domains.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type Audit = typeof audit.$inferSelect;
+
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// Billing: platform subscriptions + payment history. A platform `user` buys a
+// plan (see lib/billing/plans.ts); the active subscription drives feature
+// entitlements. Stripe (via REST) is the provider when configured, else a
+// "manual" provider the superadmin drives by hand — both write the same rows.
+export const subscriptions = sqliteTable(
+  'subscriptions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** PlanId: 'starter' | 'pro' | 'studio'. */
+    planId: text('plan_id').notNull(),
+    /** BillingInterval: 'month' | 'year'. */
+    interval: text('interval').notNull().default('month'),
+    /** 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete'. */
+    status: text('status').notNull().default('incomplete'),
+    /** 'stripe' | 'manual'. */
+    provider: text('provider').notNull().default('manual'),
+    providerCustomerId: text('provider_customer_id').notNull().default(''),
+    providerSubId: text('provider_sub_id').notNull().default(''),
+    /** Price snapshot (cents) at subscription time. */
+    amount: integer('amount').notNull().default(0),
+    currency: text('currency').notNull().default('usd'),
+    currentPeriodStart: integer('current_period_start', { mode: 'timestamp_ms' }),
+    currentPeriodEnd: integer('current_period_end', { mode: 'timestamp_ms' }),
+    /** When true, the subscription ends at currentPeriodEnd (no auto-renew). */
+    cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).notNull().default(false),
+    canceledAt: integer('canceled_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [
+    index('subscriptions_user_idx').on(t.userId),
+    index('subscriptions_status_idx').on(t.status),
+    uniqueIndex('subscriptions_provider_sub_idx').on(t.providerSubId),
+  ],
+);
+export type Subscription = typeof subscriptions.$inferSelect;
+
+// One row per payment attempt / invoice. `paid` rows drive revenue metrics.
+export const payments = sqliteTable(
+  'payments',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    subscriptionId: text('subscription_id'),
+    planId: text('plan_id').notNull().default(''),
+    /** Amount in cents. */
+    amount: integer('amount').notNull().default(0),
+    currency: text('currency').notNull().default('usd'),
+    /** 'paid' | 'failed' | 'refunded' | 'pending'. */
+    status: text('status').notNull().default('pending'),
+    provider: text('provider').notNull().default('manual'),
+    providerInvoiceId: text('provider_invoice_id').notNull().default(''),
+    providerPaymentId: text('provider_payment_id').notNull().default(''),
+    description: text('description').notNull().default(''),
+    /** Human invoice number, e.g. "CWK-2026-0001". */
+    invoiceNumber: text('invoice_number').notNull().default(''),
+    periodStart: integer('period_start', { mode: 'timestamp_ms' }),
+    periodEnd: integer('period_end', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [
+    index('payments_user_idx').on(t.userId),
+    index('payments_status_idx').on(t.status),
+    index('payments_created_idx').on(t.createdAt),
+  ],
+);
+export type Payment = typeof payments.$inferSelect;
+
+// Webhook idempotency + audit: the provider event id is the primary key, so a
+// re-delivered event is a no-op (INSERT OR IGNORE). Keeps a copy of the payload
+// for debugging in the superadmin billing screen.
+export const billingEvents = sqliteTable(
+  'billing_events',
+  {
+    /** Provider event id (e.g. Stripe "evt_..."). */
+    id: text('id').primaryKey(),
+    type: text('type').notNull().default(''),
+    provider: text('provider').notNull().default('stripe'),
+    payload: text('payload').notNull().default(''),
+    processedAt: integer('processed_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('billing_events_type_idx').on(t.type)],
+);
+export type BillingEvent = typeof billingEvents.$inferSelect;

@@ -1,5 +1,5 @@
 {
-  "name": "cinematic-web-kit",
+  "name": "builder-studio",
   "version": "0.1.0",
   "private": true,
   "description": "A Next.js starter for building modern web projects with AI-generated cinematic video sections (hero, backgrounds, cards). Includes a media pipeline: generate → optimize (.webm) → auto-import into data.json → render.",
