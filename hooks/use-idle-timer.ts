@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10) * 1000; // 15 min
+const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '1800', 10) * 1000; // 30 min
 const WARNING_DURATION = parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING || '60', 10) * 1000; // 60 s
 
 interface UseIdleTimerOptions {
