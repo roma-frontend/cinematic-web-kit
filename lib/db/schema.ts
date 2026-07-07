@@ -362,6 +362,50 @@ export const siteDocuments = sqliteTable(
 );
 export type SiteDocument = typeof siteDocuments.$inferSelect;
 
+// Support tickets: a member opens a thread, member + admin exchange messages.
+export const siteTickets = sqliteTable(
+  'site_tickets',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    siteUserId: text('site_user_id')
+      .notNull()
+      .references(() => siteUsers.id, { onDelete: 'cascade' }),
+    subject: text('subject').notNull().default(''),
+    /** 'open' | 'closed'. */
+    status: text('status').notNull().default('open'),
+    /** Who wrote last: 'member' | 'admin' (drives the "awaiting reply" hint). */
+    lastActor: text('last_actor').notNull().default('member'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('site_tickets_site_idx').on(t.siteId), index('site_tickets_user_idx').on(t.siteUserId)],
+);
+export type SiteTicket = typeof siteTickets.$inferSelect;
+
+export const siteTicketMessages = sqliteTable(
+  'site_ticket_messages',
+  {
+    id: text('id').primaryKey(),
+    ticketId: text('ticket_id')
+      .notNull()
+      .references(() => siteTickets.id, { onDelete: 'cascade' }),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id, { onDelete: 'cascade' }),
+    /** 'member' | 'admin'. */
+    authorType: text('author_type').notNull().default('member'),
+    authorId: text('author_id').notNull().default(''),
+    body: text('body').notNull().default(''),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('site_ticket_messages_ticket_idx').on(t.ticketId)],
+);
+export type SiteTicketMessage = typeof siteTicketMessages.$inferSelect;
+
+
 
 
 // Per-member notifications (join approved/rejected/suspended, new material, …).

@@ -17,6 +17,7 @@ import {
   LogIn, UserPlus,
   GraduationCap, PlayCircle, ArrowLeft, CheckCircle2, Circle,
   FolderOpen, Download, FileType,
+  LifeBuoy, Send, MessageSquare, Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +108,7 @@ const TABS = [
   { id: 'materials', icon: Library },
   { id: 'courses', icon: GraduationCap },
   { id: 'documents', icon: FolderOpen },
+  { id: 'support', icon: LifeBuoy },
   { id: 'notifications', icon: Bell },
   { id: 'security', icon: Shield },
   { id: 'activity', icon: FileText },
@@ -466,6 +468,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
                     {tab === 'materials' && <MaterialsTab siteId={siteId} />}
                     {tab === 'courses' && <CoursesTab siteId={siteId} />}
                     {tab === 'documents' && <DocumentsTab siteId={siteId} />}
+                    {tab === 'support' && <SupportTab siteId={siteId} />}
                     {tab === 'notifications' && <NotificationsTab siteId={siteId} />}
                     {tab === 'security' && <SecurityTab siteId={siteId} />}
                     {tab === 'activity' && <ActivityTab siteId={siteId} />}
@@ -1068,6 +1071,139 @@ function DocumentsTab({ siteId }: { siteId: string }) {
               <a href={m.url} target="_blank" rel="noreferrer" download className="inline-flex flex-none items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
                 <Download className="h-4 w-4" /> <span className="hidden sm:inline">{td.download}</span>
               </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+type MTicket = { id: string; subject: string; status: string; lastActor: string; updatedAt: string | number | Date; messageCount: number };
+type MTicketMsg = { id: string; authorType: string; body: string; createdAt: string | number | Date };
+type MThread = { id: string; subject: string; status: string; messages: MTicketMsg[] };
+
+function SupportTab({ siteId }: { siteId: string }) {
+  const locale = useLocale().locale;
+  const t = siteAccountDict(locale);
+  const ts = t.support;
+  const [list, setList] = useState<MTicket[] | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [thread, setThread] = useState<MThread | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [reply, setReply] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const loadList = useCallback(() => {
+    fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=tickets`)
+      .then((r) => r.json()).then((d) => setList(d.tickets ?? [])).catch(() => setList([]));
+  }, [siteId]);
+  useEffect(() => { loadList(); }, [loadList]);
+
+  const openTicket = (id: string) => {
+    setOpenId(id); setThread(null);
+    fetch(`/api/site-auth?site=${encodeURIComponent(siteId)}&resource=ticket&id=${encodeURIComponent(id)}`)
+      .then((r) => r.json()).then((d) => setThread(d.ticket ?? null)).catch(() => setThread(null));
+  };
+
+  const create = async () => {
+    if (!subject.trim() && !message.trim()) return;
+    setBusy(true);
+    await api('ticket-create', { siteId, subject, body: message }, t.networkError);
+    setBusy(false); setSubject(''); setMessage(''); setCreating(false); loadList();
+  };
+  const sendReply = async () => {
+    if (!reply.trim() || !openId) return;
+    setBusy(true);
+    await api('ticket-reply', { siteId, ticketId: openId, body: reply }, t.networkError);
+    setBusy(false); setReply(''); openTicket(openId); loadList();
+  };
+
+  // ── Thread view ──
+  if (openId) {
+    return (
+      <div>
+        <button onClick={() => { setOpenId(null); setThread(null); }} className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> {ts.back}
+        </button>
+        {!thread ? (
+          <div className="py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <>
+            <div className="mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold tracking-tight">{thread.subject}</h2>
+              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${thread.status === 'open' ? 'bg-green-500/15 text-green-600' : 'bg-muted text-muted-foreground'}`}>{thread.status === 'open' ? ts.open : ts.closed}</span>
+            </div>
+            <ul className="space-y-3">
+              {thread.messages.map((m) => {
+                const mine = m.authorType === 'member';
+                return (
+                  <li key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${mine ? 'bg-primary text-primary-foreground' : 'border border-border bg-background/60'}`}>
+                      <p className={`mb-0.5 text-[11px] font-semibold ${mine ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{mine ? ts.you : ts.team} · {fmtDate(m.createdAt, locale)}</p>
+                      <p className="whitespace-pre-wrap">{m.body}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {thread.status === 'open' && (
+              <div className="mt-4 flex items-end gap-2">
+                <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={ts.replyPh} rows={2}
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+                <Button onClick={sendReply} disabled={busy || !reply.trim()} className="gap-1.5">
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {ts.reply}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ── List view ──
+  return (
+    <div>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div><SectionTitle title={ts.title} desc={ts.desc} /></div>
+        {!creating && <Button size="sm" className="flex-none gap-1.5" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {ts.create}</Button>}
+      </div>
+      {creating && (
+        <div className="mb-4 space-y-2 rounded-xl border border-border bg-card p-4">
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={ts.newSubject} className="h-10" />
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder={ts.newMessage} rows={3}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-1.5" disabled={busy} onClick={create}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {ts.create}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setCreating(false); setSubject(''); setMessage(''); }}>{t.cancel}</Button>
+          </div>
+        </div>
+      )}
+      {!list ? (
+        <div className="py-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : list.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border py-10 text-center">
+          <LifeBuoy className="mx-auto h-8 w-8 text-muted-foreground/50" />
+          <p className="mt-2 text-sm text-muted-foreground">{ts.empty}</p>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((tk) => (
+            <li key={tk.id}>
+              <button onClick={() => openTicket(tk.id)} className="flex w-full items-center gap-3 rounded-xl border border-border bg-background/60 p-4 text-left transition-colors hover:border-primary/40">
+                <MessageSquare className="h-5 w-5 flex-none text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{tk.subject}</p>
+                  <p className="truncate text-xs text-muted-foreground">{tk.lastActor === 'admin' ? ts.team : ts.you} · {fmtDate(tk.updatedAt, locale)}</p>
+                </div>
+                <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-semibold ${tk.status === 'open' ? 'bg-green-500/15 text-green-600' : 'bg-muted text-muted-foreground'}`}>{tk.status === 'open' ? ts.open : ts.closed}</span>
+                <ChevronRight className="h-4 w-4 flex-none text-muted-foreground" />
+              </button>
             </li>
           ))}
         </ul>

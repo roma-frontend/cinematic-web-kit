@@ -29,6 +29,7 @@ import {
 import { listPublishedMaterials } from '@/lib/site-membership';
 import { listPublishedCourses, getCourseForMember, setLessonProgress } from '@/lib/site-learning';
 import { listPublishedDocuments } from '@/lib/site-documents';
+import { listMemberTickets, getMemberTicket, createTicket, memberReply } from '@/lib/site-tickets';
 import {
   createSiteLoginOtp,
   verifySiteLoginOtp,
@@ -96,6 +97,16 @@ export async function GET(request: Request) {
   if (resource === 'documents') {
     if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
     return NextResponse.json({ documents: listPublishedDocuments(siteId) });
+  }
+  if (resource === 'tickets') {
+    if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
+    return NextResponse.json({ tickets: listMemberTickets(siteId, user.id) });
+  }
+  if (resource === 'ticket') {
+    if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
+    const ticket = getMemberTicket(siteId, user.id, url.searchParams.get('id') ?? '');
+    if (!ticket) return NextResponse.json({ error: t.unknownResource }, { status: 404 });
+    return NextResponse.json({ ticket });
   }
   if (resource === 'course') {
     if (user.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
@@ -400,6 +411,22 @@ export async function POST(request: Request) {
     if (me.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
     const ok = setLessonProgress(siteId, me.id, str('lessonId'), bool('done') ?? true);
     if (!ok) return NextResponse.json({ error: t.badRequest }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === 'ticket-create') {
+    if (me.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
+    const subject = str('subject').trim();
+    const bodyText = str('body').trim();
+    if (!subject && !bodyText) return NextResponse.json({ error: t.badRequest }, { status: 400 });
+    const ticket = createTicket(siteId, me.id, subject, bodyText);
+    return NextResponse.json({ ok: true, ticket });
+  }
+
+  if (action === 'ticket-reply') {
+    if (me.status !== 'approved') return NextResponse.json({ error: t.membersOnly }, { status: 403 });
+    const okr = memberReply(siteId, me.id, str('ticketId'), str('body').trim());
+    if (!okr) return NextResponse.json({ error: t.badRequest }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
 

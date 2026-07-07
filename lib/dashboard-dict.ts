@@ -228,6 +228,10 @@ export type DashDict = {
   documents: {
     title: string; desc: string; upload: string; uploading: string; noDocuments: string; titlePh: string; delete: string;
   };
+  support: {
+    title: string; desc: string; noTickets: string; open: string; closed: string; reply: string; replyPh: string;
+    send: string; close: string; reopen: string; you: string; team: string; back: string;
+  };
 };
 
 const ru: DashDict = {
@@ -475,6 +479,21 @@ const ru: DashDict = {
     noDocuments: 'Файлов пока нет.',
     titlePh: 'Название (необязательно)',
     delete: 'Удалить',
+  },
+  support: {
+    title: 'Обращения в поддержку',
+    desc: 'Отвечайте на вопросы участников. Ответ приходит им уведомлением.',
+    noTickets: 'Обращений пока нет.',
+    open: 'Открыто',
+    closed: 'Закрыто',
+    reply: 'Ответить',
+    replyPh: 'Ваш ответ…',
+    send: 'Отправить',
+    close: 'Закрыть',
+    reopen: 'Открыть заново',
+    you: 'Вы',
+    team: 'Участник',
+    back: 'К списку',
   },
 };
 
@@ -724,6 +743,21 @@ const en: DashDict = {
     titlePh: 'Title (optional)',
     delete: 'Delete',
   },
+  support: {
+    title: 'Support tickets',
+    desc: 'Reply to member questions. They get notified of your reply.',
+    noTickets: 'No tickets yet.',
+    open: 'Open',
+    closed: 'Closed',
+    reply: 'Reply',
+    replyPh: 'Your reply…',
+    send: 'Send',
+    close: 'Close',
+    reopen: 'Reopen',
+    you: 'You',
+    team: 'Member',
+    back: 'Back to list',
+  },
 };
 
 const hy: DashDict = {
@@ -971,6 +1005,21 @@ const hy: DashDict = {
     noDocuments: 'Ֆայլեր դեռ չկան։',
     titlePh: 'Անվանում (ըստ ցանկության)',
     delete: 'Ջնջել',
+  },
+  support: {
+    title: 'Աջակցության դիմումներ',
+    desc: 'Պատասխանեք մասնակիցների հարցերին։ Նրանք ծանուցում կստանան ձեր պատասխանի մասին։',
+    noTickets: 'Դիմումներ դեռ չկան։',
+    open: 'Բաց',
+    closed: 'Փակված',
+    reply: 'Պատասխանել',
+    replyPh: 'Ձեր պատասխանը…',
+    send: 'Ուղարկել',
+    close: 'Փակել',
+    reopen: 'Բացել կրկին',
+    you: 'Դուք',
+    team: 'Մասնակից',
+    back: 'Դեպի ցանկ',
   },
 };
 

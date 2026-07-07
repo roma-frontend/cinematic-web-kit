@@ -5,7 +5,7 @@
 // (platform-authenticated + ownership-checked). Fully siteId-scoped.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Check, X, Ban, Clock, Plus, Trash2, Users, Library, ShieldCheck, GraduationCap, ChevronRight, Eye, EyeOff, Upload, FileType } from 'lucide-react';
+import { Loader2, Check, X, Ban, Clock, Plus, Trash2, Users, Library, ShieldCheck, GraduationCap, ChevronRight, Eye, EyeOff, Upload, FileType, LifeBuoy, Send, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SITE_MEMBERS_SEEN_EVENT } from '@/components/dashboard/site-members-badge';
@@ -17,6 +17,9 @@ type Material = { id: string; title: string; body: string; url: string; publishe
 type Course = { id: string; title: string; description: string; accent: string; published: boolean; lessonCount: number; createdAt: string | number };
 type Lesson = { id: string; title: string; body: string; videoUrl: string; attachmentUrl: string; position: number };
 type Document = { id: string; title: string; fileName: string; url: string; size: number; createdAt: string | number };
+type Ticket = { id: string; subject: string; status: string; lastActor: string; updatedAt: string | number; messageCount: number; memberName: string; memberEmail: string };
+type TicketMsg = { id: string; authorType: string; body: string; createdAt: string | number };
+type TicketThread = { id: string; subject: string; status: string; messages: TicketMsg[]; memberName: string; memberEmail: string };
 
 const STATUS_CLS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-600',
@@ -36,6 +39,7 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
   const [materials, setMaterials] = useState<Material[] | null>(null);
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [documents, setDocuments] = useState<Document[] | null>(null);
+  const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [approval, setApproval] = useState(memberApproval);
   const [busy, setBusy] = useState('');
 
@@ -47,10 +51,11 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
         setMaterials(d.materials ?? []);
         setCourses(d.courses ?? []);
         setDocuments(d.documents ?? []);
+        setTickets(d.tickets ?? []);
         // Owner opened the members panel → clear the nav badge blink.
         window.dispatchEvent(new CustomEvent(SITE_MEMBERS_SEEN_EVENT));
       })
-      .catch(() => { setMembers([]); setMaterials([]); setCourses([]); setDocuments([]); });
+      .catch(() => { setMembers([]); setMaterials([]); setCourses([]); setDocuments([]); setTickets([]); });
   }, [siteId]);
   useEffect(() => { load(); }, [load]);
 
@@ -141,6 +146,7 @@ export function SiteMembers({ siteId, memberApproval }: { siteId: string; member
       <MaterialsEditor siteId={siteId} materials={materials} reload={load} />
       <CoursesEditor siteId={siteId} courses={courses} reload={load} />
       <DocumentsEditor siteId={siteId} documents={documents} reload={load} />
+      <TicketsEditor siteId={siteId} tickets={tickets} reload={load} />
     </div>
   );
 }
@@ -360,6 +366,94 @@ function DocumentsEditor({ siteId, documents, reload }: { siteId: string; docume
               <a href={d.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">{d.title || d.fileName}</a>
               <button type="button" onClick={() => del(d.id)} disabled={delBusy === d.id} aria-label={t.delete} className="flex-none rounded-lg p-2 text-muted-foreground hover:bg-red-500/10 hover:text-red-500">
                 {delBusy === d.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+
+function TicketsEditor({ siteId, tickets, reload }: { siteId: string; tickets: Ticket[] | null; reload: () => void }) {
+  const t = dashDict(useLocale().locale).support;
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [thread, setThread] = useState<TicketThread | null>(null);
+  const [reply, setReply] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const openTicket = (id: string) => {
+    setOpenId(id); setThread(null);
+    fetch(`/api/site-members?site=${encodeURIComponent(siteId)}&ticket=${encodeURIComponent(id)}`)
+      .then((r) => r.json()).then((d) => setThread(d.ticket ?? null)).catch(() => setThread(null));
+  };
+  const send = async () => {
+    if (!reply.trim() || !openId) return;
+    setBusy(true);
+    await post({ action: 'ticket-reply', siteId, ticketId: openId, body: reply });
+    setBusy(false); setReply(''); openTicket(openId); reload();
+  };
+  const setStatus = async (status: 'open' | 'closed') => {
+    if (!openId) return;
+    setBusy(true);
+    await post({ action: 'ticket-status', siteId, ticketId: openId, status });
+    setBusy(false); openTicket(openId); reload();
+  };
+
+  return (
+    <section>
+      <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold"><LifeBuoy className="h-4 w-4" /> {t.title}</h3>
+      <p className="mb-3 text-xs text-muted-foreground">{t.desc}</p>
+      {openId && thread ? (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <button onClick={() => { setOpenId(null); setThread(null); }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> {t.back}</button>
+            <span className="ml-auto text-xs text-muted-foreground">{thread.memberName || thread.memberEmail}</span>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => setStatus(thread.status === 'open' ? 'closed' : 'open')}>
+              {thread.status === 'open' ? t.close : t.reopen}
+            </Button>
+          </div>
+          <p className="mb-3 font-semibold">{thread.subject}</p>
+          <ul className="space-y-2">
+            {thread.messages.map((m) => {
+              const admin = m.authorType === 'admin';
+              return (
+                <li key={m.id} className={`flex ${admin ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${admin ? 'bg-primary text-primary-foreground' : 'border border-border bg-background'}`}>
+                    <p className={`mb-0.5 text-[11px] font-semibold ${admin ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{admin ? t.you : t.team}</p>
+                    <p className="whitespace-pre-wrap">{m.body}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {thread.status === 'open' && (
+            <div className="mt-3 flex items-end gap-2">
+              <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t.replyPh} rows={2}
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
+              <Button disabled={busy || !reply.trim()} onClick={send} className="gap-1.5">
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {t.send}
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : !tickets ? (
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      ) : tickets.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t.noTickets}</p>
+      ) : (
+        <ul className="space-y-2">
+          {tickets.map((tk) => (
+            <li key={tk.id}>
+              <button onClick={() => openTicket(tk.id)} className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left hover:border-primary/40">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{tk.subject}</p>
+                  <p className="truncate text-xs text-muted-foreground">{tk.memberName || tk.memberEmail}</p>
+                </div>
+                {tk.lastActor === 'member' && tk.status === 'open' && <span className="h-2 w-2 flex-none rounded-full bg-amber-500" />}
+                <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] font-semibold ${tk.status === 'open' ? 'bg-green-500/15 text-green-600' : 'bg-muted text-muted-foreground'}`}>{tk.status === 'open' ? t.open : t.closed}</span>
+                <ChevronRight className="h-4 w-4 flex-none text-muted-foreground" />
               </button>
             </li>
           ))}

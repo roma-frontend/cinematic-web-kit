@@ -16,6 +16,7 @@ import {
   listLessonsForAdmin, createLesson, updateLesson, deleteLesson,
 } from '@/lib/site-learning';
 import { listDocumentsForAdmin, deleteDocument } from '@/lib/site-documents';
+import { listTicketsForAdmin, getTicketForAdmin, adminReply, setTicketStatus } from '@/lib/site-tickets';
 import { getDb, sites } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { getLocale } from '@/lib/i18n';
@@ -49,7 +50,12 @@ export async function GET(request: Request) {
   if (courseId) {
     return NextResponse.json({ lessons: listLessonsForAdmin(siteId, courseId) });
   }
-  return NextResponse.json({ members: listMembers(siteId), materials: listMaterialsForAdmin(siteId), courses: listCoursesForAdmin(siteId), documents: listDocumentsForAdmin(siteId) });
+  // One ticket thread (lazy-loaded by the admin ticket view).
+  const ticketId = new URL(request.url).searchParams.get('ticket');
+  if (ticketId) {
+    return NextResponse.json({ ticket: getTicketForAdmin(siteId, ticketId) });
+  }
+  return NextResponse.json({ members: listMembers(siteId), materials: listMaterialsForAdmin(siteId), courses: listCoursesForAdmin(siteId), documents: listDocumentsForAdmin(siteId), tickets: listTicketsForAdmin(siteId) });
 }
 
 export async function POST(request: Request) {
@@ -120,6 +126,16 @@ export async function POST(request: Request) {
     }
     case 'document-delete': {
       await deleteDocument(siteId, str('documentId'));
+      return NextResponse.json({ ok: true });
+    }
+    case 'ticket-reply': {
+      const okr = adminReply(siteId, user.id, str('ticketId'), str('body').trim());
+      if (!okr) return NextResponse.json({ error: t.badRequest }, { status: 400 });
+      return NextResponse.json({ ok: true });
+    }
+    case 'ticket-status': {
+      const st = str('status') === 'closed' ? 'closed' : 'open';
+      setTicketStatus(siteId, str('ticketId'), st);
       return NextResponse.json({ ok: true });
     }
     case 'set-approval-policy': {

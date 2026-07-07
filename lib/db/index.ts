@@ -182,6 +182,31 @@ CREATE TABLE IF NOT EXISTS site_documents (
 );
 CREATE INDEX IF NOT EXISTS site_documents_site_idx ON site_documents (site_id);
 
+CREATE TABLE IF NOT EXISTS site_tickets (
+  id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  site_user_id TEXT NOT NULL REFERENCES site_users(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open',
+  last_actor TEXT NOT NULL DEFAULT 'member',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS site_tickets_site_idx ON site_tickets (site_id);
+CREATE INDEX IF NOT EXISTS site_tickets_user_idx ON site_tickets (site_user_id);
+
+CREATE TABLE IF NOT EXISTS site_ticket_messages (
+  id TEXT PRIMARY KEY,
+  ticket_id TEXT NOT NULL REFERENCES site_tickets(id) ON DELETE CASCADE,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  author_type TEXT NOT NULL DEFAULT 'member',
+  author_id TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS site_ticket_messages_ticket_idx ON site_ticket_messages (ticket_id);
+
+
 
 
 CREATE TABLE IF NOT EXISTS site_notifications (

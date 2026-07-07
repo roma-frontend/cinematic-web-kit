@@ -36,6 +36,7 @@ export type SiteAccountDict = {
     materials: string;
     courses: string;
     documents: string;
+    support: string;
     notifications: string;
     security: string;
     activity: string;
@@ -47,6 +48,10 @@ export type SiteAccountDict = {
     done: string; watchVideo: string; openAttachment: string; noLessons: string; allDone: string; lesson: string;
   };
   documents: { title: string; desc: string; empty: string; download: string };
+  support: {
+    title: string; desc: string; empty: string; newSubject: string; newMessage: string; create: string;
+    back: string; reply: string; replyPh: string; you: string; team: string; open: string; closed: string; awaiting: string;
+  };
   // greeting words (by time of day)
   greetNight: string;
   greetMorning: string;
@@ -187,6 +192,7 @@ const ru: SiteAccountDict = {
     materials: 'Материалы',
     courses: 'Обучение',
     documents: 'Файлы',
+    support: 'Поддержка',
     notifications: 'Уведомления',
     security: 'Безопасность',
     activity: 'Обращения',
@@ -215,6 +221,22 @@ const ru: SiteAccountDict = {
     desc: 'Материалы для скачивания от команды: PDF, видео и другие файлы.',
     empty: 'Пока нет файлов.',
     download: 'Скачать',
+  },
+  support: {
+    title: 'Поддержка',
+    desc: 'Задайте вопрос команде — мы ответим прямо здесь.',
+    empty: 'У вас пока нет обращений.',
+    newSubject: 'Тема обращения',
+    newMessage: 'Опишите вопрос…',
+    create: 'Создать обращение',
+    back: 'К обращениям',
+    reply: 'Отправить',
+    replyPh: 'Ваш ответ…',
+    you: 'Вы',
+    team: 'Команда',
+    open: 'Открыто',
+    closed: 'Закрыто',
+    awaiting: 'Ждём ответа команды',
   },
   greetNight: 'Доброй ночи',
   greetMorning: 'Доброе утро',
@@ -346,6 +368,7 @@ const en: SiteAccountDict = {
     materials: 'Materials',
     courses: 'Learning',
     documents: 'Files',
+    support: 'Support',
     notifications: 'Notifications',
     security: 'Security',
     activity: 'Requests',
@@ -374,6 +397,22 @@ const en: SiteAccountDict = {
     desc: 'Downloadable materials from the team: PDFs, videos and other files.',
     empty: 'No files yet.',
     download: 'Download',
+  },
+  support: {
+    title: 'Support',
+    desc: 'Ask the team a question — we reply right here.',
+    empty: 'You have no tickets yet.',
+    newSubject: 'Ticket subject',
+    newMessage: 'Describe your question…',
+    create: 'Create ticket',
+    back: 'Back to tickets',
+    reply: 'Send',
+    replyPh: 'Your reply…',
+    you: 'You',
+    team: 'Team',
+    open: 'Open',
+    closed: 'Closed',
+    awaiting: 'Awaiting the team’s reply',
   },
   greetNight: 'Good night',
   greetMorning: 'Good morning',
@@ -505,6 +544,7 @@ const hy: SiteAccountDict = {
     materials: 'Նյութեր',
     courses: 'Ուսուցում',
     documents: 'Ֆայլեր',
+    support: 'Աջակցություն',
     notifications: 'Ծանուցումներ',
     security: 'Անվտանգություն',
     activity: 'Դիմումներ',
@@ -533,6 +573,22 @@ const hy: SiteAccountDict = {
     desc: 'Ներբեռնվող նյութեր թիմից՝ PDF, տեսանյութեր և այլ ֆայլեր։',
     empty: 'Դեռ ֆայլեր չկան։',
     download: 'Ներբեռնել',
+  },
+  support: {
+    title: 'Աջակցություն',
+    desc: 'Հարցրեք թիմին — մենք կպատասխանենք հենց այստեղ։',
+    empty: 'Դուք դեռ դիմումներ չունեք։',
+    newSubject: 'Դիմումի թեմա',
+    newMessage: 'Նկարագրեք հարցը…',
+    create: 'Ստեղծել դիմում',
+    back: 'Դեպի դիմումներ',
+    reply: 'Ուղարկել',
+    replyPh: 'Ձեր պատասխանը…',
+    you: 'Դուք',
+    team: 'Թիմ',
+    open: 'Բաց',
+    closed: 'Փակված',
+    awaiting: 'Սպասում ենք թիմի պատասխանին',
   },
   greetNight: 'Բարի գիշեր',
   greetMorning: 'Բարի լույս',
