@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 // global fetch and drops the Content-Length for non-trivial bodies, which makes
 // R2 reject the upload with 411. Mock node:https with a controllable status.
 let httpsStatus = 200;
-let lastHttpsOptions: { method?: string; hostname?: string; path?: string; headers?: Record<string, string> } | null = null;
+let lastHttpsOptions: { method?: string; hostname?: string; path?: string; headers?: Record<string, string> } = {};
 vi.mock('node:https', () => ({
   request: (options: { method?: string; hostname?: string; path?: string; headers?: Record<string, string> }, cb: (res: EventEmitter & { statusCode: number }) => void) => {
     lastHttpsOptions = options;
@@ -85,7 +85,7 @@ describe('configured storage', () => {
   it('r2Put issues a signed PUT', async () => {
     setR2Env();
     httpsStatus = 200;
-    lastHttpsOptions = null;
+    lastHttpsOptions = {};
     const { r2Put } = await import('@/lib/storage');
     await r2Put('uploads/a.webp', Buffer.from('data'), 'image/webp');
     expect(lastHttpsOptions?.method).toBe('PUT');
