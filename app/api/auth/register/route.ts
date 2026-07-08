@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createUser, createSession, findUserByEmail, rateLimit, requestMeta, setSessionCookie } from '@/lib/auth';
 import { recordAudit } from '@/lib/audit';
+import { notifyRegistration } from '@/lib/notify';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
 
@@ -38,5 +39,6 @@ export async function POST(request: Request) {
   const { token, expiresAt } = createSession(user.id, requestMeta(request));
   await setSessionCookie(token, expiresAt);
   recordAudit({ id: user.id, email: user.email }, 'auth.register', user.email, `ip=${ip}`);
+  notifyRegistration({ name: user.name, email: user.email, role: user.role });
   return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name } });
 }

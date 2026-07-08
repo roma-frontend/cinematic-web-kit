@@ -10,7 +10,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Film, Blocks, LayoutDashboard, Globe, Inbox, UserCircle, Users, LayoutList,
   LogOut, Menu, X, ExternalLink, Crown, ShieldCheck, Plus, Search, Building2, Database,
-  ScrollText, KeyRound, Activity, Trash2, ChevronLeft, ChevronRight, CreditCard,
+  ScrollText, KeyRound, Activity, Trash2, ChevronLeft, ChevronRight, CreditCard, Bell,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { ActivityTracker } from '@/components/dashboard/activity-tracker';
 import { OrgRequestsBadge } from '@/components/dashboard/org-requests-badge';
 import { UserMenu } from '@/components/dashboard/user-menu';
 import { SiteMembersBadge } from '@/components/dashboard/site-members-badge';
+import { NotificationBell } from '@/components/dashboard/notification-bell';
 import { useLocale } from '@/hooks/use-locale';
 import { dashDict } from '@/lib/dashboard-dict';
 import { LanguageSwitcher } from '../language-switcher';
@@ -27,7 +28,7 @@ import { LanguageSwitcher } from '../language-switcher';
 export type Role = 'customer' | 'admin' | 'superadmin';
 export interface ShellUser { name: string; email: string; role: Role }
 
-type NavKey = 'overview' | 'sites' | 'organization' | 'submissions' | 'account' | 'users' | 'allSites' | 'audit' | 'organizations' | 'database' | 'access' | 'activity' | 'control' | 'studio' | 'trash' | 'billing' | 'billingAdmin';
+type NavKey = 'overview' | 'sites' | 'organization' | 'submissions' | 'account' | 'users' | 'allSites' | 'audit' | 'organizations' | 'database' | 'access' | 'activity' | 'control' | 'studio' | 'trash' | 'billing' | 'billingAdmin' | 'notifications';
 interface NavItem { href: string; key: NavKey; icon: React.ComponentType<{ className?: string }>; staff?: boolean; super?: boolean }
 
 const NAV: NavItem[] = [
@@ -46,6 +47,7 @@ const NAV: NavItem[] = [
   { href: '/dashboard/activity', key: 'activity', icon: Activity, super: true },
   { href: '/dashboard/trash', key: 'trash', icon: Trash2, super: true },
   { href: '/dashboard/control', key: 'control', icon: Crown, super: true },
+  { href: '/dashboard/notifications', key: 'notifications', icon: Bell, super: true },
   { href: '/dashboard/billing-admin', key: 'billingAdmin', icon: CreditCard, super: true },
   { href: '/studio', key: 'studio', icon: Film, super: true },
 ];
@@ -69,7 +71,7 @@ const ROLE_ICON: Record<Role, React.ComponentType<{ className?: string }>> = {
   customer: UserCircle,
 };
 
-export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembers = 0, disabled = [], hideOrgNav = false, children }: { user: ShellUser; banner?: React.ReactNode; gated?: boolean; orgRequests?: number; siteMembers?: number; disabled?: string[]; hideOrgNav?: boolean; children: React.ReactNode }) {
+export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembers = 0, notifications = 0, disabled = [], hideOrgNav = false, children }: { user: ShellUser; banner?: React.ReactNode; gated?: boolean; orgRequests?: number; siteMembers?: number; notifications?: number; disabled?: string[]; hideOrgNav?: boolean; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -425,6 +427,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
             )}
             <LanguageSwitcher />
             <ThemeToggle />
+            {!gated && <NotificationBell initialCount={notifications} />}
             <UserMenu user={user} gated={gated} keys={visible.map((i) => i.key)} onLogout={logout} />
           </div>
         </header>

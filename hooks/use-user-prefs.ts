@@ -25,7 +25,7 @@ function notify() {
 
 function ensureLoaded(): void {
   if (cache !== null || loadPromise || typeof window === 'undefined') return;
-  loadPromise = fetch('/api/prefs')
+  loadPromise = fetch('/api/prefs', { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : { prefs: {} }))
     .then((data) => {
       // Keys changed locally while the fetch was in flight win over the snapshot.

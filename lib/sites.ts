@@ -5,10 +5,17 @@
 import 'server-only';
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { getDb, newId, sites, domains, submissions, type Site, type Domain } from '@/lib/db';
-import { DEFAULT_DOC, type BuilderDoc, type BuilderNode } from '@/lib/builder/types';
-import { starterPage, legalPages } from '@/lib/builder/templates';
-import { trc } from '@/lib/builder/templates-i18n';
+import { type BuilderDoc, type BuilderNode } from '@/lib/builder/types';
+import { legalPages } from '@/lib/builder/templates';
+import { trc, translatePage } from '@/lib/builder/templates-i18n';
 import { DEFAULT_LOCALE, type Locale } from '@/lib/seo';
+import starterSeed from '@/data/builder.json';
+
+// The committed demo document doubles as the starter template for a tenant's
+// first site. Only its primary marketing pages seed a new site; the many
+// preset/example pages (home-2 … home-N) are excluded.
+const STARTER_SEED = starterSeed as unknown as BuilderDoc;
+const STARTER_PATHS = new Set(['', 'about', 'contact']);
 
 export const RESERVED_SLUGS = new Set([
   'www', 'app', 'api', 'admin', 'dashboard', 'studio', 'site', 'sites', 's', 'd',
@@ -48,17 +55,28 @@ export function createSite(userId: string, name: string, locale: Locale = DEFAUL
   const db = getDb();
   const trimmed = name.trim() || 'Мой сайт';
   const now = new Date();
-  // Seed with a publishable starter page; DEFAULT_DOC's demo nav points at
-  // pages a fresh site doesn't have, so it collapses to the home link only.
+  // Seed a fresh site with the demo template's primary pages (home / about /
+  // contact) rebranded to the new site's name, plus ready-made legal pages.
+  // Nav, theme and chrome are inherited from the template so the first site
+  // looks polished out of the box; '/site/...' links rebase to '/s/<slug>/…'.
+  const seed = STARTER_SEED;
   const doc: BuilderDoc = {
-    ...structuredClone(DEFAULT_DOC),
+    ...structuredClone(seed),
     brand: trimmed,
-    nav: [],
-    footer: { text: `© ${new Date().getFullYear()} ${trimmed}. ${trc('Все права защищены', locale)}.`, links: [] },
-    // Seed the home page plus ready-made Privacy/Terms/Cookie pages — they are
-    // auto-linked in the site footer (see site-chrome footerLinks) and remain
-    // fully editable in the builder.
-    pages: [starterPage(trimmed, locale), ...legalPages(locale)],
+    // Nav / footer labels are seed content → localize them too.
+    nav: seed.nav.map((l) => ({ ...l, label: trc(l.label, locale) })),
+    footer: {
+      text: `© ${new Date().getFullYear()} ${trimmed}. ${trc('Все права защищены', locale)}.`,
+      links: seed.footer.links.map((l) => ({ ...l, label: trc(l.label, locale) })),
+    },
+    pages: [
+      // structuredClone first (translatePage returns the same object for 'ru',
+      // so cloning keeps the imported seed immutable across calls).
+      ...seed.pages
+        .filter((p) => STARTER_PATHS.has(p.path))
+        .map((p) => translatePage(structuredClone(p), locale)),
+      ...legalPages(locale),
+    ],
   };
   const site: Site = {
     id: newId('s'),

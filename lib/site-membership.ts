@@ -8,6 +8,7 @@ import { getUserById } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
 import { renderNewMemberEmail } from '@/lib/email-templates';
 import { APP_URL, DEFAULT_LOCALE } from '@/lib/seo';
+import { publishNotify } from '@/lib/realtime';
 
 // Org-isolation (variant A): a tenant SITE is an organization, its owner (the
 // platform user) is the admin, and site_users are members "under" the admin.
@@ -93,6 +94,8 @@ export async function notifyOwnerOfPendingMember(siteId: string, memberEmail: st
   try {
     const site = getDb().select().from(sites).where(eq(sites.id, siteId)).get();
     if (!site) return;
+    // Real-time: light up the owner's header bell (best-effort, in-process).
+    publishNotify({ kind: 'member-request', siteId, at: new Date().toISOString() });
     const owner = getUserById(site.userId);
     if (!owner?.email) return;
     // This notification goes to the site OWNER, whose UI locale isn't part of

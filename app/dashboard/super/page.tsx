@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { Building2, Database, KeyRound, Activity, Trash2, Crown, Film, CreditCard } from 'lucide-react';
+import { Building2, Database, KeyRound, Activity, Trash2, Crown, Film, CreditCard, Bell } from 'lucide-react';
 import { getCurrentUser, isSuperadmin } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n';
 import { dashDict } from '@/lib/dashboard-dict';
@@ -25,6 +25,7 @@ export default async function SuperHubPage() {
     { href: '/dashboard/activity', key: 'activity', icon: Activity },
     { href: '/dashboard/trash', key: 'trash', icon: Trash2 },
     { href: '/dashboard/control', key: 'control', icon: Crown },
+    { href: '/dashboard/notifications', key: 'notifications', icon: Bell },
     { href: '/dashboard/billing-admin', key: 'billingAdmin', icon: CreditCard },
     { href: '/studio', key: 'studio', icon: Film },
   ] as const;

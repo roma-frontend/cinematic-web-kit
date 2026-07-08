@@ -827,6 +827,110 @@ const CONTENT: Record<string, Tr> = {
     en: 'If you have questions about the use of cookies, email us at the address listed on the site.',
     hy: 'Եթե cookie-ների օգտագործման վերաբերյալ հարցեր ունեք, գրեք մեզ կայքում նշված էլ. փոստին։',
   },
+
+  // ── redesigned demo starter site (home / about / contact) ──
+  '✦ Визуальный конструктор сайтов': { en: '✦ Visual website builder', hy: '✦ Վիզուալ կայքերի կոնստրուկտոր' },
+  'Создайте сайт, который впечатляет': { en: 'Create a website that impresses', hy: 'Ստեղծեք կայք, որ տպավորում է' },
+  'Собирайте страницы из секций, текстов, кнопок и форм — без кода. Полный адаптив, тёмная тема и современные эффекты из коробки.': {
+    en: 'Assemble pages from sections, text, buttons and forms — no code. Full responsiveness, dark theme and modern effects out of the box.',
+    hy: 'Հավաքեք էջերը բաժիններից, տեքստերից, կոճակներից և ձևերից՝ առանց կոդի։ Լիարժեք ադապտիվություն, մուգ թեմա և ժամանակակից էֆեկտներ տուփից դուրս։',
+  },
+  'Всё, что нужно для сайта': { en: 'Everything you need for a website', hy: 'Ամեն ինչ, ինչ պետք է կայքի համար' },
+  'Готовые блоки, продуманный дизайн и логика — соберите проект за вечер.': {
+    en: 'Ready-made blocks, thoughtful design and logic — build your project in an evening.',
+    hy: 'Պատրաստի բլոկներ, մտածված դիզայն և տրամաբանություն՝ հավաքեք նախագիծը մեկ երեկոյում։',
+  },
+  '◆ Секции и блоки': { en: '◆ Sections and blocks', hy: '◆ Բաժիններ և բլոկներ' },
+  'Стройте страницу из готовых секций, рядов и сеток с адаптивом.': {
+    en: 'Build pages from ready-made sections, rows and grids with responsiveness.',
+    hy: 'Կառուցեք էջը պատրաստի բաժիններից, տողերից և ցանցերից՝ ադապտիվությամբ։',
+  },
+  '◆ Формы и логика': { en: '◆ Forms and logic', hy: '◆ Ձևեր և տրամաբանություն' },
+  'Добавляйте поля и формы — заявки уходят на сервер и обрабатываются.': {
+    en: 'Add fields and forms — submissions go to the server and get processed.',
+    hy: 'Ավելացրեք դաշտեր և ձևեր՝ հայտերը գնում են սերվեր և մշակվում։',
+  },
+  '◆ Много страниц': { en: '◆ Multiple pages', hy: '◆ Բազմաթիվ էջեր' },
+  'Хедер, футер и маршруты страниц генерируются автоматически.': {
+    en: 'Header, footer and page routes are generated automatically.',
+    hy: 'Հեդերը, ֆուտերը և էջերի երթուղիները գեներացվում են ավտոմատ։',
+  },
+  'созданных сайтов': { en: 'websites built', hy: 'ստեղծված կայք' },
+  'готовых блоков': { en: 'ready-made blocks', hy: 'պատրաստի բլոկ' },
+  'Выберите блоки': { en: 'Choose blocks', hy: 'Ընտրեք բլոկները' },
+  'Соберите страницу из готовых секций перетаскиванием.': {
+    en: 'Assemble a page from ready-made sections by dragging.',
+    hy: 'Հավաքեք էջը պատրաստի բաժիններից քաշելով։',
+  },
+  'Настройте стиль': { en: 'Customize the style', hy: 'Կարգավորեք ոճը' },
+  'Темы, цвета, шрифты и эффекты — всё меняется визуально.': {
+    en: 'Themes, colors, fonts and effects — all changed visually.',
+    hy: 'Թեմաներ, գույներ, տառատեսակներ և էֆեկտներ՝ ամեն ինչ փոխվում է վիզուալ։',
+  },
+  'Опубликуйте': { en: 'Publish', hy: 'Հրապարակեք' },
+  'Один клик — и сайт доступен по вашему адресу.': {
+    en: 'One click — and your site is live at your address.',
+    hy: 'Մեկ կլիկ՝ և կայքը հասանելի է ձեր հասցեով։',
+  },
+  'Собрали лендинг за вечер — выглядит как из студии.': {
+    en: 'Built a landing in an evening — looks like it came from a studio.',
+    hy: 'Հավաքեցինք լենդինգը մեկ երեկոյում՝ տեսքը ասես ստուդիայից։',
+  },
+  'Формы, тарифы, отзывы — всё из коробки и красиво.': {
+    en: 'Forms, pricing, testimonials — all out of the box and beautiful.',
+    hy: 'Ձևեր, սակագներ, կարծիքներ՝ ամեն ինչ տուփից դուրս և գեղեցիկ։',
+  },
+  'Наконец-то конструктор, где не стыдно за результат.': {
+    en: 'Finally a builder whose results you are not ashamed of.',
+    hy: 'Վերջապես կոնստրուկտոր, որի արդյունքից ամոթ չէ։',
+  },
+  'маркетолог': { en: 'marketer', hy: 'մարքեթոլոգ' },
+  'фаундер': { en: 'founder', hy: 'հիմնադիր' },
+  'дизайнер': { en: 'designer', hy: 'դիզայներ' },
+  'Начните бесплатно и растите вместе с проектом.': {
+    en: 'Start for free and grow with your project.',
+    hy: 'Սկսեք անվճար և աճեք ձեր նախագծի հետ։',
+  },
+  'Базовый набор блоков': { en: 'Basic set of blocks', hy: 'Բլոկների հիմնական փաթեթ' },
+  'Поддержка сообщества': { en: 'Community support', hy: 'Համայնքի աջակցություն' },
+  'Всё из Start': { en: 'Everything in Start', hy: 'Ամեն ինչ Start-ից' },
+  'Приоритетная поддержка': { en: 'Priority support', hy: 'Առաջնահերթ աջակցություն' },
+  'Команда и роли': { en: 'Team and roles', hy: 'Թիմ և դերեր' },
+  'SLA и приоритет': { en: 'SLA and priority', hy: 'SLA և առաջնահերթություն' },
+  'Нет, всё собирается визуально из готовых блоков.': {
+    en: 'No, everything is built visually from ready-made blocks.',
+    hy: 'Ոչ, ամեն ինչ հավաքվում է վիզուալ՝ պատրաստի բլոկներից։',
+  },
+  'Можно свой домен?': { en: 'Can I use my own domain?', hy: 'Կարո՞ղ եմ օգտագործել իմ դոմեյնը։' },
+  'Да, подключается в пару кликов.': { en: 'Yes, connected in a couple of clicks.', hy: 'Այո, միանում է մի քանի կլիկով։' },
+  'Есть бесплатный тариф?': { en: 'Is there a free plan?', hy: 'Անվճար սակագին կա՞։' },
+  'Да, стартовый план бесплатен навсегда.': { en: 'Yes, the starter plan is free forever.', hy: 'Այո, մեկնարկային պլանն անվճար է ընդմիշտ։' },
+  'Готовы собрать свой сайт?': { en: 'Ready to build your website?', hy: 'Պատրա՞ստ եք կառուցել ձեր կայքը։' },
+  'Начните бесплатно прямо сейчас — без кода и ограничений.': {
+    en: 'Start for free right now — no code, no limits.',
+    hy: 'Սկսեք անվճար հենց հիմա՝ առանց կոդի և սահմանափակումների։',
+  },
+  '✦ О нас': { en: '✦ About us', hy: '✦ Մեր մասին' },
+  'Мы делаем сайты доступными каждому': { en: 'We make websites accessible to everyone', hy: 'Մենք կայքերը դարձնում ենք հասանելի բոլորին' },
+  'Мы делаем инструменты, которые позволяют кому угодно собрать настоящий сайт: секции, тексты, кнопки, формы — всё редактируется визуально и адаптируется под любой экран.': {
+    en: 'We build tools that let anyone assemble a real website: sections, text, buttons, forms — all editable visually and adapting to any screen.',
+    hy: 'Մենք ստեղծում ենք գործիքներ, որ թույլ են տալիս ցանկացածին հավաքել իրական կայք՝ բաժիններ, տեքստեր, կոճակներ, ձևեր՝ ամեն ինչ խմբագրվում է վիզուալ և հարմարվում ցանկացած էկրանի։',
+  },
+  '◆ Просто': { en: '◆ Simple', hy: '◆ Պարզ' },
+  'Никакого кода — только визуальный редактор.': { en: 'No code — just a visual editor.', hy: 'Ոչ մի կոդ՝ միայն վիզուալ խմբագրիչ։' },
+  '◆ Красиво': { en: '◆ Beautiful', hy: '◆ Գեղեցիկ' },
+  'Современные темы, эффекты и адаптив из коробки.': {
+    en: 'Modern themes, effects and responsiveness out of the box.',
+    hy: 'Ժամանակակից թեմաներ, էֆեկտներ և ադապտիվություն տուփից դուրս։',
+  },
+  '◆ Надёжно': { en: '◆ Reliable', hy: '◆ Հուսալի' },
+  'Формы, заявки и данные — всё работает стабильно.': {
+    en: 'Forms, submissions and data — all works reliably.',
+    hy: 'Ձևեր, հայտեր և տվյալներ՝ ամեն ինչ աշխատում է կայուն։',
+  },
+  'год основания': { en: 'founded', hy: 'հիմնադրման տարի' },
+  'сайтов создано': { en: 'websites built', hy: 'ստեղծված կայք' },
+  '✦ Контакты': { en: '✦ Contacts', hy: '✦ Կոնտակտներ' },
 };
 
 /** Translate a single atomic string (no delimiters). RU / unmapped → original. */

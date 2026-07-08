@@ -190,6 +190,8 @@ export function createUser(email: string, password: string, name: string): User 
     totpSecret: null,
     totpEnabled: false,
     mustChangePassword: false,
+    telegramId: null,
+    telegramUsername: null,
     createdAt: new Date(),
   };
   db.insert(users).values(user).run();

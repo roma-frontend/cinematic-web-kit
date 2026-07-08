@@ -39,8 +39,10 @@
           "type": "section",
           "props": {
             "padding": "lg",
-            "bg": "primary",
-            "width": "normal"
+            "bg": "none",
+            "width": "normal",
+            "minH": "half",
+            "fx": "aurora"
           },
           "children": [
             {
@@ -48,25 +50,39 @@
               "type": "stack",
               "props": {
                 "gap": "md",
-                "align": "center"
+                "align": "center",
+                "stagger": "true"
               },
               "children": [
+                {
+                  "id": "h-badge",
+                  "type": "text",
+                  "props": {
+                    "text": "✦ Визуальный конструктор сайтов",
+                    "align": "center",
+                    "size": "sm",
+                    "letterSpacing": "wider",
+                    "fontWeight": "semibold",
+                    "textColor": "primary"
+                  }
+                },
                 {
                   "id": "h-title",
                   "type": "heading",
                   "props": {
                     "text": "Создайте сайт, который впечатляет",
                     "level": "1",
-                    "align": "center"
+                    "align": "center",
+                    "gradient": "true"
                   }
                 },
                 {
                   "id": "h-sub",
                   "type": "text",
                   "props": {
-                    "text": "Собирайте страницы из секций, текстов, кнопок и форм — без кода. Полный адаптив из коробки.",
+                    "text": "Собирайте страницы из секций, текстов, кнопок и форм — без кода. Полный адаптив, тёмная тема и современные эффекты из коробки.",
                     "align": "center",
-                    "muted": "false",
+                    "muted": "true",
                     "size": "lg"
                   }
                 },
@@ -86,15 +102,14 @@
                       "props": {
                         "text": "Начать бесплатно",
                         "href": "/site/contact",
-                        "variant": "secondary",
+                        "variant": "default",
                         "size": "lg",
                         "align": "center",
                         "fontWeight": "bold",
-                        "textColor": "white",
                         "hover": "glow",
-                        "animate": "none",
-                        "radius": "lg",
-                        "shadow": "md"
+                        "radius": "full",
+                        "shadow": "lg",
+                        "shimmer": "true"
                       }
                     },
                     {
@@ -105,7 +120,9 @@
                         "href": "/site/about",
                         "variant": "outline",
                         "size": "lg",
-                        "align": "center"
+                        "align": "center",
+                        "radius": "full",
+                        "hover": "lift"
                       }
                     }
                   ]
@@ -129,7 +146,18 @@
               "props": {
                 "text": "Всё, что нужно для сайта",
                 "level": "2",
-                "align": "center"
+                "align": "center",
+                "gradient": "true"
+              }
+            },
+            {
+              "id": "f-subtitle",
+              "type": "text",
+              "props": {
+                "text": "Готовые блоки, продуманный дизайн и логика — соберите проект за вечер.",
+                "align": "center",
+                "muted": "true",
+                "size": "lg"
               }
             },
             {
@@ -144,22 +172,26 @@
               "type": "grid",
               "props": {
                 "gap": "md",
-                "columns": "3"
+                "columns": "3",
+                "stagger": "true"
               },
               "children": [
                 {
                   "id": "f-c1",
-                  "type": "stack",
+                  "type": "card",
                   "props": {
+                    "padding": "md",
                     "gap": "sm",
-                    "align": "start"
+                    "cardVariant": "glass",
+                    "hover": "lift",
+                    "animate": "slide-up"
                   },
                   "children": [
                     {
                       "id": "f-c1h",
                       "type": "heading",
                       "props": {
-                        "text": "Секции и блоки",
+                        "text": "◆ Секции и блоки",
                         "level": "3",
                         "align": "left"
                       }
@@ -177,17 +209,20 @@
                 },
                 {
                   "id": "f-c2",
-                  "type": "stack",
+                  "type": "card",
                   "props": {
+                    "padding": "md",
                     "gap": "sm",
-                    "align": "start"
+                    "cardVariant": "glass",
+                    "hover": "lift",
+                    "animate": "slide-up"
                   },
                   "children": [
                     {
                       "id": "f-c2h",
                       "type": "heading",
                       "props": {
-                        "text": "Формы и логика",
+                        "text": "◆ Формы и логика",
                         "level": "3",
                         "align": "left"
                       }
@@ -205,17 +240,20 @@
                 },
                 {
                   "id": "f-c3",
-                  "type": "stack",
+                  "type": "card",
                   "props": {
+                    "padding": "md",
                     "gap": "sm",
-                    "align": "start"
+                    "cardVariant": "glass",
+                    "hover": "lift",
+                    "animate": "slide-up"
                   },
                   "children": [
                     {
                       "id": "f-c3h",
                       "type": "heading",
                       "props": {
-                        "text": "Много страниц",
+                        "text": "◆ Много страниц",
                         "level": "3",
                         "align": "left"
                       }
@@ -236,17 +274,44 @@
           ]
         },
         {
-          "id": "section-mr7ph5aw-2",
+          "id": "s-stats",
           "type": "section",
           "props": {
             "padding": "md",
-            "bg": "none",
+            "bg": "muted",
             "width": "wide"
           },
-          "children": []
+          "children": [
+            {
+              "id": "stats-grid",
+              "type": "grid",
+              "props": {
+                "gap": "md",
+                "columns": "3",
+                "stagger": "true"
+              },
+              "children": [
+                {
+                  "id": "stat-1",
+                  "type": "counter",
+                  "props": { "value": "12K+", "label": "созданных сайтов", "align": "center" }
+                },
+                {
+                  "id": "stat-2",
+                  "type": "counter",
+                  "props": { "value": "480+", "label": "готовых блоков", "align": "center" }
+                },
+                {
+                  "id": "stat-3",
+                  "type": "counter",
+                  "props": { "value": "99.9%", "label": "аптайм", "align": "center" }
+                }
+              ]
+            }
+          ]
         },
         {
-          "id": "section-mr7pl2vr-1",
+          "id": "s-how",
           "type": "section",
           "props": {
             "padding": "lg",
@@ -255,17 +320,244 @@
           },
           "children": [
             {
-              "id": "pricing-mr7plia0-2",
-              "type": "pricing",
+              "id": "how-title",
+              "type": "heading",
+              "props": { "text": "Как это работает", "level": "2", "align": "center" }
+            },
+            {
+              "id": "how-spacer",
+              "type": "spacer",
+              "props": { "height": "md" }
+            },
+            {
+              "id": "how-grid",
+              "type": "grid",
+              "props": { "gap": "md", "columns": "3", "stagger": "true" },
+              "children": [
+                {
+                  "id": "how-c1",
+                  "type": "card",
+                  "props": { "padding": "md", "gap": "sm", "cardVariant": "outline", "animate": "slide-up" },
+                  "children": [
+                    { "id": "how-c1n", "type": "heading", "props": { "text": "01", "level": "1", "align": "left", "textColor": "primary" } },
+                    { "id": "how-c1h", "type": "heading", "props": { "text": "Выберите блоки", "level": "3", "align": "left" } },
+                    { "id": "how-c1t", "type": "text", "props": { "text": "Соберите страницу из готовых секций перетаскиванием.", "align": "left", "muted": "true" } }
+                  ]
+                },
+                {
+                  "id": "how-c2",
+                  "type": "card",
+                  "props": { "padding": "md", "gap": "sm", "cardVariant": "outline", "animate": "slide-up" },
+                  "children": [
+                    { "id": "how-c2n", "type": "heading", "props": { "text": "02", "level": "1", "align": "left", "textColor": "primary" } },
+                    { "id": "how-c2h", "type": "heading", "props": { "text": "Настройте стиль", "level": "3", "align": "left" } },
+                    { "id": "how-c2t", "type": "text", "props": { "text": "Темы, цвета, шрифты и эффекты — всё меняется визуально.", "align": "left", "muted": "true" } }
+                  ]
+                },
+                {
+                  "id": "how-c3",
+                  "type": "card",
+                  "props": { "padding": "md", "gap": "sm", "cardVariant": "outline", "animate": "slide-up" },
+                  "children": [
+                    { "id": "how-c3n", "type": "heading", "props": { "text": "03", "level": "1", "align": "left", "textColor": "primary" } },
+                    { "id": "how-c3h", "type": "heading", "props": { "text": "Опубликуйте", "level": "3", "align": "left" } },
+                    { "id": "how-c3t", "type": "text", "props": { "text": "Один клик — и сайт доступен по вашему адресу.", "align": "left", "muted": "true" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s-testi",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "testi-title",
+              "type": "heading",
+              "props": { "text": "Нам доверяют", "level": "2", "align": "center" }
+            },
+            {
+              "id": "testi-spacer",
+              "type": "spacer",
+              "props": { "height": "md" }
+            },
+            {
+              "id": "testi-grid",
+              "type": "grid",
+              "props": { "gap": "md", "columns": "3", "stagger": "true" },
+              "children": [
+                {
+                  "id": "testi-1",
+                  "type": "testimonial",
+                  "props": { "quote": "Собрали лендинг за вечер — выглядит как из студии.", "author": "Анна П.", "role": "маркетолог", "quoteVariant": "card" }
+                },
+                {
+                  "id": "testi-2",
+                  "type": "testimonial",
+                  "props": { "quote": "Формы, тарифы, отзывы — всё из коробки и красиво.", "author": "Иван С.", "role": "фаундер", "quoteVariant": "card" }
+                },
+                {
+                  "id": "testi-3",
+                  "type": "testimonial",
+                  "props": { "quote": "Наконец-то конструктор, где не стыдно за результат.", "author": "Мария К.", "role": "дизайнер", "quoteVariant": "card" }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s-pricing",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "muted",
+            "width": "wide"
+          },
+          "children": [
+            {
+              "id": "pricing-title",
+              "type": "heading",
+              "props": { "text": "Тарифы", "level": "2", "align": "center", "gradient": "true" }
+            },
+            {
+              "id": "pricing-sub",
+              "type": "text",
+              "props": { "text": "Начните бесплатно и растите вместе с проектом.", "align": "center", "muted": "true", "size": "lg" }
+            },
+            {
+              "id": "pricing-spacer",
+              "type": "spacer",
+              "props": { "height": "md" }
+            },
+            {
+              "id": "pricing-grid",
+              "type": "grid",
+              "props": { "gap": "md", "columns": "3" },
+              "children": [
+                {
+                  "id": "price-1",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Start",
+                    "price": "0₽",
+                    "period": "",
+                    "features": "Базовый набор блоков\nДо 1 проекта\nПоддержка сообщества",
+                    "cta": "Начать",
+                    "href": "/site/contact",
+                    "featured": "false",
+                    "priceVariant": "outline"
+                  }
+                },
+                {
+                  "id": "price-2",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Pro",
+                    "price": "990₽",
+                    "period": "/мес",
+                    "features": "Всё из Start\nБез ограничений\nПриоритетная поддержка",
+                    "cta": "Выбрать",
+                    "href": "/site/contact",
+                    "featured": "true",
+                    "priceVariant": "card"
+                  }
+                },
+                {
+                  "id": "price-3",
+                  "type": "pricing",
+                  "props": {
+                    "plan": "Team",
+                    "price": "2990₽",
+                    "period": "/мес",
+                    "features": "Всё из Pro\nКоманда и роли\nSLA и приоритет",
+                    "cta": "Связаться",
+                    "href": "/site/contact",
+                    "featured": "false",
+                    "priceVariant": "outline"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s-faq",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "none",
+            "width": "normal"
+          },
+          "children": [
+            {
+              "id": "faq-title",
+              "type": "heading",
+              "props": { "text": "Частые вопросы", "level": "2", "align": "left" }
+            },
+            {
+              "id": "faq-spacer",
+              "type": "spacer",
+              "props": { "height": "sm" }
+            },
+            {
+              "id": "faq-list",
+              "type": "faq",
               "props": {
-                "plan": "Pro",
-                "price": "990₽",
-                "period": "/мес",
-                "features": "Всё из Base\nПриоритетная поддержка\nБез ограничений",
-                "cta": "Выбрать",
-                "href": "/site/contact",
-                "featured": "false"
+                "items": "Нужен ли код?::Нет, всё собирается визуально из готовых блоков.\nМожно свой домен?::Да, подключается в пару кликов.\nЕсть бесплатный тариф?::Да, стартовый план бесплатен навсегда.",
+                "align": "left",
+                "faqVariant": "bordered"
               }
+            }
+          ]
+        },
+        {
+          "id": "s-cta",
+          "type": "section",
+          "props": {
+            "padding": "lg",
+            "bg": "gradient",
+            "width": "normal",
+            "minH": "half",
+            "fx": "aurora"
+          },
+          "children": [
+            {
+              "id": "cta-stack",
+              "type": "stack",
+              "props": { "gap": "md", "align": "center", "stagger": "true" },
+              "children": [
+                {
+                  "id": "cta-title",
+                  "type": "heading",
+                  "props": { "text": "Готовы собрать свой сайт?", "level": "2", "align": "center" }
+                },
+                {
+                  "id": "cta-text",
+                  "type": "text",
+                  "props": { "text": "Начните бесплатно прямо сейчас — без кода и ограничений.", "align": "center", "size": "lg" }
+                },
+                {
+                  "id": "cta-btn",
+                  "type": "button",
+                  "props": {
+                    "text": "Начать бесплатно",
+                    "href": "/site/contact",
+                    "variant": "secondary",
+                    "size": "lg",
+                    "align": "center",
+                    "radius": "full",
+                    "shadow": "lg",
+                    "shimmer": "true",
+                    "hover": "glow"
+                  }
+                }
+              ]
             }
           ]
         }
@@ -282,27 +574,105 @@
           "props": {
             "padding": "lg",
             "bg": "none",
-            "width": "normal"
+            "width": "normal",
+            "minH": "half",
+            "fx": "aurora"
           },
           "children": [
             {
-              "id": "a-title",
+              "id": "a-stack",
+              "type": "stack",
+              "props": { "gap": "md", "align": "start", "stagger": "true" },
+              "children": [
+                {
+                  "id": "a-badge",
+                  "type": "text",
+                  "props": { "text": "✦ О нас", "align": "left", "size": "sm", "letterSpacing": "wider", "fontWeight": "semibold", "textColor": "primary" }
+                },
+                {
+                  "id": "a-title",
+                  "type": "heading",
+                  "props": { "text": "Мы делаем сайты доступными каждому", "level": "1", "align": "left", "gradient": "true" }
+                },
+                {
+                  "id": "a-text",
+                  "type": "text",
+                  "props": {
+                    "text": "Мы делаем инструменты, которые позволяют кому угодно собрать настоящий сайт: секции, тексты, кнопки, формы — всё редактируется визуально и адаптируется под любой экран.",
+                    "align": "left",
+                    "muted": "true",
+                    "size": "lg"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a-values",
+          "type": "section",
+          "props": { "padding": "lg", "bg": "none", "width": "wide" },
+          "children": [
+            {
+              "id": "a-values-title",
               "type": "heading",
-              "props": {
-                "text": "О нас",
-                "level": "1",
-                "align": "left"
-              }
+              "props": { "text": "Наши ценности", "level": "2", "align": "center" }
             },
             {
-              "id": "a-text",
-              "type": "text",
-              "props": {
-                "text": "Мы делаем инструменты, которые позволяют кому угодно собрать настоящий сайт: секции, тексты, кнопки, формы — всё редактируется визуально и адаптируется под любой экран.",
-                "align": "left",
-                "muted": "false",
-                "size": "lg"
-              }
+              "id": "a-values-spacer",
+              "type": "spacer",
+              "props": { "height": "md" }
+            },
+            {
+              "id": "a-values-grid",
+              "type": "grid",
+              "props": { "gap": "md", "columns": "3", "stagger": "true" },
+              "children": [
+                {
+                  "id": "a-v1",
+                  "type": "card",
+                  "props": { "padding": "md", "gap": "sm", "cardVariant": "glass", "hover": "lift", "animate": "slide-up" },
+                  "children": [
+                    { "id": "a-v1h", "type": "heading", "props": { "text": "◆ Просто", "level": "3", "align": "left" } },
+                    { "id": "a-v1t", "type": "text", "props": { "text": "Никакого кода — только визуальный редактор.", "align": "left", "muted": "true" } }
+                  ]
+                },
+                {
+                  "id": "a-v2",
+                  "type": "card",
+                  "props": { "padding": "md", "gap": "sm", "cardVariant": "glass", "hover": "lift", "animate": "slide-up" },
+                  "children": [
+                    { "id": "a-v2h", "type": "heading", "props": { "text": "◆ Красиво", "level": "3", "align": "left" } },
+                    { "id": "a-v2t", "type": "text", "props": { "text": "Современные темы, эффекты и адаптив из коробки.", "align": "left", "muted": "true" } }
+                  ]
+                },
+                {
+                  "id": "a-v3",
+                  "type": "card",
+                  "props": { "padding": "md", "gap": "sm", "cardVariant": "glass", "hover": "lift", "animate": "slide-up" },
+                  "children": [
+                    { "id": "a-v3h", "type": "heading", "props": { "text": "◆ Надёжно", "level": "3", "align": "left" } },
+                    { "id": "a-v3t", "type": "text", "props": { "text": "Формы, заявки и данные — всё работает стабильно.", "align": "left", "muted": "true" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "a-stats",
+          "type": "section",
+          "props": { "padding": "md", "bg": "muted", "width": "wide" },
+          "children": [
+            {
+              "id": "a-stats-grid",
+              "type": "grid",
+              "props": { "gap": "md", "columns": "3", "stagger": "true" },
+              "children": [
+                { "id": "a-s1", "type": "counter", "props": { "value": "2018", "label": "год основания", "align": "center" } },
+                { "id": "a-s2", "type": "counter", "props": { "value": "12K+", "label": "сайтов создано", "align": "center" } },
+                { "id": "a-s3", "type": "counter", "props": { "value": "40+", "label": "стран", "align": "center" } }
+              ]
             }
           ]
         }
@@ -318,17 +688,31 @@
           "type": "section",
           "props": {
             "padding": "lg",
-            "bg": "muted",
-            "width": "narrow"
+            "bg": "none",
+            "width": "narrow",
+            "fx": "aurora"
           },
           "children": [
+            {
+              "id": "c-badge",
+              "type": "text",
+              "props": {
+                "text": "✦ Контакты",
+                "align": "left",
+                "size": "sm",
+                "letterSpacing": "wider",
+                "fontWeight": "semibold",
+                "textColor": "primary"
+              }
+            },
             {
               "id": "c-title",
               "type": "heading",
               "props": {
                 "text": "Свяжитесь с нами",
                 "level": "1",
-                "align": "left"
+                "align": "left",
+                "gradient": "true"
               }
             },
             {
@@ -337,7 +721,8 @@
               "props": {
                 "text": "Оставьте заявку — ответим в течение дня.",
                 "align": "left",
-                "muted": "true"
+                "muted": "true",
+                "size": "lg"
               }
             },
             {

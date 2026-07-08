@@ -226,7 +226,7 @@ export function assignSiteAdmin(siteId: string, email: string): { id: string; em
     const now = new Date();
     const created: User = {
       id: newId('u'), email: norm, name: su.name, passwordHash: su.passwordHash,
-      role: 'admin', isActive: true, failedAttempts: 0, lockedUntil: null, totpSecret: null, totpEnabled: false, mustChangePassword: false, createdAt: now,
+      role: 'admin', isActive: true, failedAttempts: 0, lockedUntil: null, totpSecret: null, totpEnabled: false, mustChangePassword: false, telegramId: null, telegramUsername: null, createdAt: now,
     };
     db.insert(users).values(created).run();
     // Single identity: drop ALL tenant memberships for this email (sessions cascade).

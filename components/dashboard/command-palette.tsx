@@ -72,7 +72,7 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
           {filtered.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">Ничего не найдено</p>}
           {filtered.map((c, i) => (
             <button
-              key={c.label}
+              key={`${c.label}-${i}`}
               onMouseEnter={() => setIdx(i)}
               onClick={() => runAt(i)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm ${i === idx ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'}`}

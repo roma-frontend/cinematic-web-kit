@@ -22,6 +22,7 @@ export type DashDict = {
     trash: string;
     billing: string;
     billingAdmin: string;
+    notifications: string;
   };
   roles: { superadmin: string; admin: string; customer: string };
   userMenu: { label: string; signedIn: string };
@@ -53,6 +54,7 @@ export type DashDict = {
       studio: string;
       billing: string;
       billingAdmin: string;
+      notifications: string;
     };
   };
   brandSub: string;
@@ -261,6 +263,7 @@ const ru: DashDict = {
     trash: 'Корзина',
     billing: 'Подписка',
     billingAdmin: 'Платежи',
+    notifications: 'Уведомления',
   },
   roles: { superadmin: 'Суперадмин', admin: 'Админ', customer: 'Клиент' },
   userMenu: { label: 'Меню аккаунта', signedIn: 'Вы вошли как' },
@@ -292,6 +295,7 @@ const ru: DashDict = {
       studio: 'Студия генерации медиа и конструктор сайтов.',
       billing: 'Ваш тариф, продление и счета.',
       billingAdmin: 'Подписки, выручка и метрики платформы.',
+      notifications: 'Уведомления в Telegram о событиях платформы.',
     },
   },
   brandSub: 'Дашборд',
@@ -539,6 +543,7 @@ const en: DashDict = {
     trash: 'Trash',
     billing: 'Subscription',
     billingAdmin: 'Billing',
+    notifications: 'Notifications',
   },
   roles: { superadmin: 'Superadmin', admin: 'Admin', customer: 'Customer' },
   userMenu: { label: 'Account menu', signedIn: 'Signed in as' },
@@ -570,6 +575,7 @@ const en: DashDict = {
       studio: 'Media generation studio and site builder.',
       billing: 'Your plan, renewal and invoices.',
       billingAdmin: 'Subscriptions, revenue and platform metrics.',
+      notifications: 'Telegram alerts for platform events.',
     },
   },
   brandSub: 'Dashboard',
@@ -817,6 +823,7 @@ const hy: DashDict = {
     trash: 'Աղբարկղ',
     billing: 'Բաժանորդագրություն',
     billingAdmin: 'Վճարումներ',
+    notifications: 'Ծանուցումներ',
   },
   roles: { superadmin: 'Գերադմին', admin: 'Ադմին', customer: 'Հաճախորդ' },
   userMenu: { label: 'Հաշվի ընտրացանկ', signedIn: 'Մուտք եք գործել որպես' },
@@ -848,6 +855,7 @@ const hy: DashDict = {
       studio: 'Մեդիա գեներացիայի ստուդիա և կայքերի կառուցիչ։',
       billing: 'Ձեր պլանը, երկարաձգումը և հաշիվները։',
       billingAdmin: 'Բաժանորդագրություններ, եկամուտ և հարթակի մետրիկա։',
+      notifications: 'Telegram ծանուցումներ հարթակի իրադարձությունների մասին։',
     },
   },
   brandSub: 'Վահանակ',

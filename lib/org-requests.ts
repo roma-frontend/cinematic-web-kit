@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from 'drizzle-orm';
 import { getDb, newId, orgRequests, siteUsers, sites, users, type OrgRequest, type User } from '@/lib/db';
 import { createSite } from '@/lib/sites';
 import { LANDING_SLUG } from '@/lib/landing-site';
+import { publishNotify } from '@/lib/realtime';
 
 // Platform-level organization requests (ported from hr-project). A logged-in
 // platform user requests to CREATE a new org (tenant site) or JOIN an existing
@@ -112,6 +113,8 @@ export function createOrgRequest(
     createdAt: now,
   };
   getDb().insert(orgRequests).values(row).run();
+  // Real-time: light up every superadmin's header bell (best-effort).
+  publishNotify({ kind: 'org-request', superadmin: true, at: now.toISOString() });
   return row;
 }
 

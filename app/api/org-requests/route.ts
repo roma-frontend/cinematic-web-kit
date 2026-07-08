@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { createOrgRequest, getMyOrgRequests, listJoinableOrgs, orgEligibility } from '@/lib/org-requests';
+import { notifyOrgRequest } from '@/lib/notify';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors, type ApiErrorsDict } from '@/lib/api-errors-dict';
 
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
   const type = body.type === 'join' ? 'join' : 'create';
   try {
     const req = createOrgRequest(me, { type, requestedName: body.requestedName, requestedSlug: body.requestedSlug, targetSiteId: body.targetSiteId, message: body.message });
+    notifyOrgRequest({ type, requesterEmail: me.email, requesterName: me.name, requestedName: body.requestedName, message: body.message });
     return NextResponse.json({ ok: true, request: req });
   } catch (e) {
     const code = e instanceof Error ? e.message : '';

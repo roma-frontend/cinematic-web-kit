@@ -23,6 +23,63 @@ describe('lib/llm', () => {
     const { chatComplete } = await import('@/lib/llm');
     expect(await chatComplete([{ role: 'user', content: 'hi' }])).toBeNull();
   });
+
+  it('llmConfig echoes env with a default model', async () => {
+    process.env.LLM_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    process.env.LLM_KEY = 'gsk_test';
+    const { llmConfig } = await import('@/lib/llm');
+    const c = llmConfig();
+    expect(c.url).toContain('groq.com');
+    expect(c.key).toBe('gsk_test');
+    expect(c.model).toBeTruthy();
+  });
+});
+
+describe('lib/assistant-prompt', () => {
+  it('builds a role-scoped, localized prompt with a nav allow-list', async () => {
+    const { buildAssistantPrompt, assistantRoutesForRole, ASSISTANT_ROUTES } = await import('@/lib/assistant-prompt');
+    expect(ASSISTANT_ROUTES).toContain('/presets');
+
+    const ru = buildAssistantPrompt('ru', 'customer', 'Roman');
+    expect(ru).toContain('Roman');
+    expect(ru).toContain('русск'); // Russian language instruction
+    expect(ru).toContain('CUSTOMER');
+    expect(ru).toContain('/studio/builder');
+
+    const en = buildAssistantPrompt('en', 'admin');
+    expect(en).toContain('English');
+    expect(en).toContain('ADMIN');
+  });
+
+  it('gates navigable routes by role', async () => {
+    const { assistantRoutesForRole } = await import('@/lib/assistant-prompt');
+    const customer = assistantRoutesForRole('customer');
+    const admin = assistantRoutesForRole('admin');
+    const superadmin = assistantRoutesForRole('superadmin');
+
+    // Customers cannot reach staff/admin areas or the studio gallery.
+    expect(customer).not.toContain('/dashboard/users');
+    expect(customer).not.toContain('/studio');
+    expect(customer).toContain('/studio/builder');
+    // Admins get staff tools but not superadmin-only areas.
+    expect(admin).toContain('/dashboard/users');
+    expect(admin).not.toContain('/dashboard/database');
+    // Superadmin gets everything.
+    expect(superadmin).toContain('/dashboard/database');
+    expect(superadmin).toContain('/studio');
+  });
+
+  it('gates fetchable data sets by role', async () => {
+    const { assistantDataForRole } = await import('@/lib/assistant-routes');
+    // Customers may only ever fetch their own sites.
+    expect(assistantDataForRole('customer')).toEqual(['my-sites']);
+    // Staff/owners can also list users and all sites.
+    expect(assistantDataForRole('admin')).toContain('users');
+    expect(assistantDataForRole('admin')).toContain('all-sites');
+    expect(assistantDataForRole('superadmin')).toContain('users');
+    // No role is offered data outside its allow-list.
+    expect(assistantDataForRole('customer')).not.toContain('users');
+  });
 });
 
 describe('lib/turnstile', () => {

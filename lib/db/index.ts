@@ -426,6 +426,32 @@ CREATE TABLE IF NOT EXISTS translations (
   translated TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT '',
+  updated_by TEXT NOT NULL DEFAULT '',
+  updated_at INTEGER NOT NULL
+);
+
+-- Studio Assistant chat history (per platform user).
+CREATE TABLE IF NOT EXISTS assistant_conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS assistant_conversations_user_idx ON assistant_conversations (user_id, updated_at);
+
+CREATE TABLE IF NOT EXISTS assistant_messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'user',
+  content TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS assistant_messages_conv_idx ON assistant_messages (conversation_id, created_at);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;
@@ -453,6 +479,10 @@ function createDb(): DB {
   addColumn('users', 'totp_secret', `totp_secret TEXT`);
   addColumn('users', 'totp_enabled', `totp_enabled INTEGER NOT NULL DEFAULT 0`);
   addColumn('users', 'must_change_password', `must_change_password INTEGER NOT NULL DEFAULT 0`);
+  // Telegram login link (added after the initial users release).
+  addColumn('users', 'telegram_id', `telegram_id TEXT`);
+  addColumn('users', 'telegram_username', `telegram_username TEXT`);
+  sqlite.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_telegram_id_idx ON users (telegram_id) WHERE telegram_id IS NOT NULL');
   addColumn('site_users', 'failed_attempts', `failed_attempts INTEGER NOT NULL DEFAULT 0`);
   addColumn('site_users', 'locked_until', `locked_until INTEGER`);
   addColumn('sessions', 'last_active_at', `last_active_at INTEGER`);

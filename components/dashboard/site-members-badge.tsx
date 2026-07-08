@@ -1,12 +1,11 @@
 'use client';
 
 // Live badge for pending site-member (organization) join requests on the
-// «Мои сайты» nav item. Polls the aggregate count across the owner's sites,
-// plays a soft chime when a NEW request arrives, and blinks until the owner
-// opens a site's members panel (which dispatches the 'seen' event).
+// «Мои сайты» nav item. Polls the aggregate count across the owner's sites and
+// blinks until the owner opens a site's members panel (which dispatches the
+// 'seen' event). Sound is centralized in the header NotificationBell.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { playChime } from '@/components/dashboard/chime';
+import { useCallback, useEffect, useState } from 'react';
 import { usePref } from '@/hooks/use-user-prefs';
 
 export const SITE_MEMBERS_SEEN_EVENT = 'cwk:site-members-seen';
@@ -14,18 +13,12 @@ export const SITE_MEMBERS_SEEN_EVENT = 'cwk:site-members-seen';
 export function SiteMembersBadge({ initialCount }: { initialCount: number }) {
   const [count, setCount] = useState(initialCount);
   const [seen, setSeen] = usePref<number>('site-members-seen', 0);
-  const prev = useRef(initialCount);
-  const seenRef = useRef(seen);
-  useEffect(() => { seenRef.current = seen; }, [seen]);
 
   const poll = useCallback(() => {
     fetch('/api/site-members')
       .then((r) => (r.ok ? r.json() : { pending: 0 }))
       .then((d) => {
-        const n = typeof d.pending === 'number' ? d.pending : 0;
-        setCount(n);
-        if (n > prev.current && n > seenRef.current) playChime();
-        prev.current = n;
+        setCount(typeof d.pending === 'number' ? d.pending : 0);
       })
       .catch(() => {});
   }, []);

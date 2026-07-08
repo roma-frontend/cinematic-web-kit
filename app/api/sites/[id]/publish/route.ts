@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { getManageableSite, publishSite, unpublishSite, parseDoc } from '@/lib/sites';
 import { enforceFeature } from '@/lib/billing/enforce';
 import { LANDING_SLUG } from '@/lib/landing-site';
+import { notifySitePublished } from '@/lib/notify';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
 
@@ -48,6 +49,7 @@ export async function POST(_req: Request, { params }: Params) {
   if (gate) return gate;
   publishSite(site);
   if (site.slug === LANDING_SLUG) await syncLandingTheme(doc.themeId);
+  else notifySitePublished({ name: site.name, slug: site.slug, ownerEmail: user.email });
   return NextResponse.json({ ok: true, publishedAt: new Date().toISOString() });
 }
 

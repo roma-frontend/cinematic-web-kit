@@ -7,6 +7,7 @@ import { stripeConfigured } from '@/lib/billing/provider';
 import { getEffectivePlan } from '@/lib/billing/plan-config';
 import { upsertSubscription, recordPayment, hasAnySubscription } from '@/lib/billing/subscriptions';
 import { recordAudit } from '@/lib/audit';
+import { notifySubscription } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 
@@ -85,5 +86,12 @@ export async function POST(request: Request) {
     planId,
     interval,
   );
+  notifySubscription({
+    userEmail: me.email,
+    planName: plan.name || planId,
+    interval,
+    amount: trialEligible ? undefined : `${(amount / 100).toFixed(2)} ${plan.currency.toUpperCase()}`,
+    status: trialEligible ? 'trial' : 'active',
+  });
   return NextResponse.json({ ok: true, trial: trialEligible });
 }

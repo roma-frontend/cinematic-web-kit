@@ -7,6 +7,10 @@ export async function register() {
     const { reportEnvironment } = await import('./lib/env');
     reportEnvironment();
     await import('./sentry.server.config');
+    // Start the daily Telegram digest scheduler (21:00 Asia/Yerevan). No-op
+    // unless the integration + 'dailyDigest' category are configured.
+    const { startDailyScheduler } = await import('./lib/daily-scheduler');
+    startDailyScheduler();
   }
   if (process.env.NEXT_RUNTIME === 'edge') {
     await import('./sentry.edge.config');

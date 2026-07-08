@@ -50,6 +50,18 @@ export type AuthDict = {
   errBadEmail: string;
   errPwShort: string;
   errPwMismatch: string;
+  // Telegram login
+  telegram: {
+    or: string;
+    login: string;
+    connecting: string;
+    tooMany: string;
+    badPayload: string;
+    notConfigured: string;
+    badSignature: string;
+    expired: string;
+    suspended: string;
+  };
 };
 
 const ru: AuthDict = {
@@ -94,6 +106,17 @@ const ru: AuthDict = {
   errBadEmail: 'Некорректный email.',
   errPwShort: 'Пароль должен быть не короче 8 символов.',
   errPwMismatch: 'Пароли не совпадают.',
+  telegram: {
+    or: 'или',
+    login: 'Войти через Telegram',
+    connecting: 'Подключение…',
+    tooMany: 'Слишком много попыток, попробуйте позже.',
+    badPayload: 'Некорректные данные Telegram.',
+    notConfigured: 'Вход через Telegram не настроен.',
+    badSignature: 'Проверка Telegram не пройдена.',
+    expired: 'Срок авторизации Telegram истёк, попробуйте снова.',
+    suspended: 'Пользователь заблокирован.',
+  },
 };
 
 const en: AuthDict = {
@@ -138,6 +161,17 @@ const en: AuthDict = {
   errBadEmail: 'Invalid email.',
   errPwShort: 'Password must be at least 8 characters.',
   errPwMismatch: 'Passwords don’t match.',
+  telegram: {
+    or: 'or',
+    login: 'Sign in with Telegram',
+    connecting: 'Connecting…',
+    tooMany: 'Too many attempts, try again later.',
+    badPayload: 'Invalid Telegram data.',
+    notConfigured: 'Telegram sign-in is not configured.',
+    badSignature: 'Telegram verification failed.',
+    expired: 'Telegram authorization expired, please try again.',
+    suspended: 'This user is blocked.',
+  },
 };
 
 const hy: AuthDict = {
@@ -182,6 +216,17 @@ const hy: AuthDict = {
   errBadEmail: 'Սխալ էլ. փոստ։',
   errPwShort: 'Գաղտնաբառը պետք է լինի առնվազն 8 նիշ։',
   errPwMismatch: 'Գաղտնաբառերը չեն համընկնում։',
+  telegram: {
+    or: 'կամ',
+    login: 'Մուտք Telegram-ով',
+    connecting: 'Միանում…',
+    tooMany: 'Չափազանց շատ փորձեր, փորձեք ավելի ուշ։',
+    badPayload: 'Telegram-ի սխալ տվյալներ։',
+    notConfigured: 'Telegram-ով մուտքը կարգավորված չէ։',
+    badSignature: 'Telegram-ի ստուգումը ձախողվեց։',
+    expired: 'Telegram-ի վավերացման ժամկետը լրացել է, փորձեք կրկին։',
+    suspended: 'Օգտատերն արգելափակված է։',
+  },
 };
 
 export const AUTH: Record<Locale, AuthDict> = { ru, en, hy };

@@ -1,11 +1,10 @@
 'use client';
 
 // Live badge for pending organization requests on the superadmin «Организации»
-// nav item. Polls the count, plays a soft chime when a NEW request arrives, and
-// blinks until the superadmin opens the requests (which dispatches 'seen').
+// nav item. Polls the count and blinks until the superadmin opens the requests
+// (which dispatches 'seen'). Sound is centralized in the header NotificationBell.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { playChime } from '@/components/dashboard/chime';
+import { useCallback, useEffect, useState } from 'react';
 import { usePref } from '@/hooks/use-user-prefs';
 
 export const ORG_REQ_SEEN_EVENT = 'cwk:org-requests-seen';
@@ -13,18 +12,12 @@ export const ORG_REQ_SEEN_EVENT = 'cwk:org-requests-seen';
 export function OrgRequestsBadge({ initialCount }: { initialCount: number }) {
   const [count, setCount] = useState(initialCount);
   const [seen, setSeen] = usePref<number>('org-req-seen', 0);
-  const prev = useRef(initialCount);
-  const seenRef = useRef(seen);
-  useEffect(() => { seenRef.current = seen; }, [seen]);
 
   const poll = useCallback(() => {
     fetch('/api/admin/org-requests?status=pending')
       .then((r) => (r.ok ? r.json() : { requests: [] }))
       .then((d) => {
-        const n = Array.isArray(d.requests) ? d.requests.length : 0;
-        setCount(n);
-        if (n > prev.current && n > seenRef.current) playChime();
-        prev.current = n;
+        setCount(Array.isArray(d.requests) ? d.requests.length : 0);
       })
       .catch(() => {});
   }, []);

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getSiteBySlug, getSiteByHostname, addSubmission, APP_HOST } from '@/lib/sites';
+import { getSiteBySlug, getSiteByHostname, addSubmission, APP_HOST, getSite } from '@/lib/sites';
 import { getSiteUser } from '@/lib/site-auth';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
 import { verifyTurnstile } from '@/lib/turnstile';
 import { publishSubmission } from '@/lib/realtime';
+import { notifySubmission } from '@/lib/notify';
 
 export const runtime = 'nodejs';
 
@@ -97,6 +98,8 @@ export async function POST(request: Request) {
     addSubmission(siteId, formId, payload, siteUserId);
     // Real-time: notify the owner's open dashboard tabs (best-effort, in-process).
     if (siteId) publishSubmission({ siteId, formId, at: new Date().toISOString() });
+    // Telegram: notify the platform owner of a new lead (best-effort, gated).
+    notifySubmission({ siteName: siteId ? getSite(siteId)?.name : undefined, formId, fields: payload });
   } catch {
     // Non-fatal: still acknowledge so the visitor-facing UX succeeds.
   }

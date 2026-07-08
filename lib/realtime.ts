@@ -29,6 +29,8 @@ const EVENT = 'submission';
 export function publishSubmission(evt: SubmissionEvent): void {
   try {
     bus.emit(EVENT, evt);
+    // Also fan out to the unified notification channel (header bell).
+    publishNotify({ kind: 'submission', siteId: evt.siteId, at: evt.at });
   } catch {
     /* best-effort */
   }
@@ -38,4 +40,40 @@ export function publishSubmission(evt: SubmissionEvent): void {
 export function onSubmission(handler: (evt: SubmissionEvent) => void): () => void {
   bus.on(EVENT, handler);
   return () => bus.off(EVENT, handler);
+}
+
+// ── Unified notification channel ────────────────────────────────────────────
+// Every dashboard-relevant event (new form lead, a pending member join request,
+// a new organization request) is published here so the header notification bell
+// can show one aggregated, live, blinking + chiming counter. Events are routed
+// either to a site owner (via siteId → the stream resolves owned sites) or to
+// all superadmins (superadmin: true).
+
+export type NotifyKind = 'submission' | 'member-request' | 'org-request';
+
+export interface NotifyEvent {
+  kind: NotifyKind;
+  /** Owner-scoped events carry the site id; the stream forwards it only to the
+   *  site's owner. */
+  siteId?: string;
+  /** Platform-wide events (e.g. a new org request) go to every superadmin. */
+  superadmin?: boolean;
+  at: string; // ISO timestamp
+}
+
+const NOTIFY = 'notify';
+
+/** Broadcast a dashboard notification to all subscribers. Never throws. */
+export function publishNotify(evt: NotifyEvent): void {
+  try {
+    bus.emit(NOTIFY, evt);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Subscribe to unified notification events. Returns an unsubscribe function. */
+export function onNotify(handler: (evt: NotifyEvent) => void): () => void {
+  bus.on(NOTIFY, handler);
+  return () => bus.off(NOTIFY, handler);
 }

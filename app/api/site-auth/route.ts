@@ -30,6 +30,7 @@ import { listPublishedMaterials } from '@/lib/site-membership';
 import { listPublishedCourses, getCourseForMember, setLessonProgress } from '@/lib/site-learning';
 import { listPublishedDocuments } from '@/lib/site-documents';
 import { listMemberTickets, getMemberTicket, createTicket, memberReply } from '@/lib/site-tickets';
+import { notifyTicket } from '@/lib/notify';
 import { listPublished as listAnnouncements } from '@/lib/site-announcements';
 import {
   createSiteLoginOtp,
@@ -425,6 +426,8 @@ export async function POST(request: Request) {
     const bodyText = str('body').trim();
     if (!subject && !bodyText) return NextResponse.json({ error: t.badRequest }, { status: 400 });
     const ticket = createTicket(siteId, me.id, subject, bodyText);
+    const siteName = getDb().select({ name: sites.name }).from(sites).where(eq(sites.id, siteId)).get()?.name;
+    notifyTicket({ siteName, subject, authorEmail: me.email });
     return NextResponse.json({ ok: true, ticket });
   }
 

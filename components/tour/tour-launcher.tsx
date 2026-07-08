@@ -54,7 +54,7 @@ export function TourLauncher({ tour, autoStart = true }: { tour: TourId; autoSta
         <button
           onClick={() => setActive(true)}
           title={chrome.replay}
-          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-border bg-card/90 px-3.5 py-2.5 text-sm font-medium text-foreground shadow-lg backdrop-blur transition-all hover:scale-[1.03] hover:shadow-xl"
+          className="fixed bottom-[5.5rem] right-5 z-40 inline-flex items-center gap-2 rounded-full border border-border bg-card/90 px-3.5 py-2.5 text-sm font-medium text-foreground shadow-lg backdrop-blur transition-all hover:scale-[1.03] hover:shadow-xl"
         >
           <HelpCircle className="h-4 w-4 text-primary" />
           <span className="hidden sm:inline">{chrome.replay}</span>

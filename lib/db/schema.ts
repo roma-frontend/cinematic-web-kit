@@ -26,9 +26,16 @@ export const users = sqliteTable(
     totpEnabled: integer('totp_enabled', { mode: 'boolean' }).notNull().default(false),
     /** Forces a password change on next dashboard entry (set by superadmin temp-password issue). */
     mustChangePassword: integer('must_change_password', { mode: 'boolean' }).notNull().default(false),
+    /** Telegram user id (string form) when the account was linked via Telegram login. */
+    telegramId: text('telegram_id'),
+    /** Telegram @username (without '@'); kept fresh on each Telegram login. */
+    telegramUsername: text('telegram_username'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
-  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+  (t) => [
+    uniqueIndex('users_email_idx').on(t.email),
+    uniqueIndex('users_telegram_id_idx').on(t.telegramId),
+  ],
 );
 
 export const sessions = sqliteTable(
@@ -748,3 +755,15 @@ export const planOverrides = sqliteTable('plan_overrides', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
 export type PlanOverride = typeof planOverrides.$inferSelect;
+
+// Superadmin-editable, platform-wide key/value settings (integrations, toggles).
+// One row per key; the value is an opaque string (plain text or JSON). Used for
+// the Telegram notifications config so tokens/toggles live in the DB (editable
+// in the Control Center) with an env-var fallback — no redeploy to reconfigure.
+export const platformSettings = sqliteTable('platform_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+  updatedBy: text('updated_by').notNull().default(''),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+});
+export type PlatformSetting = typeof platformSettings.$inferSelect;

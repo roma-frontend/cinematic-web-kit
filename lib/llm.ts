@@ -42,6 +42,11 @@ export function llmConfigured(): boolean {
   return Boolean(url && key);
 }
 
+/** Resolved provider config (url/key/model). Used by streaming callers. */
+export function llmConfig(): { url: string; key: string; model: string } {
+  return config();
+}
+
 /**
  * Call the configured chat model. Returns the assistant message text, or null
  * on any failure (not configured, network error, bad status, timeout) so
