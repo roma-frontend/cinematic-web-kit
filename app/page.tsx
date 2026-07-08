@@ -14,8 +14,8 @@ import { getLocale } from '@/lib/i18n';
 import { getCurrentUser } from '@/lib/auth';
 import { ui } from '@/lib/ui-dict';
 import { getLandingSite } from '@/lib/landing-site';
-import { parseDoc, rebaseDoc } from '@/lib/sites';
-import { SiteRenderer, findPageByPath } from '@/components/builder/site-renderer';
+import { parseDoc } from '@/lib/sites';
+import type { BuilderDoc, BuilderNode } from '@/lib/builder/types';
 import { Button } from '@/components/ui/button';
 import { PricingCards } from '@/components/billing/pricing-cards';
 import { billingDict } from '@/lib/billing-dict';
@@ -24,7 +24,6 @@ import { getEffectivePlans } from '@/lib/billing/plan-config';
 import type { PlanId } from '@/lib/billing/plans';
 import { LandingHero } from '@/components/landing/landing-hero';
 import { CursorGlow } from '@/components/landing/cursor-glow';
-import { LandingEffectsShell } from '@/components/landing/landing-effects-shell';
 import { StickyShowcase } from '@/components/landing/sticky-showcase';
 import {
   ScrollProgress,
@@ -46,29 +45,53 @@ const ok = (v: string) => `oklch(${v})`;
 
 export const dynamic = 'force-dynamic';
 
-export default async function Home() {
-  // The landing (/) renders the builder document once it has been published
-  // from the visual builder (reserved slug). The builder now has a `landingHero`
-  // block that renders the REAL coded hero (WebGL, browser mock, animated
-  // headline, magnetic CTA), so the published landing keeps its effects.
-  // LandingEffectsShell adds the ambient cursor glow + scroll progress that
-  // live outside the document. Until published, the coded marketing page below
-  // is shown.
-  const landingSite = getLandingSite();
-  const builderDoc = landingSite ? parseDoc(landingSite.publishedDoc) : null;
-  if (builderDoc) {
-    const doc = { ...rebaseDoc(builderDoc, ''), siteId: landingSite!.id };
-    const page = findPageByPath(doc, []);
-    if (page) return (
-      <LandingEffectsShell>
-        <SiteRenderer doc={doc} page={page} platformChrome />
-      </LandingEffectsShell>
-    );
-  }
+/**
+ * The homepage (/) is always the coded, fully-localized marketing page so the
+ * language switcher keeps working. Any landing built/published in the visual
+ * builder contributes ONLY its custom media grid ("Пример живого сайта") — this
+ * pulls those items (with per-theme dark variants) out of the builder document.
+ * Text on / stays dictionary-driven, so publishing edits never breaks i18n.
+ */
+function landingGridEntries(doc: BuilderDoc): MediaEntry[] {
+  let grid: BuilderNode | null = null;
+  const walk = (n: BuilderNode) => {
+    if (!grid && n.type === 'videoGrid') grid = n;
+    (n.children ?? []).forEach(walk);
+  };
+  for (const pg of doc.pages) pg.blocks.forEach(walk);
+  const items = (grid as BuilderNode | null)?.props?.items;
+  if (!items) return [];
+  return items
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l, i): MediaEntry | null => {
+      const [src = '', title = '', subtitle = '', poster = '', srcDark = '', posterDark = ''] = l.split('::').map((s) => s.trim());
+      if (!src && !srcDark) return null;
+      return {
+        id: `landing-grid-${i}`,
+        title,
+        section: 'card',
+        src: src || srcDark,
+        subtitle: subtitle || undefined,
+        poster: poster || undefined,
+        srcDark: srcDark || undefined,
+        posterDark: posterDark || undefined,
+        aspectRatio: '16:9',
+      };
+    })
+    .filter((e): e is MediaEntry => e !== null);
+}
 
+export default async function Home() {
   const media = mediaData as MediaEntry[];
   const theme = activeSiteTheme();
-  const examples = media.slice(0, 6);
+  // Keep / on the localized coded page; only borrow the builder landing's media
+  // grid so custom uploads (and their dark variants) show without disabling i18n.
+  const landingSite = getLandingSite();
+  const landingDoc = landingSite ? parseDoc(landingSite.publishedDoc) : null;
+  const gridEntries = landingDoc ? landingGridEntries(landingDoc) : [];
+  const examples = (gridEntries.length ? gridEntries : media).slice(0, 6);
   const locale = await getLocale();
   const L = getLanding(locale);
   const dict = ui(locale);

@@ -9,6 +9,8 @@ build
 # Raw (pre-optimization) generated clips — the optimized .webm in public/ is what ships.
 scripts/media-pipeline/.raw
 /public/uploads/
+# Generated preset art — uploaded to R2 and served from NEXT_PUBLIC_MEDIA_BASE_URL.
+/public/media/generated/
 
 # Local SQLite database (multi-tenant sites, sessions)
 /data/*.db

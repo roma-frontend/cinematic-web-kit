@@ -16,8 +16,17 @@ export function VideoCard({ entry }: { entry: MediaEntry }) {
               src={entry.src}
               alt={entry.title}
               loading="lazy"
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full object-cover${entry.srcDark ? ' dark:hidden' : ''}`}
             />
+            {entry.srcDark && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={entry.srcDark}
+                alt={entry.title}
+                loading="lazy"
+                className="absolute inset-0 hidden h-full w-full object-cover dark:block"
+              />
+            )}
           </div>
         ) : (
           <LazyVideo src={entry.src} srcMp4={entry.srcMp4} poster={entry.poster} ratio={entry.aspectRatio} className="w-full" />

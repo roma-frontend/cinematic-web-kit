@@ -14,6 +14,9 @@ export interface MediaEntry {
   /** Optional MP4 (H.264) fallback for browsers without VP9/WebM. */
   srcMp4?: string;
   poster?: string;
+  /** Optional dark-theme variant (shown in dark mode when set). */
+  srcDark?: string;
+  posterDark?: string;
   aspectRatio?: string;
   createdAt?: string;
   /** Optional CTA for hero/background sections. */
