@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 /** @type {import('next').NextConfig} */
 
 // Restrict next/image to trusted remote hosts (R2 public bucket + optional
@@ -68,4 +69,20 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry: wrap the Next config once. Source maps upload only when
+// SENTRY_AUTH_TOKEN is present (CI/prod); otherwise the plugin just no-ops the
+// upload, so local/CI builds without a token still succeed.
+export default withSentryConfig(nextConfig, {
+  org: 'adb-arrm',
+  project: 'builder-studio',
+  // Only print upload logs in CI.
+  silent: !process.env.CI,
+  // Prettier stack traces (slightly larger build).
+  widenClientFileUpload: true,
+  // Route browser error reports through the app to dodge ad-blockers.
+  tunnelRoute: '/monitoring',
+  webpack: {
+    // Tree-shake Sentry logger statements to shrink the bundle.
+    treeshake: { removeDebugLogging: true },
+  },
+});

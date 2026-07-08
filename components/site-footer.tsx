@@ -4,6 +4,7 @@ import { Blocks, Sparkles, ArrowRight } from 'lucide-react';
 import { getLocale } from '@/lib/i18n';
 import { getCurrentUser } from '@/lib/auth';
 import { ui } from '@/lib/ui-dict';
+import { contactEmails } from '@/lib/seo';
 
 /** Rich multi-column footer with brand, CTA and grouped navigation. */
 export async function SiteFooter() {
@@ -57,10 +58,30 @@ export async function SiteFooter() {
     },
   ];
 
+  // Contact column — only rendered once a real domain is connected (info@ /
+  // support@ / sales@ are derived from it in lib/seo.ts). Hidden on
+  // localhost/*.fly.dev so no dead mailto links ship before the domain is live.
+  const contacts = contactEmails();
+  if (contacts) {
+    COLS.push({
+      title: t.footer.contact,
+      links: [
+        { href: `mailto:${contacts.info}`, label: contacts.info },
+        { href: `mailto:${contacts.sales}`, label: contacts.sales },
+        { href: `mailto:${contacts.support}`, label: contacts.support },
+      ],
+    });
+  }
+  // Grid template picked from static literals so Tailwind's JIT keeps them:
+  // brand column (1.4fr) + one 1fr track per link column (4 or 5).
+  const gridCols = contacts
+    ? 'lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_1fr]'
+    : 'lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]';
+
   return (
     <footer className="border-t border-border/60 bg-card/30">
       <div className="mx-auto max-w-[var(--container-max)] px-6 py-14 sm:px-10">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
+        <div className={`grid gap-10 ${gridCols}`}>
           {/* Brand + CTA */}
           <div>
             <Link href="/" className="flex items-center gap-2.5">

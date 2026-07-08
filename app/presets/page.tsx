@@ -7,7 +7,7 @@ import { siteTheme } from '@/lib/site-theme';
 import { LayoutTemplate, ArrowRight, Sparkles } from 'lucide-react';
 import { getLocale } from '@/lib/i18n';
 import { pagesDict } from '@/lib/pages-dict';
-import { PRESETS } from '@/lib/presets';
+import { PRESETS, presetArtUrl } from '@/lib/presets';
 import { presetDict } from '@/lib/preset-demo-dict';
 import { getHeaderUser } from '@/lib/auth';
 
@@ -26,7 +26,7 @@ function LivePreview({ slug, title }: { slug: string; title: string }) {
   return (
     <div className="relative aspect-[16/10] overflow-hidden border-b border-border bg-muted">
       <Image
-        src={`/media/generated/presets/${slug}-cover.webp`}
+        src={presetArtUrl(`${slug}-cover`)}
         alt={title}
         aria-hidden
         fill

@@ -18,6 +18,7 @@ import { getLandingSite } from '@/lib/landing-site';
 import { parseDoc } from '@/lib/sites';
 import type { BuilderDoc, BuilderNode } from '@/lib/builder/types';
 import { translateAuto } from '@/lib/auto-translate';
+import { mediaUrl } from '@/lib/media-url';
 import type { Locale } from '@/lib/seo';
 import { Button } from '@/components/ui/button';
 import { PricingCards } from '@/components/billing/pricing-cards';
@@ -157,12 +158,25 @@ export default async function Home() {
         microItems={microItems}
         previewLabels={extra.heroPreviewLabels}
         swatches={swatches}
+        heroVideo={{
+          src: mediaUrl('/generated/hero/hero-landing.webm'),
+          srcMp4: mediaUrl('/generated/hero/hero-landing.mp4'),
+          poster: mediaUrl('/generated/hero/hero-landing-poster.jpg'),
+        }}
       />
 
       <MarqueeBand words={extra.marquee} label={extra.trustedBy} />
 
       {/* How it works — pinned scroll story */}
-      <StickyShowcase title={L.steps.title} subtitle={L.steps.subtitle} steps={L.steps.items} />
+      <StickyShowcase
+        title={L.steps.title}
+        subtitle={L.steps.subtitle}
+        steps={L.steps.items}
+        shots={[1, 2, 3].map((n) => ({
+          light: mediaUrl(`/generated/steps/step-${n}-light.webp`),
+          dark: mediaUrl(`/generated/steps/step-${n}-dark.webp`),
+        }))}
+      />
 
       {/* Features — bento grid */}
       <BentoFeatures title={L.features.title} subtitle={L.features.subtitle} items={extra.bento.items} icons={bentoIcons} />

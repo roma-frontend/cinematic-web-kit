@@ -5,7 +5,7 @@
 // (= oklch(0.55 0.18 265)), cyan #22b0d0 accent glow, Russian copy.
 // Dependency-free (no DB / no server-only) so templates are unit-testable.
 
-import { SITE_NAME, APP_URL, DEFAULT_LOCALE, type Locale } from '@/lib/seo';
+import { SITE_NAME, APP_URL, DEFAULT_LOCALE, contactEmails, type Locale } from '@/lib/seo';
 
 // Brand palette (hex twins of the oklch tokens in app/globals.css).
 const C = {
@@ -221,13 +221,8 @@ function fmt(tpl: string, vars: Record<string, string | number>): string {
   return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
 }
 
-/** Contact addresses for the footer, derived from the sending domain. */
-function contactEmails(): { info: string; support: string; sales: string } | null {
-  const from = process.env.EMAIL_FROM || '';
-  const domain = from.split('@')[1];
-  if (!domain) return null;
-  return { info: `info@${domain}`, support: `support@${domain}`, sales: `sales@${domain}` };
-}
+/** Contact addresses for the footer, derived from the connected domain
+ *  (see lib/seo.ts → contactEmails). Null until a real domain is configured. */
 
 interface LayoutOpts {
   locale: Locale;

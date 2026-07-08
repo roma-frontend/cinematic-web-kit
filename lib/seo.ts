@@ -60,6 +60,39 @@ export function subdomainUrl(slug: string, path = ''): string {
   return `${PROTOCOL}://${slug}.${host}${suffix}${p}`;
 }
 
+// ── Contact addresses ───────────────────────────────────────────────────────
+// Single source of truth for the public contact addresses (info@ / support@ /
+// sales@). They are DERIVED from the connected domain, so nothing here needs
+// editing when you attach a real domain — set one env and both the website
+// footer and the transactional-email footer light up automatically.
+//
+// Resolution order:
+//   1. NEXT_PUBLIC_CONTACT_DOMAIN  — explicit override (e.g. "acme.com")
+//   2. EMAIL_FROM domain           — the verified sending domain
+//   3. NEXT_PUBLIC_APP_HOST        — only if it's a real custom domain
+// Returns null on localhost / *.fly.dev / provider sandboxes, so the UI hides
+// the contact block until a real domain is live.
+
+/** The bare contact domain (e.g. "acme.com"), or null when none is configured. */
+export function contactDomain(): string | null {
+  const explicit = process.env.NEXT_PUBLIC_CONTACT_DOMAIN?.trim().toLowerCase();
+  if (explicit) return explicit.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
+  const fromDomain = (process.env.EMAIL_FROM || '').split('@')[1]?.trim().toLowerCase();
+  if (fromDomain && !fromDomain.endsWith('resend.dev')) return fromDomain;
+
+  const host = APP_HOST.split(':')[0];
+  if (!IS_LOCAL && !host.endsWith('.fly.dev')) return host;
+
+  return null;
+}
+
+/** info@ / support@ / sales@ for the current domain, or null when unconfigured. */
+export function contactEmails(): { info: string; support: string; sales: string } | null {
+  const d = contactDomain();
+  return d ? { info: `info@${d}`, support: `support@${d}`, sales: `sales@${d}` } : null;
+}
+
 /**
  * hreflang alternates for a path. Until localized routes exist this is a no-op
  * (returns undefined); flip it on once /ru and /en routes are added.

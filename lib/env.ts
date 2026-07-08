@@ -61,6 +61,27 @@ export function checkEnvironment(env: Env = process.env): EnvIssue[] {
     });
   }
 
+  // Turnstile is all-or-nothing: the widget needs the public site key AND the
+  // server needs the secret. A half set silently disables bot protection.
+  const tsSite = has('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
+  const tsSecret = has('TURNSTILE_SECRET_KEY');
+  if (tsSite !== tsSecret) {
+    issues.push({
+      level: 'warn',
+      key: 'TURNSTILE',
+      message: `Turnstile is partially configured — set BOTH NEXT_PUBLIC_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY (missing: ${tsSite ? 'TURNSTILE_SECRET_KEY' : 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'}). Bot protection stays off until both are set.`,
+    });
+  }
+
+  // Workers AI needs an account id (or R2_ACCOUNT_ID) plus a token.
+  if (has('CF_AI_TOKEN') && !has('CF_ACCOUNT_ID') && !has('R2_ACCOUNT_ID')) {
+    issues.push({
+      level: 'warn',
+      key: 'CF_AI',
+      message: 'CF_AI_TOKEN is set but no CF_ACCOUNT_ID / R2_ACCOUNT_ID — Workers AI calls will be skipped.',
+    });
+  }
+
   return issues;
 }
 

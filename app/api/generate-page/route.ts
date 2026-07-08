@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/auth';
 import { isStaff } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
+import { chatComplete } from '@/lib/llm';
 
 export const runtime = 'nodejs';
 
@@ -87,27 +88,16 @@ function fallbackBlocks(brief: string): BuilderNode[] {
 }
 
 async function llmBlocks(brief: string): Promise<BuilderNode[] | null> {
-  const url = process.env.THEME_LLM_URL;
-  const key = process.env.THEME_LLM_KEY;
-  const model = process.env.THEME_LLM_MODEL || 'gpt-4o-mini';
-  if (!url || !key) return null;
   const sys = `You output ONLY a JSON array of website builder nodes. Allowed types: ${ALLOWED.join(', ')}. Each node: {"type": string, "props": object of string values, "children"?: array}. Containers: section, stack, row, grid, card, form. Build a complete, responsive Russian-language landing page.`;
+  const content = await chatComplete(
+    [
+      { role: 'system', content: sys },
+      { role: 'user', content: `Бриф: ${brief}` },
+    ],
+    { temperature: 0.6 },
+  );
+  if (!content) return null;
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: sys },
-          { role: 'user', content: `Бриф: ${brief}` },
-        ],
-        temperature: 0.6,
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const content: string = data?.choices?.[0]?.message?.content ?? '';
     const match = content.match(/\[[\s\S]*\]/);
     if (!match) return null;
     const arr = JSON.parse(match[0]);

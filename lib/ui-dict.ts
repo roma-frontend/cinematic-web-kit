@@ -46,6 +46,7 @@ export type UiDict = {
     rights: string;
     madeOn: string;
     legal: string;
+    contact: string;
   };
   legal: {
     privacy: string;
@@ -114,6 +115,7 @@ const ru: UiDict = {
     rights: 'Все права защищены.',
     madeOn: 'Собрано на платформе',
     legal: 'Правовая информация',
+    contact: 'Контакты',
   },
   legal: {
     privacy: 'Политика конфиденциальности',
@@ -182,6 +184,7 @@ const en: UiDict = {
     rights: 'All rights reserved.',
     madeOn: 'Built on the platform',
     legal: 'Legal',
+    contact: 'Contact',
   },
   legal: {
     privacy: 'Privacy Policy',
@@ -250,6 +253,7 @@ const hy: UiDict = {
     rights: 'Բոլոր իրավունքները պաշտպանված են։',
     madeOn: 'Ստեղծված հարթակում',
     legal: 'Իրավական տեղեկություններ',
+    contact: 'Կապ',
   },
   legal: {
     privacy: 'Գաղտնիության քաղաքականություն',

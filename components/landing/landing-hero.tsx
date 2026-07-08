@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Spotlight } from '@/components/fx/spotlight';
 import { Magnetic } from '@/components/fx/magnetic';
 import { WebglGradient } from '@/components/landing/webgl-gradient';
+import { LazyVideo } from '@/components/media/lazy-video';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -26,6 +27,7 @@ export function LandingHero({
   microItems,
   previewLabels,
   swatches,
+  heroVideo,
 }: {
   badge: string;
   title: string;
@@ -35,6 +37,7 @@ export function LandingHero({
   microItems: string[];
   previewLabels: { url: string; publish: string };
   swatches: HeroSwatch[];
+  heroVideo?: { src: string; srcMp4?: string; poster?: string };
 }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLElement>(null);
@@ -151,10 +154,16 @@ export function LandingHero({
             {/* Mock site body */}
             <div className="space-y-4 p-5">
               <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-xl" style={{ background: 'linear-gradient(120deg, var(--primary), color-mix(in oklch, var(--primary) 45%, #a855f7))' }}>
-                <div className="b-pattern-dots opacity-30" />
-                <span className="relative grid h-11 w-11 place-items-center rounded-full bg-white/25 backdrop-blur">
-                  <Play className="h-5 w-5 fill-white text-white" />
-                </span>
+                {heroVideo ? (
+                  <LazyVideo src={heroVideo.src} srcMp4={heroVideo.srcMp4} poster={heroVideo.poster} fill className="absolute inset-0" />
+                ) : (
+                  <>
+                    <div className="b-pattern-dots opacity-30" />
+                    <span className="relative grid h-11 w-11 place-items-center rounded-full bg-white/25 backdrop-blur">
+                      <Play className="h-5 w-5 fill-white text-white" />
+                    </span>
+                  </>
+                )}
               </div>
               <div className="h-3 w-2/3 rounded-full bg-foreground/15" />
               <div className="h-3 w-1/2 rounded-full bg-foreground/10" />

@@ -140,6 +140,7 @@ export type DashDict = {
     subtitle: string;
     emptyTitle: string;
     emptyDesc: string;
+    liveNew: string;
   };
   org: {
     create: string;
@@ -378,6 +379,7 @@ const ru: DashDict = {
     subtitle: 'Все обращения из форм на ваших сайтах.',
     emptyTitle: 'Пока нет заявок',
     emptyDesc: 'Как только посетитель отправит форму, она появится здесь.',
+    liveNew: 'Новая заявка',
   },
   org: {
     create: 'Создать организацию',
@@ -655,6 +657,7 @@ const en: DashDict = {
     subtitle: 'All form submissions from your sites.',
     emptyTitle: 'No submissions yet',
     emptyDesc: 'As soon as a visitor submits a form, it appears here.',
+    liveNew: 'New submission',
   },
   org: {
     create: 'Create organization',
@@ -932,6 +935,7 @@ const hy: DashDict = {
     subtitle: 'Ձեր կայքերի ձևերից բոլոր դիմումները։',
     emptyTitle: 'Դեռ հայտեր չկան',
     emptyDesc: 'Հենց այցելուն ուղարկի ձևը, այն կհայտնվի այստեղ։',
+    liveNew: 'Նոր հայտ',
   },
   org: {
     create: 'Ստեղծել կազմակերպություն',

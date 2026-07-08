@@ -14,6 +14,12 @@ export interface ShowcaseStep {
   text: string;
 }
 
+/** Per-step preview screenshots (light + dark scheme), served from R2. */
+export interface ShowcaseShot {
+  light: string;
+  dark: string;
+}
+
 /**
  * Sticky "scroll story": a pinned device mock on the left whose frame swaps as
  * the reader scrolls through the steps on the right (studio-grade). Falls back
@@ -23,10 +29,12 @@ export function StickyShowcase({
   title,
   subtitle,
   steps,
+  shots = [],
 }: {
   title: string;
   subtitle: string;
   steps: ShowcaseStep[];
+  shots?: ShowcaseShot[];
 }) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
@@ -56,6 +64,7 @@ export function StickyShowcase({
               {steps.map((s, i) => {
                 const Icon = ICONS[i % ICONS.length];
                 const on = i === active;
+                const shot = shots[i];
                 return (
                   <motion.div
                     key={i}
@@ -70,23 +79,49 @@ export function StickyShowcase({
                         <span className="h-3 w-3 rounded-full bg-red-400/80" />
                         <span className="h-3 w-3 rounded-full bg-amber-400/80" />
                         <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
-                      </div>
-                      <div className="relative flex flex-1 flex-col items-center justify-center gap-5 p-8">
-                        <div className="b-pattern-dots opacity-30" />
                         <span
-                          className="relative grid h-20 w-20 place-items-center rounded-2xl text-white shadow-lg"
-                          style={{ background: `linear-gradient(135deg, ${accent}, color-mix(in oklch, ${accent} 50%, #a855f7))` }}
+                          className="ml-2 font-display text-xs font-bold tracking-widest"
+                          style={{ color: accent }}
                         >
-                          <Icon className="h-9 w-9" />
-                        </span>
-                        <span className="relative font-display text-7xl font-black" style={{ color: accent, opacity: 0.9 }}>
                           {s.n}
                         </span>
-                        <div className="relative flex w-full max-w-xs flex-col gap-2">
-                          <div className="h-3 rounded-full bg-foreground/15" />
-                          <div className="h-3 w-2/3 rounded-full bg-foreground/10" />
-                        </div>
                       </div>
+                      {shot ? (
+                        <div className="relative flex-1 overflow-hidden">
+                          {/* Real product screenshot (R2), scheme-aware swap. */}
+                          <img
+                            src={shot.dark}
+                            alt={s.title}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 hidden h-full w-full object-cover object-top dark:block"
+                          />
+                          <img
+                            src={shot.light}
+                            alt={s.title}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 block h-full w-full object-cover object-top dark:hidden"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative flex flex-1 flex-col items-center justify-center gap-5 p-8">
+                          <div className="b-pattern-dots opacity-30" />
+                          <span
+                            className="relative grid h-20 w-20 place-items-center rounded-2xl text-white shadow-lg"
+                            style={{ background: `linear-gradient(135deg, ${accent}, color-mix(in oklch, ${accent} 50%, #a855f7))` }}
+                          >
+                            <Icon className="h-9 w-9" />
+                          </span>
+                          <span className="relative font-display text-7xl font-black" style={{ color: accent, opacity: 0.9 }}>
+                            {s.n}
+                          </span>
+                          <div className="relative flex w-full max-w-xs flex-col gap-2">
+                            <div className="h-3 rounded-full bg-foreground/15" />
+                            <div className="h-3 w-2/3 rounded-full bg-foreground/10" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -127,6 +162,7 @@ export function StickyShowcase({
       <div className="mx-auto grid max-w-[var(--container-max)] gap-6 px-6 py-12 sm:px-10 lg:hidden">
         {steps.map((s, i) => {
           const Icon = ICONS[i % ICONS.length];
+          const shot = shots[i];
           return (
             <motion.div
               key={i}
@@ -134,16 +170,24 @@ export function StickyShowcase({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.6, ease: EASE }}
-              className="rounded-2xl border border-border bg-card/50 p-6 backdrop-blur"
+              className="overflow-hidden rounded-2xl border border-border bg-card/50 backdrop-blur"
             >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="font-display text-3xl font-black text-muted-foreground/20">{s.n}</span>
+              {shot && (
+                <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-border">
+                  <img src={shot.dark} alt={s.title} loading="lazy" decoding="async" className="absolute inset-0 hidden h-full w-full object-cover object-top dark:block" />
+                  <img src={shot.light} alt={s.title} loading="lazy" decoding="async" className="absolute inset-0 block h-full w-full object-cover object-top dark:hidden" />
+                </div>
+              )}
+              <div className="p-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="font-display text-3xl font-black text-muted-foreground/20">{s.n}</span>
+                </div>
+                <h3 className="text-lg font-bold tracking-tight">{s.title}</h3>
+                <p className="mt-1.5 text-sm text-muted-foreground">{s.text}</p>
               </div>
-              <h3 className="text-lg font-bold tracking-tight">{s.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">{s.text}</p>
             </motion.div>
           );
         })}

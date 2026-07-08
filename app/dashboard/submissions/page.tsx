@@ -6,6 +6,7 @@ import { PageHeader, EmptyState } from '@/components/dashboard/ui';
 import { getLocale } from '@/lib/i18n';
 import { dashDict } from '@/lib/dashboard-dict';
 import { BCP47 } from '@/lib/seo';
+import { LiveSubmissions } from '@/components/dashboard/live-submissions';
 
 export async function generateMetadata() {
   const t = dashDict(await getLocale());
@@ -33,6 +34,9 @@ export default async function SubmissionsPage() {
   return (
     <>
       <PageHeader title={t.title} description={t.subtitle} />
+      <div className="mb-4 -mt-2">
+        <LiveSubmissions liveLabel={t.liveNew} />
+      </div>
       {rows.length === 0 ? (
         <EmptyState icon={Inbox} title={t.emptyTitle} description={t.emptyDesc} />
       ) : (

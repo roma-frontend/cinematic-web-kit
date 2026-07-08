@@ -3,6 +3,8 @@ import { getSiteBySlug, getSiteByHostname, addSubmission, APP_HOST } from '@/lib
 import { getSiteUser } from '@/lib/site-auth';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
+import { verifyTurnstile } from '@/lib/turnstile';
+import { publishSubmission } from '@/lib/realtime';
 
 export const runtime = 'nodejs';
 
@@ -60,6 +62,21 @@ export async function POST(request: Request) {
   if (typeof payload._hp === 'string' && payload._hp.trim() !== '') {
     return NextResponse.json({ ok: true });
   }
+
+  // Cloudflare Turnstile (bot protection). No-op unless TURNSTILE_SECRET_KEY is
+  // set; when set, a missing/invalid token is rejected. Token field follows
+  // Cloudflare's naming convention (cf-turnstile-response).
+  const turnstileToken =
+    (typeof payload['cf-turnstile-response'] === 'string' && payload['cf-turnstile-response']) ||
+    (typeof payload._turnstile === 'string' && payload._turnstile) ||
+    '';
+  const clientIp = (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  if (!(await verifyTurnstile(turnstileToken, clientIp || undefined))) {
+    return NextResponse.json({ error: t.captchaFailed }, { status: 400 });
+  }
+  delete payload['cf-turnstile-response'];
+  delete payload._turnstile;
+
   // Pull out control fields so they aren't stored as submission data.
   const webhook = typeof payload._webhook === 'string' ? payload._webhook : '';
   const notifyEmail = typeof payload._notifyEmail === 'string' ? payload._notifyEmail : '';
@@ -76,6 +93,8 @@ export async function POST(request: Request) {
     // Attach the logged-in end-user (if any) so it shows up in their account history.
     const siteUserId = siteId ? (await getSiteUser(siteId))?.id ?? null : null;
     addSubmission(siteId, formId, payload, siteUserId);
+    // Real-time: notify the owner's open dashboard tabs (best-effort, in-process).
+    if (siteId) publishSubmission({ siteId, formId, at: new Date().toISOString() });
   } catch {
     // Non-fatal: still acknowledge so the visitor-facing UX succeeds.
   }
