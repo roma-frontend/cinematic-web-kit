@@ -46,6 +46,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, duplicate: true });
   }
 
+  // Stripe's event object is untyped external JSON; fields are read defensively.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const obj = (event.data?.object ?? {}) as Record<string, any>;
 
   try {

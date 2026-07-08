@@ -114,8 +114,11 @@ export function OnboardingTour({ steps, chrome, soundOn, onToggleSound, reduced,
     return () => { window.removeEventListener('resize', on); window.removeEventListener('scroll', on, true); };
   }, [align]);
 
-  // Reposition once the tooltip has its real measured size.
+  // Reposition once the tooltip has its real measured size. align() reads the
+  // measured layout and updates position state — a legitimate useLayoutEffect
+  // measure-then-position pattern, so set-state-in-effect is disabled here.
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (ready) align();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, i]);
