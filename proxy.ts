@@ -28,14 +28,14 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // added per-audience below (tenant pages stay embeddable, the app does not).
 const CSP_BASE = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${IS_PROD ? '' : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline' https://telegram.org${IS_PROD ? '' : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   // Tenant sites may reference remote media (R2 public bucket, generated URLs).
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
   `connect-src 'self' https:${IS_PROD ? '' : ' ws: wss:'}`,
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
+  "frame-src 'self' https://oauth.telegram.org https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
