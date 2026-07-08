@@ -1084,10 +1084,10 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
       // theme actually flips, so nothing is double-loaded.
       const darkEntries = parsedRows.map((r, i) => toEntry(r, i, true));
       return (
-        <>
+        <div>
           <div className="contents dark:hidden"><VideoCardGrid entries={lightEntries} /></div>
           <div className="hidden dark:contents"><VideoCardGrid entries={darkEntries} /></div>
-        </>
+        </div>
       );
     }
 

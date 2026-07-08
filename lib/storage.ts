@@ -1,5 +1,6 @@
 import 'server-only';
 import { AwsClient } from 'aws4fetch';
+import { request as httpsRequest } from 'node:https';
 
 // Optional Cloudflare R2 (S3-compatible) object storage for uploads. When the
 // R2_* env vars are set, media is stored in R2 and served from R2_PUBLIC_BASE_URL
@@ -35,12 +36,38 @@ function client(): AwsClient {
 const endpoint = () => `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}`;
 
 export async function r2Put(key: string, body: Buffer, contentType: string): Promise<void> {
-  const res = await client().fetch(`${endpoint()}/${encodeURI(key)}`, {
+  const url = `${endpoint()}/${encodeURI(key)}`;
+  const bytes = Buffer.from(body);
+  // Sign with aws4fetch (computes the SigV4 authorization + x-amz-content-sha256
+  // over the body), then send via node:https instead of fetch. Next.js patches
+  // the global fetch and drops the Content-Length for non-trivial bodies, which
+  // makes R2 reject the PUT with "411 Length Required" (uploads over a few
+  // hundred KB silently fail). node:https lets us set Content-Length explicitly.
+  const signed = await client().sign(url, {
     method: 'PUT',
-    body: new Uint8Array(body),
+    body: new Uint8Array(bytes),
     headers: { 'content-type': contentType },
   });
-  if (!res.ok) throw new Error(`R2 PUT failed (${res.status})`);
+  const headers: Record<string, string> = { 'content-length': String(bytes.length) };
+  signed.headers.forEach((value, name) => { headers[name] = value; });
+
+  const u = new URL(url);
+  await new Promise<void>((resolve, reject) => {
+    const req = httpsRequest(
+      { hostname: u.hostname, path: u.pathname + u.search, method: 'PUT', headers },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c) => chunks.push(c as Buffer));
+        res.on('end', () => {
+          const status = res.statusCode ?? 0;
+          if (status >= 200 && status < 300) resolve();
+          else reject(new Error(`R2 PUT failed (${status}) ${Buffer.concat(chunks).toString('utf8').slice(0, 200)}`));
+        });
+      },
+    );
+    req.on('error', reject);
+    req.end(bytes);
+  });
 }
 
 export async function r2Delete(key: string): Promise<void> {

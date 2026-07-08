@@ -19,6 +19,17 @@ const execFileAsync = promisify(execFile);
 
 export const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
+// Where ffmpeg writes its output files. When R2 is configured the file is only
+// staged transiently before being pushed to R2 and deleted, so we stage OUTSIDE
+// the project tree (OS temp dir). Writing into public/ during `next dev`
+// (Turbopack) triggers a full page reload, which aborts the in-flight upload
+// and resets editor state — so the uploaded media would silently never appear.
+// Without R2 the optimized file must live under public/uploads to be served.
+const STAGING_DIR = path.join(tmpdir(), 'cwk-uploads');
+function outputDir(): string {
+  return r2Configured() ? STAGING_DIR : UPLOAD_DIR;
+}
+
 /**
  * Turn a produced local file into a public URL. With Cloudflare R2 configured
  * the file is uploaded to R2 (key `uploads/<name>`) and removed locally, and the
@@ -62,14 +73,15 @@ const rand = () => Math.random().toString(36).slice(2, 8);
  * before/after byte sizes. Falls back to storing the original if ffmpeg fails.
  */
 export async function optimizeUpload(file: File): Promise<OptimizeResult> {
-  await mkdir(UPLOAD_DIR, { recursive: true });
+  const dir = outputDir();
+  await mkdir(dir, { recursive: true });
   const buf = Buffer.from(await file.arrayBuffer());
   const originalBytes = buf.length;
   const base = `up-${Date.now().toString(36)}-${rand()}`;
 
   // SVG: store as-is.
   if (file.type === 'image/svg+xml') {
-    const out = path.join(UPLOAD_DIR, `${base}.svg`);
+    const out = path.join(dir, `${base}.svg`);
     await writeFile(out, buf);
     return { url: await finalize(out, `${base}.svg`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
   }
@@ -83,7 +95,7 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
 
   try {
     if (isImage) {
-      const out = path.join(UPLOAD_DIR, `${base}.webp`);
+      const out = path.join(dir, `${base}.webp`);
       await execFileAsync(ffmpeg, [
         '-y', '-i', tmp,
         '-vf', "scale='min(1600,iw)':-2",
@@ -95,8 +107,8 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
     }
 
     if (isVideo) {
-      const out = path.join(UPLOAD_DIR, `${base}.webm`);
-      const poster = path.join(UPLOAD_DIR, `${base}-poster.jpg`);
+      const out = path.join(dir, `${base}.webm`);
+      const poster = path.join(dir, `${base}-poster.jpg`);
       await execFileAsync(ffmpeg, [
         '-y', '-i', tmp,
         '-c:v', 'libvpx-vp9', '-crf', '34', '-b:v', '0',
@@ -118,12 +130,12 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
     }
 
     // Unknown but accepted → store raw.
-    const out = path.join(UPLOAD_DIR, `${base}.${srcExt}`);
+    const out = path.join(dir, `${base}.${srcExt}`);
     await writeFile(out, buf);
     return { url: await finalize(out, `${base}.${srcExt}`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
   } catch {
     // ffmpeg unavailable/failed → keep the original so uploads never hard-fail.
-    const out = path.join(UPLOAD_DIR, `${base}.${srcExt}`);
+    const out = path.join(dir, `${base}.${srcExt}`);
     await writeFile(out, await readFile(tmp));
     return { url: await finalize(out, `${base}.${srcExt}`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
   } finally {

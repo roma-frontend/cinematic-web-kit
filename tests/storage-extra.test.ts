@@ -1,4 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { EventEmitter } from 'node:events';
+
+// r2Put sends its PUT via node:https rather than fetch — Next.js patches the
+// global fetch and drops the Content-Length for non-trivial bodies, which makes
+// R2 reject the upload with 411. Mock node:https with a controllable status.
+let httpsStatus = 200;
+let lastHttpsOptions: { method?: string; hostname?: string; path?: string; headers?: Record<string, string> } | null = null;
+vi.mock('node:https', () => ({
+  request: (options: { method?: string; hostname?: string; path?: string; headers?: Record<string, string> }, cb: (res: EventEmitter & { statusCode: number }) => void) => {
+    lastHttpsOptions = options;
+    const req = new EventEmitter() as EventEmitter & { end: (b?: unknown) => void };
+    req.end = () => {
+      const res = Object.assign(new EventEmitter(), { statusCode: httpsStatus });
+      cb(res);
+      res.emit('data', Buffer.from('body'));
+      res.emit('end');
+    };
+    return req;
+  },
+}));
 
 const OLD_ENV = { ...process.env };
 
@@ -64,19 +84,20 @@ describe('configured storage', () => {
 
   it('r2Put issues a signed PUT', async () => {
     setR2Env();
-    const fetchMock = vi.fn().mockResolvedValue(fakeRes('', true, 200));
-    vi.stubGlobal('fetch', fetchMock);
+    httpsStatus = 200;
+    lastHttpsOptions = null;
     const { r2Put } = await import('@/lib/storage');
     await r2Put('uploads/a.webp', Buffer.from('data'), 'image/webp');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const req = fetchMock.mock.calls[0][0];
-    expect(req.method).toBe('PUT');
-    expect(req.url).toContain('acct123.r2.cloudflarestorage.com/mybucket/uploads/a.webp');
+    expect(lastHttpsOptions?.method).toBe('PUT');
+    expect(lastHttpsOptions?.hostname).toBe('acct123.r2.cloudflarestorage.com');
+    expect(lastHttpsOptions?.path).toContain('/mybucket/uploads/a.webp');
+    expect(lastHttpsOptions?.headers?.['content-length']).toBe('4');
+    expect(lastHttpsOptions?.headers?.authorization).toContain('AWS4-HMAC-SHA256');
   });
 
   it('r2Put throws on non-ok', async () => {
     setR2Env();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fakeRes('err', false, 403)));
+    httpsStatus = 403;
     const { r2Put } = await import('@/lib/storage');
     await expect(r2Put('uploads/a.webp', Buffer.from('x'), 'image/webp')).rejects.toThrow('R2 PUT failed (403)');
   });

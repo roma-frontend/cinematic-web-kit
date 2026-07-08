@@ -2082,7 +2082,9 @@ function BuilderEditor() {
                     {rows.map((r, i) => (
                       <div key={i} className="space-y-1.5 rounded-lg border border-border/60 bg-muted/30 p-2">
                         <div className="flex items-center gap-2">
-                          {GRID_IMG_RE.test(r.src) ? (
+                          {!r.src ? (
+                            <div className="h-9 w-14 shrink-0 rounded-md border border-dashed border-border bg-muted/40" />
+                          ) : GRID_IMG_RE.test(r.src) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={r.src} alt="" className="h-9 w-14 shrink-0 rounded-md border border-border object-cover" />
                           ) : (

@@ -15,6 +15,14 @@ export interface PresetContent {
   offer: { title: string; subtitle: string; items: { name: string; price: string; note: string; features: string[] }[] };
   testimonials: { name: string; role: string; quote: string }[];
   final: { title: string; subtitle: string };
+  /** Top nav labels for bento layouts (studio, pulse, maison). */
+  nav?: string[];
+  /** Labels overlaid on gallery tiles (studio works grid). */
+  galleryLabels?: string[];
+  /** "Why us" block (arena): image + icon rows. */
+  whyUs?: { title: string; items: { title: string; body: string }[] };
+  /** Artists row (pulse): circular avatars with name + genre. */
+  artists?: { title: string; subtitle: string; cta: string; items: { name: string; genre: string }[] };
 }
 
 export interface PresetCommon {
@@ -111,6 +119,11 @@ const ru: PresetLocale = {
         { title: 'Победа', body: 'Программы под цель и трекинг прогресса.' },
       ],
       showcase: { title: 'Тренируйся по-своему', body: 'Гибкое расписание и персональные планы.', points: ['Персональный тренер', 'Групповые классы', 'Открытые залы'] },
+      whyUs: { title: 'Почему выбирают нас', items: [
+        { title: 'Профессиональные тренеры', body: 'Опытные специалисты помогут достичь любых целей — от новичка до профи.' },
+        { title: 'Гибкое расписание', body: 'Занимайся тогда, когда удобно тебе. Утром, днём или поздно вечером.' },
+        { title: 'Доступ в любые залы', body: 'Тренируйся в любом зале сети 24/7 по единой подписке.' },
+      ] },
       gallery: { title: 'Внутри клуба', subtitle: 'Оборудование и пространство.' },
       offer: {
         title: 'Расписание', subtitle: 'Демо — запись отключена.',
@@ -129,6 +142,8 @@ const ru: PresetLocale = {
     studio: {
       tag: 'Агентство / портфолио',
       label: 'Studio',
+      nav: ['Работы', 'Услуги', 'О студии', 'Блог', 'Контакты'],
+      galleryLabels: ['Брендинг', 'Дизайн системы', 'Веб-дизайн', 'Продуктовый дизайн', 'UI/UX дизайн', 'Веб-приложение'],
       hero: { eyebrow: 'Дизайн-студия', title: 'Создаём бренды, которые замечают', subtitle: 'Портфолио, кейсы и подход команды — чисто, строго, по делу.' },
       logos: ['Vogue', 'Nike', 'Airbnb', 'Spotify', 'Figma', 'Notion'],
       features: [
@@ -155,6 +170,7 @@ const ru: PresetLocale = {
     maison: {
       tag: 'Люкс / ресторан',
       label: 'Maison',
+      nav: ['Меню', 'О нас', 'Атмосфера', 'Блог', 'Контакты'],
       hero: { eyebrow: 'Высокая кухня', title: 'Вечер, который хочется продлить', subtitle: 'Авторское меню, безупречный сервис и атмосфера, достойная особого случая.' },
       features: [
         { title: 'Изысканно', body: 'Сезонное меню от шефа с именем.' },
@@ -180,6 +196,14 @@ const ru: PresetLocale = {
     pulse: {
       tag: 'Музыка / ивент',
       label: 'Pulse',
+      nav: ['Афиша', 'Артисты', 'Билеты', 'О нас', 'Контакты'],
+      artists: { title: 'Звёзды на одной сцене', subtitle: 'Лучшие артисты сезона.', cta: 'Смотреть всех артистов', items: [
+        { name: 'DJ Neon', genre: 'TECHNO' },
+        { name: 'Luna Wave', genre: 'HOUSE' },
+        { name: 'Bassline', genre: 'DRUM & BASS' },
+        { name: 'Echo Pulse', genre: 'TRANCE' },
+        { name: 'Vortex', genre: 'TECH HOUSE' },
+      ] },
       hero: { eyebrow: 'Ночь начинается здесь', title: 'Почувствуй бит', subtitle: 'Лайн-ап, билеты и атмосфера главного события сезона.' },
       stats: [{ value: '20+', label: 'артистов' }, { value: '3', label: 'сцены' }, { value: '12ч', label: 'нон-стоп' }],
       features: [
@@ -282,6 +306,11 @@ const en: PresetLocale = {
         { title: 'Victory', body: 'Goal-based programs and progress tracking.' },
       ],
       showcase: { title: 'Train your way', body: 'A flexible schedule and personal plans.', points: ['Personal trainer', 'Group classes', 'Open gyms'] },
+      whyUs: { title: 'Why choose us', items: [
+        { title: 'Professional coaches', body: 'Experienced specialists help you reach any goal — from beginner to pro.' },
+        { title: 'Flexible schedule', body: 'Train whenever suits you. Morning, midday or late evening.' },
+        { title: 'Access to any gym', body: 'Train at any gym in the network 24/7 with one membership.' },
+      ] },
       gallery: { title: 'Inside the club', subtitle: 'Equipment and space.' },
       offer: {
         title: 'Schedule', subtitle: 'Demo — booking disabled.',
@@ -300,6 +329,8 @@ const en: PresetLocale = {
     studio: {
       tag: 'Agency / portfolio',
       label: 'Studio',
+      nav: ['Work', 'Services', 'About', 'Blog', 'Contact'],
+      galleryLabels: ['Branding', 'Design systems', 'Web design', 'Product design', 'UI/UX design', 'Web app'],
       hero: { eyebrow: 'Design studio', title: 'We build brands that get noticed', subtitle: 'Portfolio, case studies and the team’s approach — clean, sharp, to the point.' },
       logos: ['Vogue', 'Nike', 'Airbnb', 'Spotify', 'Figma', 'Notion'],
       features: [
@@ -326,6 +357,7 @@ const en: PresetLocale = {
     maison: {
       tag: 'Luxury / restaurant',
       label: 'Maison',
+      nav: ['Menu', 'About', 'Atmosphere', 'Blog', 'Contact'],
       hero: { eyebrow: 'Fine dining', title: 'An evening you’ll want to prolong', subtitle: 'A signature menu, impeccable service and an atmosphere worthy of a special occasion.' },
       features: [
         { title: 'Exquisite', body: 'A seasonal menu from a renowned chef.' },
@@ -351,6 +383,14 @@ const en: PresetLocale = {
     pulse: {
       tag: 'Music / event',
       label: 'Pulse',
+      nav: ['Line-up', 'Artists', 'Tickets', 'About', 'Contact'],
+      artists: { title: 'Stars on one stage', subtitle: 'The season’s best artists.', cta: 'See all artists', items: [
+        { name: 'DJ Neon', genre: 'TECHNO' },
+        { name: 'Luna Wave', genre: 'HOUSE' },
+        { name: 'Bassline', genre: 'DRUM & BASS' },
+        { name: 'Echo Pulse', genre: 'TRANCE' },
+        { name: 'Vortex', genre: 'TECH HOUSE' },
+      ] },
       hero: { eyebrow: 'The night starts here', title: 'Feel the beat', subtitle: 'The line-up, tickets and atmosphere of the season’s main event.' },
       stats: [{ value: '20+', label: 'artists' }, { value: '3', label: 'stages' }, { value: '12h', label: 'non-stop' }],
       features: [
@@ -453,6 +493,11 @@ const hy: PresetLocale = {
         { title: 'Հաղթանակ', body: 'Ծրագրեր ըստ նպատակի և առաջընթացի հետևում։' },
       ],
       showcase: { title: 'Մարզվիր քո ձևով', body: 'Ճկուն ժամանակացույց և անհատական պլաններ։', points: ['Անհատական մարզիչ', 'Խմբային դասեր', 'Բաց դահլիճներ'] },
+      whyUs: { title: 'Ինչու՞ են ընտրում մեզ', items: [
+        { title: 'Պրոֆեսիոնալ մարզիչներ', body: 'Փորձառու մասնագետները կօգնեն հասնել ցանկացած նպատակի՝ սկսնակից մինչև պրոֆեսիոնալ։' },
+        { title: 'Ճկուն ժամանակացույց', body: 'Մարզվիր այն ժամանակ, երբ հարմար է քեզ։ Առավոտյան, ցերեկը կամ ուշ երեկոյան։' },
+        { title: 'Հասանելիություն բոլոր դահլիճներին', body: 'Մարզվիր ցանցի ցանկացած դահլիճում 24/7՝ մեկ բաժանորդագրությամբ։' },
+      ] },
       gallery: { title: 'Ակումբի ներսում', subtitle: 'Սարքավորումներ և տարածք։' },
       offer: {
         title: 'Ժամանակացույց', subtitle: 'Դեմո — գրանցումն անջատված է։',
@@ -471,6 +516,8 @@ const hy: PresetLocale = {
     studio: {
       tag: 'Գործակալություն / պորտֆոլիո',
       label: 'Studio',
+      nav: ['Աշխատանքներ', 'Ծառայություններ', 'Ստուդիայի մասին', 'Բլոգ', 'Կապ'],
+      galleryLabels: ['Բրենդինգ', 'Դիզայն համակարգեր', 'Վեբ-դիզայն', 'Փրոդակթ դիզայն', 'UI/UX դիզայն', 'Վեբ-հավելված'],
       hero: { eyebrow: 'Դիզայն-ստուդիա', title: 'Ստեղծում ենք բրենդներ, որ նկատում են', subtitle: 'Պորտֆոլիո, քեյսեր և թիմի մոտեցում՝ մաքուր, խիստ, ըստ էության։' },
       logos: ['Vogue', 'Nike', 'Airbnb', 'Spotify', 'Figma', 'Notion'],
       features: [
@@ -497,6 +544,7 @@ const hy: PresetLocale = {
     maison: {
       tag: 'Լյուքս / ռեստորան',
       label: 'Maison',
+      nav: ['Մենյու', 'Մեր մասին', 'Մթնոլորտ', 'Բլոգ', 'Կապ'],
       hero: { eyebrow: 'Բարձր խոհանոց', title: 'Երեկո, որ կուզենաս երկարացնել', subtitle: 'Հեղինակային մենյու, անթերի սպասարկում և առանձնահատուկ առիթին արժանի մթնոլորտ։' },
       features: [
         { title: 'Նրբագեղ', body: 'Սեզոնային մենյու անվանի շեֆից։' },
@@ -522,6 +570,14 @@ const hy: PresetLocale = {
     pulse: {
       tag: 'Երաժշտություն / իվենթ',
       label: 'Pulse',
+      nav: ['Աֆիշա', 'Արտիստներ', 'Տոմսեր', 'Մեր մասին', 'Կապ'],
+      artists: { title: 'Աստղերը մեկ բեմում', subtitle: 'Սեզոնի լավագույն արտիստները։', cta: 'Տեսնել բոլոր արտիստներին', items: [
+        { name: 'DJ Neon', genre: 'TECHNO' },
+        { name: 'Luna Wave', genre: 'HOUSE' },
+        { name: 'Bassline', genre: 'DRUM & BASS' },
+        { name: 'Echo Pulse', genre: 'TRANCE' },
+        { name: 'Vortex', genre: 'TECH HOUSE' },
+      ] },
       hero: { eyebrow: 'Գիշերը սկսվում է այստեղ', title: 'Զգա բիթը', subtitle: 'Սեզոնի գլխավոր իրադարձության լայն-ափը, տոմսերը և մթնոլորտը։' },
       stats: [{ value: '20+', label: 'արտիստ' }, { value: '3', label: 'բեմ' }, { value: '12ժ', label: 'նոն-ստոպ' }],
       features: [
