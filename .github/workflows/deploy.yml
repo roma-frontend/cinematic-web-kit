@@ -36,7 +36,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Deploy the exact commit that passed CI, not whatever is newest.
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -45,4 +45,3 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
