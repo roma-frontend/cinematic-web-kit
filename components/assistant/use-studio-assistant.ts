@@ -13,6 +13,8 @@ export interface AssistantMessage {
   suggestions?: string[];
   route?: string;
   createdAt?: number;
+  /** Facts the assistant recorded to long-term memory in this reply. */
+  remembered?: string[];
 }
 
 export interface Conversation {
@@ -20,6 +22,12 @@ export interface Conversation {
   title: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface MemoryFact {
+  id: string;
+  content: string;
+  createdAt: number;
 }
 
 interface SR extends EventTarget {
@@ -43,7 +51,7 @@ function detectLanguage(text: string): Locale {
   return cyr > text.length * 0.2 ? 'ru' : 'en';
 }
 
-function parseTags(raw: string): { clean: string; route: string | null; suggestions: string[]; data: string | null } {
+function parseTags(raw: string): { clean: string; route: string | null; suggestions: string[]; data: string | null; remembered: string[] } {
   let route: string | null = null;
   const nav = raw.match(/<NAVIGATE>\s*([^<]+?)\s*<\/NAVIGATE>/);
   if (nav) {
@@ -59,16 +67,29 @@ function parseTags(raw: string): { clean: string; route: string | null; suggesti
   let suggestions: string[] = [];
   const sug = raw.match(/<SUGGEST>\s*([^<]*?)\s*<\/SUGGEST>/);
   if (sug) suggestions = sug[1].split('|').map((s) => s.trim()).filter(Boolean).slice(0, 3);
+  // Long-term memory facts (silent tag; surfaced as a subtle "remembered" note).
+  const remembered: string[] = [];
+  const remSeen = new Set<string>();
+  const remRe = /<REMEMBER>\s*([\s\S]*?)\s*<\/REMEMBER>/gi;
+  let rm: RegExpExecArray | null;
+  while ((rm = remRe.exec(raw)) !== null) {
+    const fact = rm[1].replace(/\s+/g, ' ').trim();
+    const key = fact.toLowerCase();
+    if (fact && !remSeen.has(key)) { remSeen.add(key); remembered.push(fact); }
+  }
   const clean = raw
     .replace(/<NAVIGATE>[\s\S]*?<\/NAVIGATE>/g, '')
     .replace(/<SUGGEST>[\s\S]*?<\/SUGGEST>/g, '')
     .replace(/<DATA>[\s\S]*?<\/DATA>/g, '')
+    .replace(/<REMEMBER>[\s\S]*?<\/REMEMBER>/gi, '')
     .replace(/<NAVIGATE>[\s\S]*$/g, '')
     .replace(/<SUGGEST>[\s\S]*$/g, '')
     .replace(/<DATA>[\s\S]*$/g, '')
-    .replace(/<\/?(NAV|SUG|DAT)[A-Z]*$/i, '')
+    .replace(/<REMEMBER>[\s\S]*$/gi, '')
+    .replace(/<\/?(NAV|SUG|DAT|REMEMBER)[A-Z]*$/i, '')
+    .replace(/<\/?(?:R|RE|REM|REME|REMEM|REMEMB|REMEMBE)$/i, '')
     .trimEnd();
-  return { clean, route, suggestions, data };
+  return { clean, route, suggestions, data, remembered };
 }
 
 export function useStudioAssistant() {
@@ -83,6 +104,7 @@ export function useStudioAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [memories, setMemories] = useState<MemoryFact[]>([]);
   const recRef = useRef<SR | null>(null);
   const silenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -96,6 +118,26 @@ export function useStudioAssistant() {
       const res = await fetch('/api/assistant/conversations');
       if (res.ok) setConversations((await res.json()).conversations ?? []);
     } catch { /* offline: history just stays empty */ }
+  }, []);
+
+  // ── Long-term memory (durable facts the assistant recorded via <REMEMBER>) ──
+  const loadMemories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assistant/memory');
+      if (res.ok) setMemories((await res.json()).memories ?? []);
+    } catch { /* memory just stays empty */ }
+  }, []);
+
+  const forgetMemory = useCallback(async (id: string) => {
+    setMemories((prev) => prev.filter((m) => m.id !== id));
+    try { await fetch(`/api/assistant/memory?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+    catch { /* optimistic; ignore */ }
+  }, []);
+
+  const clearMemory = useCallback(async () => {
+    setMemories([]);
+    try { await fetch('/api/assistant/memory', { method: 'DELETE' }); }
+    catch { /* optimistic; ignore */ }
   }, []);
 
   const newChat = useCallback(() => {
@@ -213,8 +255,10 @@ export function useStudioAssistant() {
         const { clean } = parseTags(full);
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean } : m)));
       }
-      const { clean, route, suggestions, data } = parseTags(full);
-      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean, suggestions, route: route ?? undefined } : m)));
+      const { clean, route, suggestions, data, remembered } = parseTags(full);
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean, suggestions, route: route ?? undefined, remembered: remembered.length ? remembered : undefined } : m)));
+      // Pull the freshly saved facts into the managed memory list.
+      if (remembered.length) void loadMemories();
       // If the model asked to SHOW a data set, fetch it and append a table.
       if (data) {
         // Safety net: drop any table the model may have invented — only the
@@ -252,7 +296,7 @@ export function useStudioAssistant() {
       setIsLoading(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [currentId]);
+  }, [currentId, loadMemories]);
 
   /** Cancel an in-flight reply; the partial text already streamed is kept. */
   const stop = useCallback(() => {
@@ -304,11 +348,12 @@ export function useStudioAssistant() {
   }, [isLoading, messages, runStream]);
 
   // Load conversation history once on mount.
-  useEffect(() => { void loadConversations(); }, [loadConversations]);
+  useEffect(() => { void loadConversations(); void loadMemories(); }, [loadConversations, loadMemories]);
 
   return {
     messages, conversations, currentId, input, setInput, isLoading, loadingConversation, isListening, unavailable, error,
     voiceSupported, inputRef, send, editMessage, regenerate, stop, navigate, startVoice,
     loadConversations, newChat, selectConversation, rename, remove,
+    memories, loadMemories, forgetMemory, clearMemory,
   };
 }

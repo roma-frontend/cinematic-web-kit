@@ -41,7 +41,7 @@ platform control and billing admin. Be careful suggesting destructive actions �
 always confirm intent first.`,
 };
 
-export function buildAssistantPrompt(locale: Locale, role: AssistantRole = 'customer', userName?: string, allowActions = true): string {
+export function buildAssistantPrompt(locale: Locale, role: AssistantRole = 'customer', userName?: string, allowActions = true, memories: string[] = []): string {
   const who = userName ? `The user's name is ${userName}. ` : '';
   const routes = assistantRoutesForRole(role);
   // Agentic DATA fetching is a Studio-only capability (assistant.actions). When
@@ -72,6 +72,13 @@ SHOWING DATA:
   see/list their sites or other data, guide them to the relevant page instead
   (use a backticked path or a <NAVIGATE> tag). NEVER emit a <DATA> tag and
   NEVER invent table rows.`;
+  // What we already know about this user (durable facts they shared before).
+  const memorySection = memories.length
+    ? `
+WHAT YOU KNOW ABOUT THIS USER (remembered from earlier chats — use it to
+personalise answers, but don't recite it back unprompted):
+${memories.slice(0, 30).map((m) => `- ${m}`).join('\n')}`
+    : '';
   return `You are "Studio Assistant" — the built-in AI guide for Builder Studio, a
 no-code website builder whose sections are driven by AI-generated cinematic
 video. ${who}You help users build, style and publish sites.
@@ -87,6 +94,7 @@ WHAT BUILDER STUDIO DOES:
 - Dashboard: sites, form submissions, account, billing; Web Vitals at /vitals.
 
 ${ROLE_SCOPE[role]}
+${memorySection}
 
 HOW TO ANSWER:
 - Be concise, friendly and practical. Prefer short steps over essays.
@@ -107,6 +115,18 @@ FOLLOW-UPS:
 - Optionally end with <SUGGEST>chip 1|chip 2|chip 3</SUGGEST> — up to three very
   short next-step prompts (max ~5 words each), in the user's language, and only
   for things this role can actually do.
+
+MEMORY:
+- When the user shares a DURABLE fact or preference worth recalling in future
+  chats (their business/niche, brand, target audience, preferred tone/length,
+  language, recurring goals), record it by emitting <REMEMBER>a short third-
+  person fact</REMEMBER>. Keep each fact under ~15 words, e.g.
+  <REMEMBER>Runs a coffee shop called Roast in Yerevan</REMEMBER> or
+  <REMEMBER>Prefers short, concise answers</REMEMBER>.
+- Emit at most 2 <REMEMBER> tags per reply, and only for genuinely new, lasting
+  info — NOT for one-off questions, transient context, or things already listed
+  in "WHAT YOU KNOW ABOUT THIS USER". The tag is silent (the user doesn't see
+  it), so never mention that you're saving it.
 
 ${LANG_LINE[locale]}`;
 }

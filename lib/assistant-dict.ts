@@ -54,6 +54,14 @@ export interface AssistantDict {
   shiftEnterHint: string;
   loadingChat: string;
   examplesTitle: string;
+  // Memory
+  memory: string;
+  memoryTitle: string;
+  memoryEmpty: string;
+  memoryHint: string;
+  memoryClear: string;
+  remembered: string;
+  forget: string;
   starters: Record<Role, string[]>;
 }
 
@@ -113,6 +121,13 @@ const ru: AssistantDict = {
   shiftEnterHint: 'Enter — отправить · Shift+Enter — перенос · / — команды',
   loadingChat: 'Загружаю переписку…',
   examplesTitle: 'С чего начнём?',
+  memory: 'Память',
+  memoryTitle: 'Что ассистент запомнил',
+  memoryEmpty: 'Пока ничего не запомнено. Расскажите о своём бизнесе или предпочтениях — и я буду это учитывать.',
+  memoryHint: 'Эти факты подмешиваются в ответы, чтобы ассистент вас помнил.',
+  memoryClear: 'Очистить всё',
+  remembered: 'Запомнил',
+  forget: 'Забыть',
   starters: {
     customer: [
       '✨ Как создать сайт?',
@@ -191,6 +206,13 @@ const en: AssistantDict = {
   shiftEnterHint: 'Enter to send · Shift+Enter for newline · / for commands',
   loadingChat: 'Loading conversation…',
   examplesTitle: 'Where do we start?',
+  memory: 'Memory',
+  memoryTitle: 'What the assistant remembers',
+  memoryEmpty: 'Nothing remembered yet. Tell me about your business or preferences and I’ll keep them in mind.',
+  memoryHint: 'These facts are mixed into replies so the assistant remembers you.',
+  memoryClear: 'Clear all',
+  remembered: 'Remembered',
+  forget: 'Forget',
   starters: {
     customer: [
       '✨ How do I create a site?',
@@ -269,6 +291,13 @@ const hy: AssistantDict = {
   shiftEnterHint: 'Enter — ուղարկել · Shift+Enter — նոր տող · / — հրամաններ',
   loadingChat: 'Բեռնում եմ զրույցը…',
   examplesTitle: 'Որտեղի՞ց սկսենք',
+  memory: 'Հիշողություն',
+  memoryTitle: 'Ինչ է հիշում օգնականը',
+  memoryEmpty: 'Դեռ ոչինչ չի հիշվել։ Պատմեք ձեր բիզնեսի կամ նախապատվությունների մասին, և ես կհաշվի առնեմ։',
+  memoryHint: 'Այս փաստերը միախառնվում են պատասխաններին, որպեսզի օգնականը հիշի ձեզ։',
+  memoryClear: 'Մաքրել բոլորը',
+  remembered: 'Հիշեցի',
+  forget: 'Մոռանալ',
   starters: {
     customer: [
       '✨ Ինչպե՞ս ստեղծել կայք',

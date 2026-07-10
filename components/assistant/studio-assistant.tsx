@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Wand2, X, Send, Mic, Eraser, ArrowUpRight, Maximize2, Minimize2,
   Plus, Pencil, Trash2, Check, Copy, MessageSquare, PanelLeft, RotateCcw,
-  Square, RefreshCw, Search, ArrowDown, CornerDownLeft, Sparkles, Database, Compass,
+  Square, RefreshCw, Search, ArrowDown, CornerDownLeft, Sparkles, Database, Compass, Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocale } from '@/hooks/use-locale';
@@ -45,6 +45,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
   const [historyQuery, setHistoryQuery] = useState('');
+  const [memoryOpen, setMemoryOpen] = useState(false);
   // Smart autoscroll: only glue to the bottom when the user is already there.
   const [atBottom, setAtBottom] = useState(true);
   const [hasNew, setHasNew] = useState(false);
@@ -113,13 +114,14 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
         if (editing) { setEditing(null); return; }
         if (renaming) { setRenaming(null); return; }
         if (pendingDelete) { setPendingDelete(null); return; }
+        if (memoryOpen) { setMemoryOpen(false); return; }
         if (sidebarOpen) { setSidebarOpen(false); return; }
         setOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, editing, renaming, pendingDelete, sidebarOpen]);
+  }, [open, editing, renaming, pendingDelete, sidebarOpen, memoryOpen]);
 
   // Remember the first open so the FAB stops "pinging" once discovered, and
   // land the caret in the composer whenever the panel opens.
@@ -409,11 +411,60 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                 {a.messages.length > 0 && !expanded && (
                   <button type="button" onClick={a.newChat} aria-label={t.newChat} title={t.newChat} className={iconBtn}><Eraser className="h-4 w-4" /></button>
                 )}
+                <button type="button" onClick={() => { const next = !memoryOpen; setMemoryOpen(next); if (next) void a.loadMemories(); }}
+                  aria-label={t.memory} title={t.memory}
+                  className={cn(iconBtn, 'relative', memoryOpen && 'bg-muted text-foreground')}>
+                  <Brain className="h-4 w-4" />
+                  {a.memories.length > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">{a.memories.length}</span>
+                  )}
+                </button>
                 <button type="button" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? t.collapse : t.expand} title={expanded ? t.collapse : t.expand} className={cn(iconBtn, 'hidden sm:block')}>
                   {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </button>
                 <button type="button" onClick={() => setOpen(false)} aria-label={t.close} className={iconBtn}><X className="h-4 w-4" /></button>
               </div>
+
+              {/* Memory manager — durable facts the assistant recorded */}
+              <AnimatePresence>
+                {memoryOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden border-b border-border/60 bg-muted/20">
+                    <div className={cn('mx-auto p-3', expanded && 'w-full max-w-3xl')}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <Brain className="h-3.5 w-3.5 text-primary" />
+                        <p className="flex-1 text-xs font-semibold">{t.memoryTitle}</p>
+                        {a.memories.length > 0 && (
+                          <button type="button" onClick={a.clearMemory}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-red-500 transition-colors hover:bg-red-500/10">
+                            <Trash2 className="h-3 w-3" /> {t.memoryClear}
+                          </button>
+                        )}
+                      </div>
+                      {a.memories.length === 0 ? (
+                        <p className="py-2 text-[11px] leading-relaxed text-muted-foreground">{t.memoryEmpty}</p>
+                      ) : (
+                        <>
+                          <ul className="max-h-48 space-y-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
+                            {a.memories.map((mem) => (
+                              <li key={mem.id} className="group/mem flex items-start gap-2 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1.5 text-xs">
+                                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary/70" />
+                                <span className="min-w-0 flex-1 break-words leading-relaxed">{mem.content}</span>
+                                <button type="button" onClick={() => a.forgetMemory(mem.id)} title={t.forget} aria-label={t.forget}
+                                  className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-500 group-hover/mem:opacity-100">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-[10px] text-muted-foreground/70">{t.memoryHint}</p>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Messages */}
               <div className="relative min-h-0 flex-1">
@@ -458,6 +509,17 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                   {a.messages.map((m, i) => (
                     <div key={m.id} className="space-y-2">
                       {renderBubble(m, a.isLoading && i === a.messages.length - 1 && m.role === 'assistant')}
+                      {m.role === 'assistant' && m.remembered && m.remembered.length > 0 && (
+                        <div className="flex flex-col gap-1 pl-1">
+                          {m.remembered.map((fact, fi) => (
+                            <button key={`${m.id}-mem-${fi}`} type="button" onClick={() => { setMemoryOpen(true); void a.loadMemories(); }}
+                              className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary/90 transition-colors hover:bg-primary/10">
+                              <Brain className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{t.remembered}: {fact}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       {m.role === 'assistant' && m.route && !a.isLoading && (
                         <div className="pl-1">
                           <button type="button" onClick={() => handleNavigate(m.route!)}

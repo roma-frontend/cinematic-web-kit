@@ -7,6 +7,7 @@ import { isLocale, type Locale } from '@/lib/seo';
 import { llmConfig, llmConfigured } from '@/lib/llm';
 import { buildAssistantPrompt, type AssistantRole } from '@/lib/assistant-prompt';
 import { addMessage, ownsConversation, assistantUsageToday, bumpAssistantUsage } from '@/lib/assistant-store';
+import { listMemories, addMemories, extractMemoryFacts, stripMemoryTags } from '@/lib/assistant-memory';
 import { getUserEntitlements } from '@/lib/billing/entitlements';
 
 export const runtime = 'nodejs';
@@ -76,7 +77,8 @@ export async function POST(request: Request) {
     user.role === 'superadmin' || user.role === 'admin' ? user.role : 'customer';
   // Agentic actions (live DATA fetch) are Studio-only.
   const allowActions = ent.has('assistant.actions');
-  const system = buildAssistantPrompt(locale, role, user.name || undefined, allowActions);
+  const memories = listMemories(user.id).map((m) => m.content);
+  const system = buildAssistantPrompt(locale, role, user.name || undefined, allowActions, memories);
   const { url, key, model } = llmConfig();
 
   // Count this message against the daily quota (no-op for unlimited plans, but
@@ -119,15 +121,18 @@ export async function POST(request: Request) {
   let assistantFull = '';
 
   // Persist the assistant reply once (stripped of control tags) when the
-  // stream finishes, so history reloads cleanly.
+  // stream finishes, so history reloads cleanly. Also harvest any <REMEMBER>
+  // facts the model emitted into the user's long-term memory.
   const saveReply = () => {
-    if (!persist || !assistantFull.trim()) return;
-    const clean = assistantFull
+    if (!assistantFull.trim()) return;
+    const facts = extractMemoryFacts(assistantFull);
+    if (facts.length) { try { addMemories(user.id, facts); } catch { /* memory is best-effort */ } }
+    const clean = stripMemoryTags(assistantFull)
       .replace(/<NAVIGATE>[\s\S]*?<\/NAVIGATE>/g, '')
       .replace(/<SUGGEST>[\s\S]*?<\/SUGGEST>/g, '')
       .replace(/<DATA>[\s\S]*?<\/DATA>/g, '')
       .trim();
-    if (clean) addMessage(convId, 'assistant', clean.slice(0, 8000));
+    if (persist && clean) addMessage(convId, 'assistant', clean.slice(0, 8000));
     assistantFull = '';
   };
 
