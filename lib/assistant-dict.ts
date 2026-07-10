@@ -42,6 +42,18 @@ export interface AssistantDict {
   groupToday: string;
   groupWeek: string;
   groupOlder: string;
+  // Phase 1 additions
+  commandsTitle: string;
+  cmdOpen: string;
+  cmdShow: string;
+  cmdRoutes: Record<string, string>;
+  cmdData: Record<string, string>;
+  quick: { shorter: string; longer: string; simplify: string; translate: string; continue: string };
+  statusThinking: string;
+  statusWriting: string;
+  shiftEnterHint: string;
+  loadingChat: string;
+  examplesTitle: string;
   starters: Record<Role, string[]>;
 }
 
@@ -82,6 +94,25 @@ const ru: AssistantDict = {
   groupToday: 'Сегодня',
   groupWeek: 'Последние 7 дней',
   groupOlder: 'Ранее',
+  commandsTitle: 'Команды',
+  cmdOpen: 'Открыть',
+  cmdShow: 'Показать',
+  cmdRoutes: {
+    '/dashboard': 'Обзор', '/dashboard/sites': 'Мои сайты', '/dashboard/submissions': 'Заявки',
+    '/dashboard/account': 'Аккаунт', '/dashboard/billing': 'Подписка', '/studio/builder': 'Конструктор',
+    '/presets': 'Пресеты', '/themes': 'Темы', '/vitals': 'Показатели', '/dashboard/staff': 'Персонал',
+    '/dashboard/users': 'Пользователи', '/dashboard/all-sites': 'Все сайты', '/dashboard/audit': 'Аудит',
+    '/dashboard/super': 'Суперадмин', '/dashboard/organizations': 'Организации', '/dashboard/database': 'База данных',
+    '/dashboard/access': 'Доступы', '/dashboard/activity': 'Активность', '/dashboard/trash': 'Корзина',
+    '/dashboard/control': 'Панель управления', '/dashboard/billing-admin': 'Биллинг (админ)', '/studio': 'Студия',
+  },
+  cmdData: { 'my-sites': 'Мои сайты', users: 'Пользователи', 'all-sites': 'Все сайты' },
+  quick: { shorter: 'Короче', longer: 'Подробнее', simplify: 'Проще', translate: 'Перевести', continue: 'Продолжить' },
+  statusThinking: 'Думаю…',
+  statusWriting: 'Печатаю…',
+  shiftEnterHint: 'Enter — отправить · Shift+Enter — перенос · / — команды',
+  loadingChat: 'Загружаю переписку…',
+  examplesTitle: 'С чего начнём?',
   starters: {
     customer: [
       '✨ Как создать сайт?',
@@ -141,6 +172,25 @@ const en: AssistantDict = {
   groupToday: 'Today',
   groupWeek: 'Previous 7 days',
   groupOlder: 'Older',
+  commandsTitle: 'Commands',
+  cmdOpen: 'Open',
+  cmdShow: 'Show',
+  cmdRoutes: {
+    '/dashboard': 'Overview', '/dashboard/sites': 'My sites', '/dashboard/submissions': 'Leads',
+    '/dashboard/account': 'Account', '/dashboard/billing': 'Subscription', '/studio/builder': 'Builder',
+    '/presets': 'Presets', '/themes': 'Themes', '/vitals': 'Vitals', '/dashboard/staff': 'Staff',
+    '/dashboard/users': 'Users', '/dashboard/all-sites': 'All sites', '/dashboard/audit': 'Audit',
+    '/dashboard/super': 'Superadmin', '/dashboard/organizations': 'Organizations', '/dashboard/database': 'Database',
+    '/dashboard/access': 'Access', '/dashboard/activity': 'Activity', '/dashboard/trash': 'Trash',
+    '/dashboard/control': 'Control center', '/dashboard/billing-admin': 'Billing (admin)', '/studio': 'Studio',
+  },
+  cmdData: { 'my-sites': 'My sites', users: 'Users', 'all-sites': 'All sites' },
+  quick: { shorter: 'Shorter', longer: 'Longer', simplify: 'Simpler', translate: 'Translate', continue: 'Continue' },
+  statusThinking: 'Thinking…',
+  statusWriting: 'Typing…',
+  shiftEnterHint: 'Enter to send · Shift+Enter for newline · / for commands',
+  loadingChat: 'Loading conversation…',
+  examplesTitle: 'Where do we start?',
   starters: {
     customer: [
       '✨ How do I create a site?',
@@ -200,6 +250,25 @@ const hy: AssistantDict = {
   groupToday: 'Այսօր',
   groupWeek: 'Վերջին 7 օրը',
   groupOlder: 'Ավելի վաղ',
+  commandsTitle: 'Հրամաններ',
+  cmdOpen: 'Բացել',
+  cmdShow: 'Ցույց տալ',
+  cmdRoutes: {
+    '/dashboard': 'Ակնարկ', '/dashboard/sites': 'Իմ կայքերը', '/dashboard/submissions': 'Հայտեր',
+    '/dashboard/account': 'Հաշիվ', '/dashboard/billing': 'Բաժանորդագրություն', '/studio/builder': 'Կառուցիչ',
+    '/presets': 'Պրեսեթներ', '/themes': 'Թեմաներ', '/vitals': 'Ցուցանիշներ', '/dashboard/staff': 'Անձնակազմ',
+    '/dashboard/users': 'Օգտատերեր', '/dashboard/all-sites': 'Բոլոր կայքերը', '/dashboard/audit': 'Աուդիտ',
+    '/dashboard/super': 'Սուպերադմին', '/dashboard/organizations': 'Կազմակերպություններ', '/dashboard/database': 'Տվյալների բազա',
+    '/dashboard/access': 'Հասանելիություն', '/dashboard/activity': 'Ակտիվություն', '/dashboard/trash': 'Աղբարկղ',
+    '/dashboard/control': 'Կառավարման վահանակ', '/dashboard/billing-admin': 'Բիլինգ (ադմին)', '/studio': 'Ստուդիա',
+  },
+  cmdData: { 'my-sites': 'Իմ կայքերը', users: 'Օգտատերեր', 'all-sites': 'Բոլոր կայքերը' },
+  quick: { shorter: 'Կարճ', longer: 'Մանրամասն', simplify: 'Պարզ', translate: 'Թարգմանել', continue: 'Շարունակել' },
+  statusThinking: 'Մտածում եմ…',
+  statusWriting: 'Գրում եմ…',
+  shiftEnterHint: 'Enter — ուղարկել · Shift+Enter — նոր տող · / — հրամաններ',
+  loadingChat: 'Բեռնում եմ զրույցը…',
+  examplesTitle: 'Որտեղի՞ց սկսենք',
   starters: {
     customer: [
       '✨ Ինչպե՞ս ստեղծել կայք',

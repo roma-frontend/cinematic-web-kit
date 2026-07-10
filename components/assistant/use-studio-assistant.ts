@@ -79,6 +79,7 @@ export function useStudioAssistant() {
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingConversation, setLoadingConversation] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +108,7 @@ export function useStudioAssistant() {
   const selectConversation = useCallback(async (id: string) => {
     setError(null);
     setCurrentId(id);
+    setLoadingConversation(true);
     try {
       const res = await fetch(`/api/assistant/conversations/${id}`);
       if (res.ok) {
@@ -114,6 +116,7 @@ export function useStudioAssistant() {
         setMessages(rows.map((m: { id: string; role: 'user' | 'assistant'; content: string; createdAt?: number }) => ({ id: m.id, role: m.role, content: m.content, createdAt: m.createdAt })));
       }
     } catch { /* ignore */ }
+    finally { setLoadingConversation(false); }
   }, []);
 
   const rename = useCallback(async (id: string, title: string) => {
@@ -304,7 +307,7 @@ export function useStudioAssistant() {
   useEffect(() => { void loadConversations(); }, [loadConversations]);
 
   return {
-    messages, conversations, currentId, input, setInput, isLoading, isListening, unavailable, error,
+    messages, conversations, currentId, input, setInput, isLoading, loadingConversation, isListening, unavailable, error,
     voiceSupported, inputRef, send, editMessage, regenerate, stop, navigate, startVoice,
     loadConversations, newChat, selectConversation, rename, remove,
   };
