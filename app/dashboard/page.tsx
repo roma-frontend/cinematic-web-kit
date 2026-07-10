@@ -8,6 +8,7 @@ import { disabledCapabilitiesFor } from '@/lib/access';
 import { Button } from '@/components/ui/button';
 import { PageHeader, StatCard, EmptyState } from '@/components/dashboard/ui';
 import { GettingStarted } from '@/components/dashboard/getting-started';
+import { OnboardingVideoTour } from '@/components/dashboard/onboarding-video-tour';
 import { getLocale } from '@/lib/i18n';
 import { dashDict } from '@/lib/dashboard-dict';
 import { TourLauncher } from '@/components/tour/tour-launcher';
@@ -44,12 +45,15 @@ export default async function DashboardOverview() {
       />
 
       {!isSuperadmin(user) && (
-        <GettingStarted
-          hasSite={stats.sites > 0}
-          hasPublished={stats.published > 0}
-          hasLeads={stats.submissions > 0}
-          primarySiteId={sites[0]?.id ?? null}
-        />
+        <>
+          <OnboardingVideoTour />
+          <GettingStarted
+            hasSite={stats.sites > 0}
+            hasPublished={stats.published > 0}
+            hasLeads={stats.submissions > 0}
+            primarySiteId={sites[0]?.id ?? null}
+          />
+        </>
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">

@@ -149,7 +149,7 @@ export function DashboardClient({ initialSites, canInvite = true }: { initialSit
                 <Link href={`/dashboard/sites/${site.id}#members`}>
                   <Button size="sm" variant="outline" className="gap-1.5"><Users className="h-3.5 w-3.5" /> {t.members}</Button>
                 </Link>
-                <Link href={`/dashboard/sites/${site.id}`} data-tour={idx === 0 ? 'site-settings' : undefined} className="ml-auto">
+                <Link href={`/dashboard/sites/${site.id}`} data-tour={idx === 0 ? 'site-settings' : undefined}>
                   <Button size="sm" variant="ghost" className="gap-1.5"><Settings2 className="h-3.5 w-3.5" /> {t.settings}</Button>
                 </Link>
               </div>

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "outputPrefix": "media/onboarding-video",
+  "themes": ["light", "dark"],
+  "locales": ["ru", "en", "hy"],
+  "scenes": [
+    {
+      "id": "dashboard-trial",
+      "kind": "screenshot",
+      "route": "/dashboard",
+      "waitFor": "[data-tour=\"create-site\"]",
+      "note": "Dashboard overview with trial banner and quick start"
+    },
+    {
+      "id": "quick-start",
+      "kind": "screenshot",
+      "route": "/dashboard",
+      "waitFor": "[data-tour=\"create-site\"]",
+      "note": "Quick start checklist"
+    },
+    {
+      "id": "ai-wizard",
+      "kind": "clip",
+      "route": "/dashboard/join",
+      "waitFor": "input, textarea",
+      "note": "AI wizard: brief entry and create"
+    },
+    {
+      "id": "builder-ai",
+      "kind": "clip",
+      "route": "/studio/builder",
+      "waitFor": "[aria-label=\"AI-редактирование\"]",
+      "note": "Builder AI command bar"
+    },
+    {
+      "id": "builder-palette",
+      "kind": "clip",
+      "route": "/studio/builder",
+      "waitFor": "[data-tour=\"palette-search\"]",
+      "note": "Builder blocks palette and search"
+    },
+    {
+      "id": "publish",
+      "kind": "clip",
+      "route": "/studio/builder",
+      "waitFor": "[aria-label=\"Опубликовать\"]",
+      "note": "Publish flow and celebration"
+    },
+    {
+      "id": "submissions",
+      "kind": "screenshot",
+      "route": "/dashboard/submissions",
+      "waitFor": "h1",
+      "note": "Leads / submissions screen"
+    },
+    {
+      "id": "members",
+      "kind": "screenshot",
+      "route": "/dashboard/members",
+      "waitFor": "[data-tab=\"members\"]",
+      "note": "Members screen"
+    },
+    {
+      "id": "billing",
+      "kind": "screenshot",
+      "route": "/dashboard/billing",
+      "waitFor": "h1",
+      "note": "Billing / trial panel"
+    }
+  ]
+}
