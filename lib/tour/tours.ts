@@ -33,28 +33,32 @@ const click = (sel: string) => () => {
 
 // ── site-content: create a course in the dashboard ──────────────────────────
 function siteContentSteps(locale: Locale): TourStep[] {
+  // The site panel groups tools into tabs; switch to the right one before each
+  // step so its target (rendered only when active) exists to spotlight.
+  const toCourses = click('[data-tab="courses"]');
+  const toDocuments = click('[data-tab="documents"]');
   const ru: TourStep[] = [
     { title: '👋 Добро пожаловать!', body: 'Покажу за минуту, как наполнить площадку контентом для ваших клиентов — курсами, документами и материалами. Поехали!', placement: 'center', highlight: false },
-    { target: '[data-tour="courses"]', title: '🎓 Раздел «Курсы»', body: 'Здесь вы создаёте курсы для участников. Каждый курс — это набор уроков с видео, текстом и вложениями.', placement: 'top' },
-    { target: '[data-tour="course-title"]', title: '✍️ Название курса', body: 'Впишите название курса — например «Введение в продукт». Ниже можно добавить короткое описание.', placement: 'bottom', pointer: true },
-    { target: '[data-tour="course-add"]', title: '➕ Создать курс', body: 'Нажмите — курс появится в списке. Затем раскройте его и добавьте уроки: заголовок, текст, ссылку на видео и файл-вложение.', placement: 'top', pointer: true },
-    { target: '[data-tour="documents"]', title: '📄 Документы', body: 'Загружайте файлы (PDF, видео, изображения) — участники увидят их в своём кабинете и на сайте. До 64 МБ на файл.', placement: 'top' },
+    { target: '[data-tour="courses"]', title: '🎓 Раздел «Курсы»', body: 'Здесь вы создаёте курсы для участников. Каждый курс — это набор уроков с видео, текстом и вложениями.', placement: 'top', onEnter: toCourses },
+    { target: '[data-tour="course-title"]', title: '✍️ Название курса', body: 'Впишите название курса — например «Введение в продукт». Ниже можно добавить короткое описание.', placement: 'bottom', pointer: true, onEnter: toCourses },
+    { target: '[data-tour="course-add"]', title: '➕ Создать курс', body: 'Нажмите — курс появится в списке. Затем раскройте его и добавьте уроки: заголовок, текст, ссылку на видео и файл-вложение.', placement: 'top', pointer: true, onEnter: toCourses },
+    { target: '[data-tour="documents"]', title: '📄 Документы', body: 'Загружайте файлы (PDF, видео, изображения) — участники увидят их в своём кабинете и на сайте. До 64 МБ на файл.', placement: 'top', onEnter: toDocuments },
     { title: '🚀 Отлично!', body: 'Контент готов. Теперь откройте конструктор (кнопка «Edit» у сайта) и добавьте блок «Курсы» на лендинг — покажу как в туре конструктора.', placement: 'center', highlight: false },
   ];
   const en: TourStep[] = [
     { title: '👋 Welcome!', body: 'In a minute I’ll show you how to fill your site with content for your clients — courses, documents and materials. Let’s go!', placement: 'center', highlight: false },
-    { target: '[data-tour="courses"]', title: '🎓 Courses section', body: 'This is where you create courses for members. Each course is a set of lessons with video, text and attachments.', placement: 'top' },
-    { target: '[data-tour="course-title"]', title: '✍️ Course title', body: 'Type a course title — e.g. “Getting started”. You can add a short description below.', placement: 'bottom', pointer: true },
-    { target: '[data-tour="course-add"]', title: '➕ Create course', body: 'Click and the course appears in the list. Then expand it and add lessons: title, text, a video link and a file attachment.', placement: 'top', pointer: true },
-    { target: '[data-tour="documents"]', title: '📄 Documents', body: 'Upload files (PDF, video, images) — members see them in their cabinet and on the site. Up to 64 MB per file.', placement: 'top' },
+    { target: '[data-tour="courses"]', title: '🎓 Courses section', body: 'This is where you create courses for members. Each course is a set of lessons with video, text and attachments.', placement: 'top', onEnter: toCourses },
+    { target: '[data-tour="course-title"]', title: '✍️ Course title', body: 'Type a course title — e.g. “Getting started”. You can add a short description below.', placement: 'bottom', pointer: true, onEnter: toCourses },
+    { target: '[data-tour="course-add"]', title: '➕ Create course', body: 'Click and the course appears in the list. Then expand it and add lessons: title, text, a video link and a file attachment.', placement: 'top', pointer: true, onEnter: toCourses },
+    { target: '[data-tour="documents"]', title: '📄 Documents', body: 'Upload files (PDF, video, images) — members see them in their cabinet and on the site. Up to 64 MB per file.', placement: 'top', onEnter: toDocuments },
     { title: '🚀 Great!', body: 'Content ready. Now open the builder (“Edit” on the site) and add a “Courses” block to the landing — I’ll show you in the builder tour.', placement: 'center', highlight: false },
   ];
   const hy: TourStep[] = [
     { title: '👋 Բարի գալուստ։', body: 'Մեկ րոպեում ցույց կտամ՝ ինչպես լցնել ձեր հարթակը բովանդակությամբ ձեր հաճախորդների համար՝ դասընթացներ, փաստաթղթեր և նյութեր։', placement: 'center', highlight: false },
-    { target: '[data-tour="courses"]', title: '🎓 «Դասընթացներ» բաժին', body: 'Այստեղ դուք ստեղծում եք դասընթացներ անդամների համար։ Յուրաքանչյուր դասընթաց՝ դասերի հավաքածու է՝ վիդեոյով, տեքստով և կցորդներով։', placement: 'top' },
-    { target: '[data-tour="course-title"]', title: '✍️ Դասընթացի անվանում', body: 'Մուտքագրեք դասընթացի անվանումը։ Ներքևում կարող եք ավելացնել կարճ նկարագրություն։', placement: 'bottom', pointer: true },
-    { target: '[data-tour="course-add"]', title: '➕ Ստեղծել դասընթաց', body: 'Սեղմեք՝ դասընթացը կհայտնվի ցանկում։ Ապա բացեք այն և ավելացրեք դասեր՝ վերնագիր, տեքստ, վիդեոյի հղում և կցորդ։', placement: 'top', pointer: true },
-    { target: '[data-tour="documents"]', title: '📄 Փաստաթղթեր', body: 'Վերբեռնեք ֆայլեր (PDF, վիդեո, նկարներ)՝ անդամները կտեսնեն դրանք իրենց էջում և կայքում։ Մինչև 64 ՄԲ ֆայլը։', placement: 'top' },
+    { target: '[data-tour="courses"]', title: '🎓 «Դասընթացներ» բաժին', body: 'Այստեղ դուք ստեղծում եք դասընթացներ անդամների համար։ Յուրաքանչյուր դասընթաց՝ դասերի հավաքածու է՝ վիդեոյով, տեքստով և կցորդներով։', placement: 'top', onEnter: toCourses },
+    { target: '[data-tour="course-title"]', title: '✍️ Դասընթացի անվանում', body: 'Մուտքագրեք դասընթացի անվանումը։ Ներքևում կարող եք ավելացնել կարճ նկարագրություն։', placement: 'bottom', pointer: true, onEnter: toCourses },
+    { target: '[data-tour="course-add"]', title: '➕ Ստեղծել դասընթաց', body: 'Սեղմեք՝ դասընթացը կհայտնվի ցանկում։ Ապա բացեք այն և ավելացրեք դասեր՝ վերնագիր, տեքստ, վիդեոյի հղում և կցորդ։', placement: 'top', pointer: true, onEnter: toCourses },
+    { target: '[data-tour="documents"]', title: '📄 Փաստաթղթեր', body: 'Վերբեռնեք ֆայլեր (PDF, վիդեո, նկարներ)՝ անդամները կտեսնեն դրանք իրենց էջում և կայքում։ Մինչև 64 ՄԲ ֆայլը։', placement: 'top', onEnter: toDocuments },
     { title: '🚀 Հիանալի է։', body: 'Բովանդակությունը պատրաստ է։ Այժմ բացեք կառուցիչը («Edit») և ավելացրեք «Դասընթացներ» բլոկը լենդինգում։', placement: 'center', highlight: false },
   ];
   return locale === 'ru' ? ru : locale === 'hy' ? hy : en;
