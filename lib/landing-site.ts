@@ -209,6 +209,7 @@ export function getOrCreateLandingSite(): Site | null {
     publishedAt: null,  // editor explicitly hits "Опубликовать" (no accidental flips)
     memberApproval: true,
     dashboardTheme: '',
+    suppressedPlans: '[]',
     createdAt: now,
     updatedAt: now,
   };

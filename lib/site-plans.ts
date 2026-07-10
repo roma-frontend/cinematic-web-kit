@@ -114,6 +114,25 @@ function publishedDoc(siteId: string): BuilderDoc | null {
   return parseDoc(row?.publishedDoc ?? null);
 }
 
+/** Plan ids the admin explicitly deleted — builder sync/seed must skip these. */
+function suppressedPlanIds(siteId: string): Set<string> {
+  const row = getDb().select({ s: sites.suppressedPlans }).from(sites).where(eq(sites.id, siteId)).get();
+  try {
+    const arr = JSON.parse(row?.s ?? '[]');
+    return new Set(Array.isArray(arr) ? arr.filter((x): x is string => typeof x === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Mark a plan id as deleted so builder pricing sync never resurrects it. */
+function suppressPlanId(siteId: string, planId: string): void {
+  const set = suppressedPlanIds(siteId);
+  if (set.has(planId)) return;
+  set.add(planId);
+  getDb().update(sites).set({ suppressedPlans: JSON.stringify([...set]), updatedAt: new Date() }).where(eq(sites.id, siteId)).run();
+}
+
 function builderPlanRow(siteId: string, node: BuilderNode, sortOrder: number, now = new Date()): SitePlan | null {
   const money = priceFromBuilder(node.props.price ?? '');
   if (!money) return null;
@@ -181,10 +200,13 @@ export function syncBuilderPricingPlans(siteId: string, doc: BuilderDoc): Builde
   const prefix = builderPlanPrefix(siteId);
   const seen = new Set<string>();
   let sortOrder = 0;
+  const suppressed = suppressedPlanIds(siteId);
 
   for (const node of pricingNodes(doc)) {
     const row = builderPlanRow(siteId, node, sortOrder++, now);
     if (!row) continue;
+    // Admin deleted this plan — do not recreate/reactivate it from the builder.
+    if (suppressed.has(row.id)) continue;
     node.props.planId = row.id;
     seen.add(row.id);
     const existing = db.select({ id: sitePlans.id }).from(sitePlans).where(and(eq(sitePlans.id, row.id), eq(sitePlans.siteId, siteId))).get();
@@ -256,5 +278,8 @@ export async function updatePlan(siteId: string, planId: string, input: Partial<
 
 export function deletePlan(siteId: string, planId: string): void {
   // Existing member subscriptions live independently from the local catalog row.
+  // If this plan was derived from a builder pricing card, record it as suppressed
+  // so ensureBuilderPlansFromPublished / syncBuilderPricingPlans don't recreate it.
+  if (planId.startsWith(builderPlanPrefix(siteId))) suppressPlanId(siteId, planId);
   getDb().delete(sitePlans).where(and(eq(sitePlans.id, planId), eq(sitePlans.siteId, siteId))).run();
 }

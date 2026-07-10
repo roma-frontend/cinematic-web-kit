@@ -90,4 +90,25 @@ describe('site plan catalog', () => {
     const published = parseDoc(getSite(s.id)?.publishedDoc ?? null);
     expect(published?.pages[0].blocks[0].children?.[1].props.planId).toMatch(/^bplan_/);
   });
+
+  it('a deleted builder plan is not resurrected by re-seed on empty catalog', () => {
+    const s = seedSite();
+    const doc = parseDoc(s.draftDoc)!;
+    doc.pages[0].blocks = [{
+      id: 'pricing-section', type: 'section', props: {},
+      children: [
+        { id: 'pro', type: 'pricing', props: { plan: 'PRO', price: '990₽', period: '/мес', features: 'A' } },
+      ],
+    }];
+    saveDraft(s, doc);
+    publishSite({ ...s, draftDoc: JSON.stringify(doc) });
+
+    const [plan] = listPlansForAdmin(s.id);
+    expect(plan.name).toBe('PRO');
+    deletePlan(s.id, plan.id);
+    // Catalog is now empty → ensureBuilderPlansFromPublished would normally
+    // re-seed from the published pricing cards, but the delete must stick.
+    expect(listPlansForAdmin(s.id)).toHaveLength(0);
+    expect(listActivePlans(s.id)).toHaveLength(0);
+  });
 });

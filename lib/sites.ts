@@ -88,6 +88,7 @@ export function createSite(userId: string, name: string, locale: Locale = DEFAUL
     publishedDoc: null,
     memberApproval: true,
     dashboardTheme: '',
+    suppressedPlans: '[]',
     publishedAt: null,
     createdAt: now,
     updatedAt: now,

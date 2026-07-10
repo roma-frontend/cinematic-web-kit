@@ -83,6 +83,9 @@ export const sites = sqliteTable(
     /** Org-wide admin-panel theme id (dashboard of the owner + members' account
      *  area). Empty = inherit the platform theme. */
     dashboardTheme: text('dashboard_theme').notNull().default(''),
+    /** JSON array of member-plan ids the admin explicitly deleted, so builder
+     *  pricing-card sync/seed never resurrects them. */
+    suppressedPlans: text('suppressed_plans').notNull().default('[]'),
     publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),

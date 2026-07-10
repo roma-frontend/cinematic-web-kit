@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Layers, Plus, Pencil, Trash2, Loader2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useLocale } from '@/hooks/use-locale';
 
 // Org-admin catalog editor: create/edit/delete the member plans shown on the
@@ -22,6 +23,8 @@ const DICT = {
     name: 'Название', desc: 'Описание', price: 'Цена', per: 'Период', month: 'в месяц', year: 'в год',
     perks: 'Что входит (по строке на пункт)', active: 'Активен', save: 'Сохранить', cancel: 'Отмена',
     edit: 'Изменить', del: 'Удалить', delConfirm: 'Удалить этот план?',
+    delDesc: 'План будет удалён из каталога и перестанет показываться на лендинге. Действующие подписки не затрагиваются. Это действие необратимо.',
+    cancel2: 'Отмена',
     inactive: 'скрыт',
   },
   en: {
@@ -30,6 +33,8 @@ const DICT = {
     name: 'Name', desc: 'Description', price: 'Price', per: 'Interval', month: 'per month', year: 'per year',
     perks: 'What’s included (one per line)', active: 'Active', save: 'Save', cancel: 'Cancel',
     edit: 'Edit', del: 'Delete', delConfirm: 'Delete this plan?',
+    delDesc: 'The plan will be removed from your catalog and hidden from the landing. Existing subscriptions are unaffected. This cannot be undone.',
+    cancel2: 'Cancel',
     inactive: 'hidden',
   },
   hy: {
@@ -38,6 +43,8 @@ const DICT = {
     name: 'Անվանում', desc: 'Նկարագրություն', price: 'Գին', per: 'Պարբերություն', month: 'ամսական', year: 'տարեկան',
     perks: 'Ինչ է ներառված (մեկ տողում)', active: 'Ակտիվ', save: 'Պահպանել', cancel: 'Չեղարկել',
     edit: 'Խմբագրել', del: 'Ջնջել', delConfirm: 'Ջնջե՞լ այս պլանը։',
+    delDesc: 'Պլանը կհեռացվի կատալոգից և կթաքցվի լենդինգից։ Գործող բաժանորդագրությունները չեն ազդվի։ Այս գործողությունը անդառնալի է։',
+    cancel2: 'Չեղարկել',
     inactive: 'թաքցված',
   },
 } as const;
@@ -58,6 +65,7 @@ export function SitePlans({ siteId, initial }: { siteId: string; initial: PlanDT
   const [plans, setPlans] = useState<PlanDTO[]>(initial);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
+  const { confirm, confirmDialog } = useConfirm();
 
   const reload = async () => {
     const res = await fetch(`/api/site-members?site=${encodeURIComponent(siteId)}`);
@@ -83,7 +91,8 @@ export function SitePlans({ siteId, initial }: { siteId: string; initial: PlanDT
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm(t.delConfirm)) return;
+    const ok = await confirm({ title: t.delConfirm, description: t.delDesc, confirmLabel: t.del, cancelLabel: t.cancel2, tone: 'danger' });
+    if (!ok) return;
     setBusy(true);
     await api({ action: 'plan-delete', siteId, planId: id });
     await reload();
@@ -92,6 +101,7 @@ export function SitePlans({ siteId, initial }: { siteId: string; initial: PlanDT
 
   return (
     <section className="rounded-2xl border border-border/60 bg-card/50 p-6">
+      {confirmDialog}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Layers className="h-5 w-5" /></span>

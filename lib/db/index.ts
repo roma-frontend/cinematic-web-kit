@@ -627,6 +627,8 @@ function createDb(): DB {
   addColumn('site_users', 'theme', `theme TEXT NOT NULL DEFAULT ''`);
   // Org-wide admin-panel theme (dashboard of owner + members' account area).
   addColumn('sites', 'dashboard_theme', `dashboard_theme TEXT NOT NULL DEFAULT ''`);
+  // Member-plan ids the admin deleted (so builder pricing sync won't resurrect them).
+  addColumn('sites', 'suppressed_plans', `suppressed_plans TEXT NOT NULL DEFAULT '[]'`);
   globalForDb.__cwkSqlite = sqlite;
   return drizzle(sqlite, { schema });
 }
