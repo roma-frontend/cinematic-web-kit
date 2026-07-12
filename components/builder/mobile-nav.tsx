@@ -12,11 +12,11 @@ import { siteRt } from '@/lib/site-runtime-dict';
 
 // Burger menu shown on mobile/tablet — nav links + auth buttons collapse into a
 // single dropdown. The theme toggle stays outside, always visible on the bar.
-export function MobileNav({ links, authBase, showAuth, authStyles }: { links: NavLink[]; authBase?: string; showAuth?: boolean; authStyles?: ChromeBtnStyles }) {
+export function MobileNav({ links, authBase, showAuth, authStyles, className = 'md:hidden' }: { links: NavLink[]; authBase?: string; showAuth?: boolean; authStyles?: ChromeBtnStyles; className?: string }) {
   const [open, setOpen] = useState(false);
   const t = siteRt(useLocale().locale);
   return (
-    <div className="md:hidden">
+    <div className={className}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? t.closeMenu : t.openMenu}

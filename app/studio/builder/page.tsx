@@ -23,7 +23,7 @@ import { RenderNode } from '@/components/builder/render-node';
 import { TourLauncher } from '@/components/tour/tour-launcher';
 import { PublishCelebration } from '@/components/dashboard/publish-celebration';
 import { RevealDisabled } from '@/components/builder/reveal';
-import { Header as ChromeHeader, Footer as ChromeFooter } from '@/components/builder/site-chrome';
+import { Header as ChromeHeader, Footer as ChromeFooter, HEADER_VARIANTS, FOOTER_VARIANTS } from '@/components/builder/site-chrome';
 import { TEMPLATES, LANDINGS, SECTION_PRESETS, isPristineStarter, buildTemplatePage, buildSubpages, buildSection, tplText } from '@/lib/builder/templates';
 import {
   type BuilderDoc, type BuilderNode, type NodeType, type BuilderPage,
@@ -2539,7 +2539,7 @@ function BuilderEditor() {
           <Card className="p-3">
             <p className="mb-2 text-sm font-semibold">{tr('Шапка (header)')}</p>
             <div className="grid grid-cols-2 gap-2">
-              {(['minimal', 'centered', 'split', 'cta'] as const).map((v) => (
+              {HEADER_VARIANTS.map((v) => (
                 <div key={v} role="button" tabIndex={0} onClick={() => setDoc((d) => ({ ...d, headerVariant: v }))} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDoc((d) => ({ ...d, headerVariant: v })); }} className={`cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.headerVariant || 'minimal') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
                   <ChromeThumb doc={doc} kind="header" variant={v} />
                   <span className="mt-1 block text-[11px] font-medium">{tr(HEADER_LABELS[v])}</span>
@@ -2556,7 +2556,7 @@ function BuilderEditor() {
             </div>
             <p className="mb-2 mt-3 text-sm font-semibold">{tr('Подвал (footer)')}</p>
             <div className="grid grid-cols-2 gap-2">
-              {(['simple', 'columns', 'centered', 'newsletter'] as const).map((v) => (
+              {FOOTER_VARIANTS.map((v) => (
                 <div key={v} role="button" tabIndex={0} onClick={() => setDoc((d) => ({ ...d, footerVariant: v }))} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDoc((d) => ({ ...d, footerVariant: v })); }} className={`cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-colors ${(doc.footerVariant || 'simple') === v ? 'border-primary bg-primary/5' : 'border-border/60 hover:border-primary/50'}`}>
                   <ChromeThumb doc={doc} kind="footer" variant={v} />
                   <span className="mt-1 block text-[11px] font-medium">{tr(FOOTER_LABELS[v])}</span>
@@ -2639,7 +2639,7 @@ function BuilderEditor() {
                 </div>
               </div>
             </div>
-            {(doc.headerVariant === 'cta') && (
+            {(['cta', 'studio', 'commerce', 'portal'].includes(doc.headerVariant || '')) && (
               <div className="mb-2 border-t border-border/60 pt-2">
                 <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('CTA-кнопка в шапке')}</label>
                 <div className="mb-1.5 flex gap-1.5">
@@ -2673,7 +2673,7 @@ function BuilderEditor() {
                 </div>
               </div>
             )}
-            {doc.footerVariant === 'newsletter' && (
+            {(['newsletter', 'mega', 'ctaBand'].includes(doc.footerVariant || '')) && (
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{tr('Кнопка подписки (подвал)')}</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -2852,8 +2852,14 @@ function BuilderEditor() {
 }
 
 // Real, theme-scoped mini-preview of a header/footer variant.
-const HEADER_LABELS: Record<string, string> = { minimal: 'Минимал', centered: 'По центру', split: 'Сплит', cta: 'С кнопкой' };
-const FOOTER_LABELS: Record<string, string> = { simple: 'Простой', columns: 'Колонки', centered: 'По центру', newsletter: 'С подпиской' };
+const HEADER_LABELS: Record<string, string> = {
+  minimal: 'Минимал', centered: 'По центру', split: 'Сплит', cta: 'С кнопкой',
+  command: 'Командный центр', orbital: 'Орбитальный', studio: 'Премиум-студия', commerce: 'Маркетплейс', portal: 'VIP-портал',
+};
+const FOOTER_LABELS: Record<string, string> = {
+  simple: 'Простой', columns: 'Колонки', centered: 'По центру', newsletter: 'С подпиской',
+  mega: 'Мега-футер', magazine: 'Журнал', ctaBand: 'CTA-баннер', socialWall: 'Соцвитрина', sitemap: 'Карта сайта',
+};
 // Every doc field the chrome (header/footer/aside) actually reads. The memo
 // below re-renders a thumb only when one of these changes — editing page
 // content must not redraw 8 mini-chromes on each keystroke.

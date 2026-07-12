@@ -33,10 +33,10 @@ export const NAV_STYLE_LABELS: Record<string, string> = {
   plain: 'Просто текст',
 };
 const NAV_CLS: Record<string, string> = {
-  pills: 'rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-  underline: 'border-b-2 border-transparent px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground',
-  uppercase: 'px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground',
-  plain: 'px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+  pills: 'shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+  underline: 'shrink-0 whitespace-nowrap border-b-2 border-transparent px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground',
+  uppercase: 'shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground',
+  plain: 'shrink-0 whitespace-nowrap px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
 };
 export function navLinkClass(style?: string): string {
   return NAV_CLS[style ?? ''] ?? NAV_CLS.pills;
