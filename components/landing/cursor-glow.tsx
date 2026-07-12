@@ -43,12 +43,19 @@ export function CursorGlow() {
     const onMove = (e: MouseEvent) => {
       mx = e.clientX;
       my = e.clientY;
+      const t = e.target as HTMLElement | null;
+      const inHeader = Boolean(t?.closest('header'));
       if (!visible) {
         visible = true;
         if (dot.current) dot.current.style.opacity = '1';
-        if (glow.current) glow.current.style.opacity = '1';
       }
+      if (glow.current) glow.current.style.opacity = inHeader ? '0' : '1';
       if (dot.current) dot.current.style.transform = `translate(${mx}px, ${my}px) translate(-50%, -50%)`;
+      if (inHeader) {
+        gx = mx;
+        gy = my;
+        if (glow.current) glow.current.style.transform = `translate(${gx}px, ${gy}px) translate(-50%, -50%)`;
+      }
       kick();
     };
     const onLeave = () => {
@@ -56,11 +63,13 @@ export function CursorGlow() {
       if (dot.current) dot.current.style.opacity = '0';
       if (glow.current) glow.current.style.opacity = '0';
     };
-    // Enlarge over interactive elements for an affordance cue.
+    // Keep the cursor precise over sticky headers: dense nav bars make the
+    // large hover affordance feel like the cursor has slipped off target.
     const onOver = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
       const interactive = t.closest('a, button, [role="button"], input, select, textarea, label');
-      if (dot.current) dot.current.style.setProperty('--dot-scale', interactive ? '2.4' : '1');
+      const inHeader = t.closest('header');
+      if (dot.current) dot.current.style.setProperty('--dot-scale', interactive && !inHeader ? '1.35' : '1');
     };
     const onVis = () => {
       if (document.hidden) {
@@ -97,8 +106,8 @@ export function CursorGlow() {
       <div
         ref={dot}
         aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[71] hidden h-5 w-5 rounded-full border border-primary/70 opacity-0 transition-[opacity,width,height] duration-200 will-change-transform lg:block"
-        style={{ scale: 'var(--dot-scale, 1)', mixBlendMode: 'difference' }}
+        className="pointer-events-none fixed left-0 top-0 z-[71] hidden h-5 w-5 rounded-full border border-primary/80 bg-background/10 opacity-0 shadow-[0_0_0_1px_color-mix(in_oklch,var(--background)_45%,transparent)] transition-[opacity,scale] duration-150 will-change-transform lg:block"
+        style={{ scale: 'var(--dot-scale, 1)' }}
       />
     </>
   );
