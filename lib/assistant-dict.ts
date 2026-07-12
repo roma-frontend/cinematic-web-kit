@@ -51,9 +51,11 @@ export interface AssistantDict {
   quick: { shorter: string; longer: string; simplify: string; translate: string; continue: string };
   statusThinking: string;
   statusWriting: string;
+  statusFetching: string;
   shiftEnterHint: string;
   loadingChat: string;
   examplesTitle: string;
+  mentionTitle: string;
   // Memory
   memory: string;
   memoryTitle: string;
@@ -62,6 +64,35 @@ export interface AssistantDict {
   memoryClear: string;
   remembered: string;
   forget: string;
+  sources: string;
+  feedbackGood: string;
+  feedbackBad: string;
+  feedbackReason: string;
+  feedbackSent: string;
+  // Action confirmation
+  proposedAction: string;
+  confirmAction: string;
+  actionProceed: string;
+  actionSuccess: string;
+  actionFailed: string;
+  actionCancelled: string;
+  actionNetworkError: string;
+  openResult: string;
+  // Canvas workspace (fullscreen side panel)
+  canvasTitle: string;
+  canvasEmpty: string;
+  canvasPreview: string;
+  canvasData: string;
+  canvasThemeDiff: string;
+  canvasClose: string;
+  canvasApply: string;
+  canvasRollback: string;
+  canvasCurrentTheme: string;
+  canvasProposedTheme: string;
+  canvasLivePreview: string;
+  canvasDataTable: string;
+  canvasOpenPreview: string;
+  canvasHint: string;
   starters: Record<Role, string[]>;
 }
 
@@ -116,11 +147,13 @@ const ru: AssistantDict = {
   },
   cmdData: { 'my-sites': 'Мои сайты', users: 'Пользователи', 'all-sites': 'Все сайты' },
   quick: { shorter: 'Короче', longer: 'Подробнее', simplify: 'Проще', translate: 'Перевести', continue: 'Продолжить' },
-  statusThinking: 'Думаю…',
-  statusWriting: 'Печатаю…',
-  shiftEnterHint: 'Enter — отправить · Shift+Enter — перенос · / — команды',
+  statusThinking: 'Думает…',
+  statusWriting: 'Пишет…',
+  statusFetching: 'Ищет данные…',
+  shiftEnterHint: 'Enter — отправить · Shift+Enter — перенос · / — команды · @ — упоминание',
   loadingChat: 'Загружаю переписку…',
   examplesTitle: 'С чего начнём?',
+  mentionTitle: 'Упомянуть',
   memory: 'Память',
   memoryTitle: 'Что ассистент запомнил',
   memoryEmpty: 'Пока ничего не запомнено. Расскажите о своём бизнесе или предпочтениях — и я буду это учитывать.',
@@ -128,6 +161,33 @@ const ru: AssistantDict = {
   memoryClear: 'Очистить всё',
   remembered: 'Запомнил',
   forget: 'Забыть',
+  sources: 'Источники',
+  feedbackGood: 'Хороший ответ',
+  feedbackBad: 'Плохой ответ',
+  feedbackReason: 'Что пошло не так?',
+  feedbackSent: 'Спасибо за фидбек',
+  proposedAction: 'Предложенное действие',
+  confirmAction: 'Подтвердить',
+  actionProceed: 'Выполнить',
+  actionSuccess: 'Готово',
+  actionFailed: 'Не удалось выполнить',
+  actionCancelled: 'Отменено',
+  actionNetworkError: 'Ошибка связи',
+  openResult: 'Открыть',
+  canvasTitle: 'Рабочая область',
+  canvasEmpty: 'Здесь появится предпросмотр сайта или таблица данных, когда ассистент предложит посмотреть результат.',
+  canvasPreview: 'Предпросмотр сайта',
+  canvasData: 'Данные',
+  canvasThemeDiff: 'Смена темы',
+  canvasClose: 'Закрыть панель',
+  canvasApply: 'Применить',
+  canvasRollback: 'Откатить',
+  canvasCurrentTheme: 'Текущая тема',
+  canvasProposedTheme: 'Предлагаемая тема',
+  canvasLivePreview: 'Живой предпросмотр',
+  canvasDataTable: 'Таблица',
+  canvasOpenPreview: 'Открыть предпросмотр',
+  canvasHint: 'Ассистент может открыть здесь предпросмотр сайта или данные.',
   starters: {
     customer: [
       '✨ Как создать сайт?',
@@ -202,10 +262,12 @@ const en: AssistantDict = {
   cmdData: { 'my-sites': 'My sites', users: 'Users', 'all-sites': 'All sites' },
   quick: { shorter: 'Shorter', longer: 'Longer', simplify: 'Simpler', translate: 'Translate', continue: 'Continue' },
   statusThinking: 'Thinking…',
-  statusWriting: 'Typing…',
-  shiftEnterHint: 'Enter to send · Shift+Enter for newline · / for commands',
+  statusWriting: 'Writing…',
+  statusFetching: 'Fetching data…',
+  shiftEnterHint: 'Enter to send · Shift+Enter for newline · / for commands · @ to mention',
   loadingChat: 'Loading conversation…',
   examplesTitle: 'Where do we start?',
+  mentionTitle: 'Mention',
   memory: 'Memory',
   memoryTitle: 'What the assistant remembers',
   memoryEmpty: 'Nothing remembered yet. Tell me about your business or preferences and I’ll keep them in mind.',
@@ -213,6 +275,33 @@ const en: AssistantDict = {
   memoryClear: 'Clear all',
   remembered: 'Remembered',
   forget: 'Forget',
+  sources: 'Sources',
+  feedbackGood: 'Helpful',
+  feedbackBad: 'Not helpful',
+  feedbackReason: 'What went wrong?',
+  feedbackSent: 'Thanks for the feedback',
+  proposedAction: 'Proposed action',
+  confirmAction: 'Confirm',
+  actionProceed: 'Proceed',
+  actionSuccess: 'Done',
+  actionFailed: 'Could not complete',
+  actionCancelled: 'Cancelled',
+  actionNetworkError: 'Connection error',
+  openResult: 'Open',
+  canvasTitle: 'Workspace',
+  canvasEmpty: 'A site preview or data table will appear here when the assistant suggests viewing something.',
+  canvasPreview: 'Site preview',
+  canvasData: 'Data',
+  canvasThemeDiff: 'Theme change',
+  canvasClose: 'Close panel',
+  canvasApply: 'Apply',
+  canvasRollback: 'Rollback',
+  canvasCurrentTheme: 'Current theme',
+  canvasProposedTheme: 'Proposed theme',
+  canvasLivePreview: 'Live preview',
+  canvasDataTable: 'Table',
+  canvasOpenPreview: 'Open preview',
+  canvasHint: 'The assistant can open a site preview or data here.',
   starters: {
     customer: [
       '✨ How do I create a site?',
@@ -286,11 +375,13 @@ const hy: AssistantDict = {
   },
   cmdData: { 'my-sites': 'Իմ կայքերը', users: 'Օգտատերեր', 'all-sites': 'Բոլոր կայքերը' },
   quick: { shorter: 'Կարճ', longer: 'Մանրամասն', simplify: 'Պարզ', translate: 'Թարգմանել', continue: 'Շարունակել' },
-  statusThinking: 'Մտածում եմ…',
-  statusWriting: 'Գրում եմ…',
-  shiftEnterHint: 'Enter — ուղարկել · Shift+Enter — նոր տող · / — հրամաններ',
+  statusThinking: 'Մտածում է…',
+  statusWriting: 'Գրում է…',
+  statusFetching: 'Տվյալներ է որոնում…',
+  shiftEnterHint: 'Enter — ուղարկել · Shift+Enter — նոր տող · / — հրամաններ · @ — հիշատակում',
   loadingChat: 'Բեռնում եմ զրույցը…',
   examplesTitle: 'Որտեղի՞ց սկսենք',
+  mentionTitle: 'Հիշատակել',
   memory: 'Հիշողություն',
   memoryTitle: 'Ինչ է հիշում օգնականը',
   memoryEmpty: 'Դեռ ոչինչ չի հիշվել։ Պատմեք ձեր բիզնեսի կամ նախապատվությունների մասին, և ես կհաշվի առնեմ։',
@@ -298,6 +389,33 @@ const hy: AssistantDict = {
   memoryClear: 'Մաքրել բոլորը',
   remembered: 'Հիշեցի',
   forget: 'Մոռանալ',
+  sources: 'Աղբյուրներ',
+  feedbackGood: 'Օգտակար պատասխան',
+  feedbackBad: 'Անօգուտ պատասխան',
+  feedbackReason: 'Ինչն էր սխալ?',
+  feedbackSent: 'Շնորհակալության ֆիդբեքի համար',
+  proposedAction: 'Առաջարկվող գործողություն',
+  confirmAction: 'Հաստատել',
+  actionProceed: 'Կատարել',
+  actionSuccess: 'Պատրաստ է',
+  actionFailed: 'Չհաջողվեց կատարել',
+  actionCancelled: 'Չեղարկվեց',
+  actionNetworkError: 'Սխալ կապի մեջ',
+  openResult: 'Բացել',
+  canvasTitle: 'Աշխատատարածք',
+  canvasEmpty: 'Այստեղ կայքի նախադիտումը կամ տվյալների աղյուսակը կհայտնվի, երբ օգնականը առաջարկի դիտել արդյունքը։',
+  canvasPreview: 'Կայքի նախադիտում',
+  canvasData: 'Տվյալներ',
+  canvasThemeDiff: 'Թեմայի փոփոխում',
+  canvasClose: 'Փակել վահանակը',
+  canvasApply: 'Կիրառել',
+  canvasRollback: 'Հետարկել',
+  canvasCurrentTheme: 'Ընթացիկ թեմա',
+  canvasProposedTheme: 'Առաջարկվող թեմա',
+  canvasLivePreview: 'Ապրող նախադիտում',
+  canvasDataTable: 'Աղյուսակ',
+  canvasOpenPreview: 'Բացել նախադիտումը',
+  canvasHint: 'Օգնականը կարող է այստեղ բացել կայքի նախադիտում կամ տվյալներ։',
   starters: {
     customer: [
       '✨ Ինչպե՞ս ստեղծել կայք',

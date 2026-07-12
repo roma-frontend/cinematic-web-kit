@@ -6,7 +6,11 @@ import {
   quickActionPrompt,
   pushInputHistory,
   QUICK_ACTIONS,
+  parseMentionQuery,
+  filterMentions,
+  insertMention,
   type CommandLabels,
+  type MentionEntity,
 } from '@/lib/assistant-commands';
 
 const labels: CommandLabels = {
@@ -117,5 +121,58 @@ describe('pushInputHistory', () => {
     expect(h).toHaveLength(50);
     expect(h[h.length - 1]).toBe('m59');
     expect(h[0]).toBe('m10');
+  });
+});
+
+describe('parseMentionQuery', () => {
+  it('activates when input ends with @token and lowercases it', () => {
+    expect(parseMentionQuery('show data for @Coff')).toEqual({ active: true, query: 'coff' });
+    expect(parseMentionQuery('@')).toEqual({ active: true, query: '' });
+  });
+
+  it('stays inactive when a space follows @ or there is no @', () => {
+    expect(parseMentionQuery('hello @coff more text').active).toBe(false);
+    expect(parseMentionQuery('just text').active).toBe(false);
+  });
+});
+
+const entities: MentionEntity[] = [
+  { id: 's_1', type: 'site', label: 'Coffee', hint: 'coffee' },
+  { id: 'u_1', type: 'user', label: 'Anna', hint: 'anna@x.com' },
+  { id: 'sub_1', type: 'submission', label: 'Book Club', hint: 'contact-form' },
+];
+
+describe('filterMentions', () => {
+
+  it('returns all entities for an empty query', () => {
+    expect(filterMentions(entities, '')).toEqual(entities);
+  });
+
+  it('matches by label, hint, and type', () => {
+    expect(filterMentions(entities, 'coff')).toHaveLength(1);
+    expect(filterMentions(entities, 'anna')).toHaveLength(1);
+    expect(filterMentions(entities, 'user')).toHaveLength(1);
+    expect(filterMentions(entities, 'contact')).toHaveLength(1);
+  });
+
+  it('requires every query token to match', () => {
+    expect(filterMentions(entities, 'anna user')).toHaveLength(1);
+    expect(filterMentions(entities, 'coffee user')).toHaveLength(0);
+  });
+});
+
+describe('insertMention', () => {
+  const typeLabels = { site: 'site', user: 'user', submission: 'submission' };
+
+  it('replaces a trailing @token with a typed mention and trailing space', () => {
+    expect(insertMention('Show data for @Coff', entities[0], typeLabels)).toBe('Show data for @site:Coffee ');
+  });
+
+  it('handles a bare @ input', () => {
+    expect(insertMention('@', entities[1], typeLabels)).toBe('@user:Anna ');
+  });
+
+  it('does not replace earlier @ symbols', () => {
+    expect(insertMention('hello @anna and @', entities[2], typeLabels)).toBe('hello @anna and @submission:Book Club ');
   });
 });

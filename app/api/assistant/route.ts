@@ -8,6 +8,8 @@ import { llmConfig, llmConfigured } from '@/lib/llm';
 import { buildAssistantPrompt, type AssistantRole } from '@/lib/assistant-prompt';
 import { addMessage, ownsConversation, assistantUsageToday, bumpAssistantUsage } from '@/lib/assistant-store';
 import { listMemories, addMemories, extractMemoryFacts, stripMemoryTags } from '@/lib/assistant-memory';
+import { retrieveDocs, formatKnowledgeSection, sourceLabels } from '@/lib/assistant-rag';
+import { stripActionTags } from '@/lib/assistant-actions';
 import { getUserEntitlements } from '@/lib/billing/entitlements';
 
 export const runtime = 'nodejs';
@@ -78,7 +80,14 @@ export async function POST(request: Request) {
   // Agentic actions (live DATA fetch) are Studio-only.
   const allowActions = ent.has('assistant.actions');
   const memories = listMemories(user.id).map((m) => m.content);
-  const system = buildAssistantPrompt(locale, role, user.name || undefined, allowActions, memories);
+  // RAG grounding over internal ops docs — STAFF only (these describe platform
+  // operations like Fly secrets/DNS and must never reach customers).
+  const isStaffRole = role === 'admin' || role === 'superadmin';
+  const lastUserMsg = [...history].reverse().find((m) => m.role === 'user');
+  const docHits = isStaffRole && lastUserMsg ? retrieveDocs(lastUserMsg.content, 3) : [];
+  const knowledge = formatKnowledgeSection(docHits);
+  const sources = sourceLabels(docHits);
+  const system = buildAssistantPrompt(locale, role, user.name || undefined, allowActions, memories, knowledge);
   const { url, key, model } = llmConfig();
 
   // Count this message against the daily quota (no-op for unlimited plans, but
@@ -127,7 +136,7 @@ export async function POST(request: Request) {
     if (!assistantFull.trim()) return;
     const facts = extractMemoryFacts(assistantFull);
     if (facts.length) { try { addMemories(user.id, facts); } catch { /* memory is best-effort */ } }
-    const clean = stripMemoryTags(assistantFull)
+    const clean = stripActionTags(stripMemoryTags(assistantFull))
       .replace(/<NAVIGATE>[\s\S]*?<\/NAVIGATE>/g, '')
       .replace(/<SUGGEST>[\s\S]*?<\/SUGGEST>/g, '')
       .replace(/<DATA>[\s\S]*?<\/DATA>/g, '')
@@ -137,6 +146,14 @@ export async function POST(request: Request) {
   };
 
   const stream = new ReadableStream({
+    start(controller) {
+      // Emit the (deterministic, real) citations first so the client can render
+      // a "Sources" footer. Labels are sanitized so they can't break the tag.
+      if (sources.length) {
+        const safe = sources.map((s) => s.replace(/[|<>]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+        if (safe.length) controller.enqueue(encoder.encode(`<SOURCES>${safe.join('|')}</SOURCES>`));
+      }
+    },
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {

@@ -138,6 +138,49 @@ export function quickActionPrompt(action: QuickAction, locale: Locale): string {
   return (PROMPTS[locale] ?? PROMPTS.en)[action];
 }
 
+// ── @-mentions of tenant/platform entities in the composer ─────────────────
+
+export type MentionKind = 'site' | 'user' | 'submission';
+
+export interface MentionEntity {
+  id: string;
+  type: MentionKind;
+  label: string;
+  /** Optional human-readable detail shown in the palette. */
+  hint?: string;
+}
+
+/** Detect whether the composer is in @-mention mode. Active while the input ends
+ *  with `@token` (no space yet); returns the lowercase token to filter by. */
+export function parseMentionQuery(input: string): { active: boolean; query: string } {
+  const m = /@(\S*)$/.exec(input);
+  if (!m) return { active: false, query: '' };
+  return { active: true, query: m[1].toLowerCase() };
+}
+
+/** Fuzzy-filter entities by label/hint/type. */
+export function filterMentions(entities: MentionEntity[], query: string): MentionEntity[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return entities;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  return entities.filter((e) => {
+    const hay = `${e.label} ${e.hint ?? ''} ${e.type}`.toLowerCase();
+    return tokens.every((tk) => hay.includes(tk));
+  });
+}
+
+/**
+ * Replace the trailing `@token` with a human-readable mention token that the
+ * assistant can understand as a typed reference, e.g. `@site:My Site`.
+ */
+export function insertMention(
+  input: string,
+  entity: MentionEntity,
+  typeLabels: Record<MentionKind, string>,
+): string {
+  return input.replace(/@\S*$/, `@${typeLabels[entity.type]}:${entity.label} `);
+}
+
 /**
  * Push a sent message onto a bounded, de-duplicated input-history ring (newest
  * last). Consecutive duplicates collapse; capacity defaults to 50.

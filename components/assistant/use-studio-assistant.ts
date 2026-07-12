@@ -3,8 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/hooks/use-locale';
-import { ASSISTANT_ROUTES, ASSISTANT_DATA_KEYS } from '@/lib/assistant-routes';
+import { ASSISTANT_ROUTES, ASSISTANT_DATA_KEYS, type AssistantRole } from '@/lib/assistant-routes';
+import type { MentionEntity } from '@/lib/assistant-commands';
+import { sitePreviewUrl, type MarkdownTable } from '@/lib/assistant-canvas';
+
 import type { Locale } from '@/lib/seo';
+import {
+  parseActionTag,
+  stripActionTags,
+  summarizeAction,
+  canProposeAction,
+  type AgentAction,
+  type PendingAction,
+  type ActionResult,
+} from '@/lib/assistant-action-tags';
 
 export interface AssistantMessage {
   id: string;
@@ -15,6 +27,35 @@ export interface AssistantMessage {
   createdAt?: number;
   /** Facts the assistant recorded to long-term memory in this reply. */
   remembered?: string[];
+  /** Citation labels from internal docs used to ground this reply (staff). */
+  sources?: string[];
+  /** User-supplied thumbs up/down feedback for this assistant reply. */
+  feedback?: { rating: 'up' | 'down'; reason?: string };
+  /** Agentic action proposed by the assistant, awaiting user confirmation. */
+  action?: PendingAction;
+  /** Outcome after the user confirmed or dismissed the action. */
+  actionResult?: ActionResult;
+  /** Inline data table the assistant emitted in this reply. */
+  dataMarkdown?: string;
+}
+
+export type CanvasType = 'none' | 'preview' | 'data' | 'diff-theme';
+
+export interface CanvasState {
+  type: CanvasType;
+  /** Site selected for live preview. */
+  siteId?: string;
+  siteSlug?: string;
+  siteName?: string;
+  /** Markdown table rendered from a <DATA> reply. */
+  dataMarkdown?: string;
+  /** Theme diff: previous theme id/label and proposed theme. */
+  themeDiff?: {
+    beforeId?: string;
+    beforeLabel?: string;
+    afterId: string;
+    afterLabel: string;
+  };
 }
 
 export interface Conversation {
@@ -51,7 +92,10 @@ function detectLanguage(text: string): Locale {
   return cyr > text.length * 0.2 ? 'ru' : 'en';
 }
 
-function parseTags(raw: string): { clean: string; route: string | null; suggestions: string[]; data: string | null; remembered: string[] } {
+function parseTags(
+  raw: string,
+  role: AssistantRole,
+): { clean: string; route: string | null; suggestions: string[]; data: string | null; remembered: string[]; sources: string[]; action: AgentAction | null } {
   let route: string | null = null;
   const nav = raw.match(/<NAVIGATE>\s*([^<]+?)\s*<\/NAVIGATE>/);
   if (nav) {
@@ -67,6 +111,10 @@ function parseTags(raw: string): { clean: string; route: string | null; suggesti
   let suggestions: string[] = [];
   const sug = raw.match(/<SUGGEST>\s*([^<]*?)\s*<\/SUGGEST>/);
   if (sug) suggestions = sug[1].split('|').map((s) => s.trim()).filter(Boolean).slice(0, 3);
+  // Deterministic doc citations (staff RAG), emitted by the server up front.
+  let sources: string[] = [];
+  const src = raw.match(/<SOURCES>\s*([^<]*?)\s*<\/SOURCES>/);
+  if (src) sources = src[1].split('|').map((s) => s.trim()).filter(Boolean).slice(0, 5);
   // Long-term memory facts (silent tag; surfaced as a subtle "remembered" note).
   const remembered: string[] = [];
   const remSeen = new Set<string>();
@@ -77,22 +125,29 @@ function parseTags(raw: string): { clean: string; route: string | null; suggesti
     const key = fact.toLowerCase();
     if (fact && !remSeen.has(key)) { remSeen.add(key); remembered.push(fact); }
   }
-  const clean = raw
+  // Agentic action: only the first well-formed block; role/locale checked by caller.
+  const action = parseActionTag(raw);
+  const clean = stripActionTags(raw)
     .replace(/<NAVIGATE>[\s\S]*?<\/NAVIGATE>/g, '')
     .replace(/<SUGGEST>[\s\S]*?<\/SUGGEST>/g, '')
     .replace(/<DATA>[\s\S]*?<\/DATA>/g, '')
     .replace(/<REMEMBER>[\s\S]*?<\/REMEMBER>/gi, '')
+    .replace(/<SOURCES>[\s\S]*?<\/SOURCES>/gi, '')
     .replace(/<NAVIGATE>[\s\S]*$/g, '')
     .replace(/<SUGGEST>[\s\S]*$/g, '')
     .replace(/<DATA>[\s\S]*$/g, '')
     .replace(/<REMEMBER>[\s\S]*$/gi, '')
-    .replace(/<\/?(NAV|SUG|DAT|REMEMBER)[A-Z]*$/i, '')
+    .replace(/<SOURCES>[\s\S]*$/gi, '')
+    .replace(/<\/?(NAV|SUG|DAT|REMEMBER|SOURCES|ACTION)[A-Z]*$/i, '')
     .replace(/<\/?(?:R|RE|REM|REME|REMEM|REMEMB|REMEMBE)$/i, '')
+    .replace(/<\/?(?:S|SO|SOU|SOUR|SOURC|SOURCE)$/i, '')
     .trimEnd();
-  return { clean, route, suggestions, data, remembered };
+  // Only the user's allowed role can see a proposed action; silently strip it otherwise.
+  const allowedAction = action && canProposeAction(role, action.kind) ? action : null;
+  return { clean, route, suggestions, data, remembered, sources, action: allowedAction };
 }
 
-export function useStudioAssistant() {
+export function useStudioAssistant(role: AssistantRole = 'customer') {
   const router = useRouter();
   const { locale } = useLocale();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
@@ -104,7 +159,11 @@ export function useStudioAssistant() {
   const [isListening, setIsListening] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamStatus, setStreamStatus] = useState<'idle' | 'thinking' | 'writing' | 'fetching'>('idle');
   const [memories, setMemories] = useState<MemoryFact[]>([]);
+  const [entities, setEntities] = useState<MentionEntity[]>([]);
+  const [canvas, setCanvas] = useState<CanvasState>({ type: 'none' });
+  const [canvasBusy, setCanvasBusy] = useState(false);
   const recRef = useRef<SR | null>(null);
   const silenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -112,6 +171,12 @@ export function useStudioAssistant() {
   // partial text already received is kept (not discarded).
   const abortRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
+  const streamStatusRef = useRef(streamStatus);
+  streamStatusRef.current = streamStatus;
+
+  const setStreamStatusIfChanged = useCallback((next: typeof streamStatus) => {
+    if (streamStatusRef.current !== next) setStreamStatus(next);
+  }, []);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -215,6 +280,7 @@ export function useStudioAssistant() {
     setIsLoading(true);
     setError(null);
     stoppedRef.current = false;
+    setStreamStatusIfChanged('thinking');
     const controller = new AbortController();
     abortRef.current = controller;
     let convId = currentId;
@@ -248,19 +314,35 @@ export function useStudioAssistant() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let full = '';
+      let hasToken = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        full += decoder.decode(value, { stream: true });
-        const { clean } = parseTags(full);
+        const chunk = decoder.decode(value, { stream: true });
+        if (!hasToken && chunk.trim().length > 0) {
+          hasToken = true;
+          setStreamStatusIfChanged('writing');
+        }
+        full += chunk;
+        const { clean } = parseTags(full, role);
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean } : m)));
       }
-      const { clean, route, suggestions, data, remembered } = parseTags(full);
-      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean, suggestions, route: route ?? undefined, remembered: remembered.length ? remembered : undefined } : m)));
+      const { clean, route, suggestions, data, remembered, sources, action: agentAction } = parseTags(full, role);
+      const pendingAction = agentAction ? { action: agentAction, summary: summarizeAction(agentAction, locale) } : undefined;
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? {
+        ...m,
+        content: clean,
+        suggestions,
+        route: route ?? undefined,
+        remembered: remembered.length ? remembered : undefined,
+        sources: sources.length ? sources : undefined,
+        action: pendingAction,
+      } : m)));
       // Pull the freshly saved facts into the managed memory list.
       if (remembered.length) void loadMemories();
       // If the model asked to SHOW a data set, fetch it and append a table.
       if (data) {
+        setStreamStatusIfChanged('fetching');
         // Safety net: drop any table the model may have invented — only the
         // app-provided (real) table should appear.
         const intro = clean.split('\n').filter((ln) => !/^\s*\|.*\|\s*$/.test(ln)).join('\n').trim();
@@ -273,7 +355,10 @@ export function useStudioAssistant() {
           });
           if (dres.ok) {
             const md = (await dres.json()).markdown as string;
-            if (md) setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: `${intro}\n\n${md}`.trim() } : m)));
+            if (md) {
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: `${intro}\n\n${md}`.trim() } : m)));
+              showCanvasData(md);
+            }
           }
         } catch { /* keep the text answer even if data fetch fails */ }
       }
@@ -294,9 +379,10 @@ export function useStudioAssistant() {
     } finally {
       abortRef.current = null;
       setIsLoading(false);
+      setStreamStatusIfChanged('idle');
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [currentId, loadMemories]);
+  }, [currentId, loadMemories, setStreamStatusIfChanged]);
 
   /** Cancel an in-flight reply; the partial text already streamed is kept. */
   const stop = useCallback(() => {
@@ -306,6 +392,64 @@ export function useStudioAssistant() {
 
   /** Navigate to an in-app route (used by clickable links in replies). */
   const navigate = useCallback((route: string) => { router.push(route); }, [router]);
+
+  // ── Fullscreen canvas: live preview / data table / theme diff workspace ─────
+  const openCanvasSite = useCallback((siteId: string, siteSlug: string, siteName: string) => {
+    setCanvas({ type: 'preview', siteId, siteSlug, siteName });
+  }, []);
+
+  const showCanvasData = useCallback((dataMarkdown: string) => {
+    setCanvas({ type: 'data', dataMarkdown });
+  }, []);
+
+  const closeCanvas = useCallback(() => { setCanvas({ type: 'none' }); }, []);
+
+  const previewTheme = useCallback(async (siteId: string, instruction: string) => {
+    setCanvasBusy(true);
+    try {
+      const res = await fetch('/api/assistant/preview-theme', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId, instruction }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) return payload?.error ?? 'preview_error';
+      const current = canvas.type === 'preview' ? canvas : undefined;
+      setCanvas({
+        type: 'diff-theme',
+        siteId,
+        siteSlug: current?.siteSlug ?? entities.find((e) => e.type === 'site' && e.id === siteId)?.hint,
+        siteName: current?.siteName,
+        themeDiff: {
+          beforeId: payload.beforeId,
+          beforeLabel: payload.beforeLabel,
+          afterId: payload.afterId,
+          afterLabel: payload.afterLabel,
+        },
+      });
+      return null;
+    } catch {
+      return 'network_error';
+    } finally {
+      setCanvasBusy(false);
+    }
+  }, [canvas, entities]);
+
+  const commitTheme = useCallback(async (siteId: string, themeId: string) => {
+    setCanvasBusy(true);
+    try {
+      const res = await fetch('/api/assistant/site-theme', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteId, themeId }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) return { ok: false, error: payload?.error ?? 'error' as string };
+      return { ok: true, themeId: payload.themeId as string, label: payload.label as string };
+    } catch {
+      return { ok: false, error: 'network_error' as string };
+    } finally {
+      setCanvasBusy(false);
+    }
+  }, []);
 
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -347,13 +491,67 @@ export function useStudioAssistant() {
     await runStream(history, messages[userIdx].content);
   }, [isLoading, messages, runStream]);
 
+  // Submit thumbs up/down feedback for an assistant message.
+  const sendFeedback = useCallback(async (messageId: string, rating: 'up' | 'down', reason = '') => {
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, feedback: { rating, reason } } : m)));
+    try {
+      await fetch('/api/assistant/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, conversationId: currentId ?? undefined, rating, reason }),
+      });
+    } catch { /* optimistic; ignore network errors */ }
+  }, [currentId]);
+
+  // Confirm a proposed agentic action. The server performs the mutation, logs
+  // audit, and returns the outcome; we surface it on the originating message.
+  const confirmAction = useCallback(async (messageId: string) => {
+    const msg = messages.find((m) => m.id === messageId);
+    if (!msg?.action) return;
+    try {
+      const res = await fetch('/api/assistant/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: msg.action.action }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = (await res.json()) as ActionResult;
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, actionResult: result } : m)));
+    } catch {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, actionResult: { ok: false, message: 'network_error' } } : m)));
+    }
+  }, [messages]);
+
+  const dismissAction = useCallback((messageId: string) => {
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, actionResult: { ok: false, message: 'cancelled' } } : m)));
+  }, []);
+
+  const loadEntities = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assistant/entities');
+      if (res.ok) setEntities((await res.json()).entities ?? []);
+    } catch { /* offline: entity picker stays empty */ }
+  }, []);
+
   // Load conversation history once on mount.
-  useEffect(() => { void loadConversations(); void loadMemories(); }, [loadConversations, loadMemories]);
+  useEffect(() => { void loadConversations(); void loadMemories(); void loadEntities(); }, [loadConversations, loadMemories, loadEntities]);
 
   return {
     messages, conversations, currentId, input, setInput, isLoading, loadingConversation, isListening, unavailable, error,
     voiceSupported, inputRef, send, editMessage, regenerate, stop, navigate, startVoice,
     loadConversations, newChat, selectConversation, rename, remove,
     memories, loadMemories, forgetMemory, clearMemory,
+    sendFeedback,
+    streamStatus,
+    entities,
+    confirmAction,
+    dismissAction,
+    // Fullscreen canvas workspace
+    canvas,
+    canvasBusy,
+    openCanvasSite,
+    closeCanvas,
+    previewTheme,
+    commitTheme,
   };
 }

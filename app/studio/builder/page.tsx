@@ -36,6 +36,7 @@ import { EFFECT_PRESETS, applyEffectPatch, clearEffectPatch, type EffectPreset }
 import { TutorialModal } from '@/components/builder/tutorial-modal';
 import { useLocale } from '@/hooks/use-locale';
 import { builderTr } from '@/lib/builder-dict';
+import { resolveBuilderRouteSiteId } from '@/lib/builder-route';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { studioDict } from '@/lib/studio-dict';
@@ -567,7 +568,10 @@ function BuilderEditor() {
   const tr = builderTr(locale);
   const t = studioDict(locale);
   const { confirm, confirmDialog } = useConfirm();
-  const siteId = useSearchParams().get('site');
+  const searchSiteId = useSearchParams().get('site');
+  const [contextSiteId, setContextSiteId] = useState<string | null>(null);
+  const [contextReady, setContextReady] = useState(false);
+  const siteId = resolveBuilderRouteSiteId(searchSiteId, contextSiteId);
   const [siteMeta, setSiteMeta] = useState<SiteMeta | null>(null);
   const [doc, setDoc] = useState<BuilderDoc>(seed as unknown as BuilderDoc);
   const [pageId, setPageId] = useState<string>((seed as unknown as BuilderDoc).pages[0]?.id ?? '');
@@ -689,9 +693,31 @@ function BuilderEditor() {
     setPref(`builder:${siteId}`, { pageId, tab, device, previewWidth, previewDark, collapsed: [...collapsed] });
   }, [siteId, pageId, tab, device, previewWidth, previewDark, collapsed]);
 
-  // Load the tenant's draft doc. The builder always works on a concrete site
-  // (?site=<id>); without it we send the user to the dashboard to pick one.
   useEffect(() => {
+    let alive = true;
+    fetch('/api/studio/context')
+      .then(async (r) => {
+        if (!r.ok) return null;
+        const data = await r.json() as { tenant?: { id?: string } | null };
+        return data.tenant?.id ?? null;
+      })
+      .then((tenantSiteId) => {
+        if (!alive) return;
+        setContextSiteId(tenantSiteId ?? null);
+        setContextReady(true);
+      })
+      .catch(() => {
+        if (alive) setContextReady(true);
+      });
+    return () => { alive = false; };
+  }, []);
+
+  // Load the tenant's draft doc. The builder can open directly via
+  // /studio/builder and resolves the site from either the explicit ?site= URL
+  // or the signed-in studio context; if neither exists we hand off to the
+  // dashboard to pick a site.
+  useEffect(() => {
+    if (!contextReady) return;
     if (!siteId) {
       router.replace('/dashboard');
       return;
@@ -720,7 +746,7 @@ function BuilderEditor() {
       })
       .catch(() => setMsg(tr('Не удалось загрузить сайт.')));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tr is locale-derived; re-running on locale change isn't needed here
-  }, [siteId, router]);
+  }, [contextReady, siteId, router]);
 
   // The org's member-plan catalog — powers the pricing block's "link to plan"
   // picker so a landing pricing card can drive a real Stripe subscription.

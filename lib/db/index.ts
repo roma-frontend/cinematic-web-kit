@@ -483,6 +483,18 @@ CREATE TABLE IF NOT EXISTS assistant_memory (
 );
 CREATE INDEX IF NOT EXISTS assistant_memory_user_idx ON assistant_memory (user_id, created_at);
 
+-- Assistant feedback: thumbs up/down per assistant reply with optional reason.
+CREATE TABLE IF NOT EXISTS assistant_feedback (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  conversation_id TEXT REFERENCES assistant_conversations(id) ON DELETE SET NULL,
+  message_id TEXT NOT NULL DEFAULT '',
+  rating TEXT NOT NULL,
+  reason TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS assistant_feedback_user_idx ON assistant_feedback (user_id, created_at);
+
 -- Legacy Connect table; new tenant-commerce flows use the platform Stripe account.
 CREATE TABLE IF NOT EXISTS site_stripe_accounts (
   site_id TEXT PRIMARY KEY REFERENCES sites(id) ON DELETE CASCADE,

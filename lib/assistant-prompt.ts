@@ -41,7 +41,7 @@ platform control and billing admin. Be careful suggesting destructive actions â€
 always confirm intent first.`,
 };
 
-export function buildAssistantPrompt(locale: Locale, role: AssistantRole = 'customer', userName?: string, allowActions = true, memories: string[] = []): string {
+export function buildAssistantPrompt(locale: Locale, role: AssistantRole = 'customer', userName?: string, allowActions = true, memories: string[] = [], knowledge = ''): string {
   const who = userName ? `The user's name is ${userName}. ` : '';
   const routes = assistantRoutesForRole(role);
   // Agentic DATA fetching is a Studio-only capability (assistant.actions). When
@@ -65,7 +65,19 @@ SHOWING DATA:
 - CRITICAL: you do NOT have the actual records. NEVER write names, emails,
   users, sites or ANY table rows yourself â€” anything you invent is fake and
   wrong. Output ONLY the intro sentence + <DATA>key</DATA>; the app fills the
-  real table. Never include a markdown table of your own.`
+  real table. Never include a markdown table of your own.
+
+ACTIONS (mutation requires user confirmation):
+- When the user clearly wants to CREATE a site, PUBLISH a site, or INVITE a
+  site member, you may propose the action by emitting ONE <ACTION> block with
+  the exact fields below. The user must confirm before anything changes.
+- Allowed actions for this role: create_site, publish_site, invite_site_user.
+- Examples:
+  <ACTION kind="create_site" name="Coffee Shop" locale="ru" />
+  <ACTION kind="publish_site" siteId="s_xxx" />
+  <ACTION kind="invite_site_user" siteId="s_xxx" email="member@x.com" name="Alex" />
+- Do NOT combine an ACTION with a <NAVIGATE> tag in the same reply.
+- If ownership is unclear, ask the user instead of guessing a siteId.`
     : `
 SHOWING DATA:
 - You CANNOT fetch or display live records on this plan. If the user asks to
@@ -95,6 +107,7 @@ WHAT BUILDER STUDIO DOES:
 
 ${ROLE_SCOPE[role]}
 ${memorySection}
+${knowledge}
 
 HOW TO ANSWER:
 - Be concise, friendly and practical. Prefer short steps over essays.
@@ -128,5 +141,5 @@ MEMORY:
   in "WHAT YOU KNOW ABOUT THIS USER". The tag is silent (the user doesn't see
   it), so never mention that you're saving it.
 
-${LANG_LINE[locale]}`;
+${LANG_LINE[locale] ?? LANG_LINE.en}`;
 }

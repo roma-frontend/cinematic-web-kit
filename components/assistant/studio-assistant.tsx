@@ -5,7 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Wand2, X, Send, Mic, Eraser, ArrowUpRight, Maximize2, Minimize2,
   Plus, Pencil, Trash2, Check, Copy, MessageSquare, PanelLeft, RotateCcw,
-  Square, RefreshCw, Search, ArrowDown, CornerDownLeft, Sparkles, Database, Compass, Brain,
+  Square, RefreshCw, Search, ArrowDown, CornerDownLeft, Sparkles, Database, Compass, Brain, FileText,
+  ThumbsUp, ThumbsDown, Loader2, PenLine, Globe, User, Inbox, ShieldCheck, AlertTriangle, CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocale } from '@/hooks/use-locale';
@@ -13,7 +14,9 @@ import { assistantDict } from '@/lib/assistant-dict';
 import {
   buildSlashCommands, filterCommands, parseSlashQuery, quickActionPrompt,
   pushInputHistory, QUICK_ACTIONS, type SlashCommand,
+  parseMentionQuery, filterMentions, insertMention, type MentionEntity,
 } from '@/lib/assistant-commands';
+import { parseMarkdownTable, sitePreviewUrl } from '@/lib/assistant-canvas';
 import { useStudioAssistant, type AssistantMessage } from './use-studio-assistant';
 import { AssistantMarkdown } from './assistant-markdown';
 
@@ -21,23 +24,51 @@ const DRAFT_KEY = 'cwk:assistant:draft';
 const HISTORY_KEY = 'cwk:assistant:input-history';
 
 type Role = 'customer' | 'admin' | 'superadmin';
+type StreamStatusValue = 'idle' | 'thinking' | 'writing' | 'fetching';
 
-function TypingDots() {
+function StreamStatus({
+  status,
+  inline = false,
+  thinkingLabel,
+  writingLabel,
+  fetchingLabel,
+}: {
+  status: StreamStatusValue;
+  inline?: boolean;
+  thinkingLabel: string;
+  writingLabel: string;
+  fetchingLabel: string;
+}) {
+  const map = {
+    idle: { icon: null, label: '' },
+    thinking: { icon: Sparkles, label: thinkingLabel },
+    writing: { icon: PenLine, label: writingLabel },
+    fetching: { icon: Database, label: fetchingLabel },
+  } satisfies Record<StreamStatusValue, { icon: typeof Sparkles | typeof PenLine | typeof Database | null; label: string }>;
+
+  const { icon: Icon, label } = map[status];
+  if (!Icon || !label) return null;
+
   return (
-    <div className="flex items-center gap-1 py-1">
-      {[0, 1, 2].map((i) => (
-        <motion.span key={i} className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60"
-          animate={{ opacity: [0.3, 1, 0.3], y: [0, -2, 0] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }} />
-      ))}
-    </div>
+    <span className={cn('inline-flex items-center gap-1.5 text-[11px] font-medium text-primary/80', inline ? '' : 'rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1')}>
+      <Icon className={cn('h-3 w-3', status !== 'thinking' && 'motion-safe:animate-pulse')} />
+      {status === 'thinking' && (
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary/80" />
+        </span>
+      )}
+      <span>{label}</span>
+    </span>
   );
 }
 
 export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   const { locale } = useLocale();
   const t = assistantDict(locale);
-  const a = useStudioAssistant();
+  const a = useStudioAssistant(role);
   const [open, setOpen] = useState(false);
+  const [confirmingActionId, setConfirmingActionId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null);
@@ -46,6 +77,8 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
   const [historyQuery, setHistoryQuery] = useState('');
   const [memoryOpen, setMemoryOpen] = useState(false);
+  const [feedbackReasoning, setFeedbackReasoning] = useState<{ id: string; value: string } | null>(null);
+  const [themeInstruction, setThemeInstruction] = useState('');
   // Smart autoscroll: only glue to the bottom when the user is already there.
   const [atBottom, setAtBottom] = useState(true);
   const [hasNew, setHasNew] = useState(false);
@@ -64,6 +97,27 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   const showSlash = slash.active && slashMatches.length > 0;
   const [slashIdx, setSlashIdx] = useState(0);
   useEffect(() => { setSlashIdx(0); }, [a.input]);
+
+  // ── @-mention entity picker ────────────────────────────────────────────────
+  const mention = parseMentionQuery(a.input);
+  const mentionEntities = a.entities;
+  const mentionMatches = mention.active ? filterMentions(mentionEntities, mention.query).slice(0, 6) : [];
+  const showMention = mention.active && mentionMatches.length > 0;
+  const [mentionIdx, setMentionIdx] = useState(0);
+  useEffect(() => { setMentionIdx(0); }, [a.input, mentionEntities.length]);
+  const mentionTypeLabels: Record<MentionEntity['type'], string> = {
+    site: t.cmdData['my-sites'] ?? 'site',
+    user: t.cmdData.users ?? 'user',
+    submission: t.cmdRoutes['/dashboard/submissions'] ?? 'submission',
+  };
+  const entityIcon = (type: MentionEntity['type']) => {
+    switch (type) {
+      case 'site': return Globe;
+      case 'user': return User;
+      case 'submission': return Inbox;
+      default: return Database;
+    }
+  };
 
   // ── Input history (↑/↓ recall of previously sent messages) ────────────────
   const inputHistory = useRef<string[]>([]);
@@ -123,16 +177,19 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, editing, renaming, pendingDelete, sidebarOpen, memoryOpen]);
 
-  // Remember the first open so the FAB stops "pinging" once discovered, and
-  // land the caret in the composer whenever the panel opens.
-  useEffect(() => {
-    if (!open) return;
+  // On the first open, reveal the history sidebar smoothly so the conversation
+  // list is visible immediately instead of staying hidden in the compact mode.
+useEffect(() => {
+  if (!open) return;
+  if (!hasOpened) {        // только первый раз
     setHasOpened(true);
-    setAtBottom(true);
-    const id = setTimeout(() => { a.inputRef.current?.focus(); scrollToBottom('auto'); }, 60);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+    setExpanded(true);
+    setSidebarOpen(true);
+  }
+  setAtBottom(true);
+  const id = setTimeout(() => { a.inputRef.current?.focus(); scrollToBottom('auto'); }, 60);
+  return () => clearTimeout(id);
+}, [open]);
 
   // Delete countdown (4s) with an undo window.
   useEffect(() => {
@@ -140,7 +197,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
     if (pendingDelete.secs <= 0) { a.remove(pendingDelete.id); setPendingDelete(null); return; }
     const id = setTimeout(() => setPendingDelete((p) => (p ? { ...p, secs: p.secs - 1 } : p)), 1000);
     return () => clearTimeout(id);
-  }, [pendingDelete, a]);
+  }, [pendingDelete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const persistHistory = () => {
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(inputHistory.current)); } catch { /* ignore */ }
@@ -160,10 +217,21 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
     else if (cmd.kind === 'data' && cmd.value) a.send(`${t.cmdShow}: ${t.cmdData[cmd.value] ?? cmd.value}`);
     setTimeout(() => a.inputRef.current?.focus(), 40);
   };
+  const runMention = (e: MentionEntity) => {
+    const next = insertMention(a.input, e, mentionTypeLabels);
+    a.setInput(next);
+    setTimeout(() => a.inputRef.current?.focus(), 40);
+  };
   const runQuick = (action: (typeof QUICK_ACTIONS)[number]) => {
     if (!a.isLoading) a.send(quickActionPrompt(action, locale));
   };
   const onComposerKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showMention) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIdx((i) => (i + 1) % mentionMatches.length); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIdx((i) => (i - 1 + mentionMatches.length) % mentionMatches.length); return; }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); runMention(mentionMatches[mentionIdx]); return; }
+      if (e.key === 'Escape') { e.preventDefault(); a.setInput(a.input.replace(/@\S*$/, '')); return; }
+    }
     if (showSlash) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setSlashIdx((i) => (i + 1) % slashMatches.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setSlashIdx((i) => (i - 1 + slashMatches.length) % slashMatches.length); return; }
@@ -174,7 +242,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
     if (!showSlash && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       const hist = inputHistory.current;
       const singleLine = !a.input.includes('\n');
-      if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
+if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
         if (e.key === 'ArrowUp') {
           e.preventDefault();
           const next = histIdx === null ? hist.length - 1 : Math.max(0, histIdx - 1);
@@ -215,6 +283,114 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
 
   const iconBtn = 'rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground';
 
+  const renderFeedback = (m: AssistantMessage) => {
+    if (m.role !== 'assistant' || a.isLoading || !m.content) return null;
+    const sent = m.feedback?.rating;
+    if (sent) {
+      return (
+        <div className="flex items-center gap-1.5 pl-1 text-[11px] text-muted-foreground/70">
+          {sent === 'up' ? <ThumbsUp className="h-3 w-3" /> : <ThumbsDown className="h-3 w-3" />}
+          <span>{t.feedbackSent}</span>
+        </div>
+      );
+    }
+    if (feedbackReasoning?.id === m.id) {
+      return (
+        <div className="flex flex-col gap-1.5 pl-1">
+          <textarea
+            autoFocus
+            value={feedbackReasoning.value}
+            onChange={(e) => setFeedbackReasoning({ id: m.id, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); a.sendFeedback(m.id, 'down', feedbackReasoning.value); setFeedbackReasoning(null); }
+              if (e.key === 'Escape') setFeedbackReasoning(null);
+            }}
+            rows={2}
+            placeholder={t.feedbackReason}
+            className="max-w-md resize-none rounded-xl border border-border/70 bg-card/60 px-3 py-2 text-xs outline-none placeholder:text-muted-foreground focus:border-primary/50"
+          />
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => { a.sendFeedback(m.id, 'down', feedbackReasoning.value); setFeedbackReasoning(null); }}
+              className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90">{t.send}</button>
+            <button type="button" onClick={() => setFeedbackReasoning(null)}
+              className="rounded-lg px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">{t.cancel}</button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-0.5 pl-1">
+        <button type="button" onClick={() => a.sendFeedback(m.id, 'up')} aria-label={t.feedbackGood} title={t.feedbackGood}
+          className={iconBtn}><ThumbsUp className="h-3.5 w-3.5" /></button>
+        <button type="button" onClick={() => setFeedbackReasoning({ id: m.id, value: '' })} aria-label={t.feedbackBad} title={t.feedbackBad}
+          className={iconBtn}><ThumbsDown className="h-3.5 w-3.5" /></button>
+      </div>
+    );
+  };
+
+  const renderAction = (m: AssistantMessage) => {
+    if (m.role !== 'assistant' || !m.action) return null;
+    const result = m.actionResult;
+    if (result?.ok) {
+      return (
+        <div className="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-emerald-700">{t.actionSuccess}</p>
+            <p className="text-emerald-700/80">{result.message}</p>
+          </div>
+          {result.redirect && (
+            <button type="button" onClick={() => handleNavigate(result.redirect!)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-700">
+              {t.openResult} <ArrowUpRight className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      );
+    }
+    if (result) {
+      const cancelled = result.message === 'cancelled';
+      return (
+        <div className={cn('flex items-start gap-2 rounded-xl border px-3 py-2 text-xs',
+          cancelled ? 'border-amber-500/30 bg-amber-500/10' : 'border-red-500/30 bg-red-500/10')}>
+          <AlertTriangle className={cn('mt-0.5 h-4 w-4 shrink-0', cancelled ? 'text-amber-600' : 'text-red-600')} />
+          <div className="min-w-0 flex-1">
+            <p className={cn('font-semibold', cancelled ? 'text-amber-700' : 'text-red-700')}>
+              {cancelled ? t.actionCancelled : t.actionFailed}
+            </p>
+            {!cancelled && (
+              <p className="text-red-700/80">{result.message === 'network_error' ? t.actionNetworkError : result.message}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+    const busy = confirmingActionId === m.id;
+    return (
+      <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2">
+        <div className="flex items-start gap-2">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1 text-xs">
+            <p className="font-semibold text-foreground">{t.proposedAction}</p>
+            <p className="text-muted-foreground">{m.action.summary}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" disabled={busy}
+            onClick={async () => { setConfirmingActionId(m.id); await a.confirmAction(m.id); setConfirmingActionId((id) => id === m.id ? null : id); }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity disabled:opacity-60">
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            {t.actionProceed}
+          </button>
+          <button type="button" disabled={busy} onClick={() => a.dismissAction(m.id)}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-60">
+            {t.cancel}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderBubble = (m: AssistantMessage, isStreaming: boolean) => {
     const isUser = m.role === 'user';
     // Inline edit of a sent user message — a nice textarea right in the bubble.
@@ -254,7 +430,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                     <AssistantMarkdown content={m.content} onNavigate={handleNavigate} />
                     {isStreaming && <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 rounded-full bg-primary align-middle motion-safe:animate-pulse" aria-hidden />}
                   </div>)
-            : <div className="flex items-center gap-2"><TypingDots /><span className="text-[11px] text-muted-foreground">{t.statusThinking}</span></div>}
+            : <div className="flex items-center gap-2"><StreamStatus status={a.streamStatus} inline thinkingLabel={t.statusThinking} writingLabel={t.statusWriting} fetchingLabel={t.statusFetching} /></div>}
         </div>
         {/* Row actions: edit (user) · copy (both) · regenerate (assistant) · time */}
         {m.content && (
@@ -318,6 +494,145 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
     );
   };
 
+  const renderCanvas = () => {
+    const c = a.canvas;
+    if (!expanded || c.type === 'none') return null;
+
+    const header = (
+      <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <PanelLeft className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold">{t.canvasTitle}</span>
+        </div>
+        <button type="button" onClick={a.closeCanvas} aria-label={t.canvasClose} title={t.canvasClose}
+          className={cn(iconBtn, 'h-7 w-7')}>
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+
+    if (c.type === 'data' && c.dataMarkdown) {
+      const parsed = parseMarkdownTable(c.dataMarkdown);
+      return (
+        <div className="flex h-full w-full flex-col md:w-80 lg:w-96 xl:w-[28rem]">
+          {header}
+          <div className="flex-1 overflow-auto p-3 [scrollbar-width:thin]">
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              <Database className="h-3 w-3" /> {t.canvasDataTable}
+            </div>
+            {parsed ? (
+              <div className="overflow-x-auto rounded-xl border border-border/60">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr>{parsed.headers.map((h, i) => <th key={i} className="px-2 py-1.5 text-left font-semibold">{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {parsed.rows.map((row, ri) => (
+                      <tr key={ri} className="border-t border-border/60">
+                        {row.map((cell, ci) => <td key={ci} className="px-2 py-1.5">{cell}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="whitespace-pre-wrap rounded-xl border border-border/60 bg-card/60 p-3 text-xs text-muted-foreground">
+                {c.dataMarkdown}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (c.type === 'preview' || c.type === 'diff-theme') {
+      const diff = c.type === 'diff-theme' ? c.themeDiff : undefined;
+      const previewThemeId = diff?.afterId;
+      const previewUrl = c.siteSlug ? sitePreviewUrl(c.siteSlug, previewThemeId) : '';
+      return (
+        <div className="flex h-full w-full flex-col md:w-80 lg:w-96 xl:w-[28rem]">
+          {header}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex-1 overflow-hidden bg-muted/10">
+              {previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  title={t.canvasPreview}
+                  className="h-full w-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-xs text-muted-foreground">
+                  <Globe className="h-6 w-6 opacity-40" />
+                  <p>{t.canvasEmpty}</p>
+                </div>
+              )}
+            </div>
+            {c.type === 'diff-theme' && diff && (
+              <div className="border-t border-border/60 bg-muted/20 p-3">
+                <p className="mb-2 text-xs font-semibold">{t.canvasThemeDiff}</p>
+                <div className="mb-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-border/60 bg-card/60 p-2 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70">{t.canvasCurrentTheme}</p>
+                    <p className="truncate text-xs font-semibold">{diff.beforeLabel ?? diff.beforeId}</p>
+                  </div>
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-primary/80">{t.canvasProposedTheme}</p>
+                    <p className="truncate text-xs font-semibold text-primary">{diff.afterLabel}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" disabled={a.canvasBusy} onClick={async () => {
+                    const res = await a.commitTheme(c.siteId!, diff.afterId);
+                    if (res.ok) a.closeCanvas();
+                  }} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity disabled:opacity-60">
+                    {a.canvasBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                    {t.canvasApply}
+                  </button>
+                  <button type="button" disabled={a.canvasBusy} onClick={a.closeCanvas}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border/70 bg-card/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-60">
+                    <RotateCcw className="h-3 w-3" /> {t.canvasRollback}
+                  </button>
+                </div>
+              </div>
+            )}
+            {c.type === 'preview' && c.siteSlug && (
+              <div className="border-t border-border/60 bg-muted/20 p-3">
+                <p className="mb-1 text-xs font-semibold">{t.canvasLivePreview}</p>
+                <p className="mb-2 truncate text-[11px] text-muted-foreground">{c.siteName ?? c.siteSlug}</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={themeInstruction}
+                    onChange={(e) => setThemeInstruction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && themeInstruction.trim() && c.siteId) { void a.previewTheme(c.siteId, themeInstruction); setThemeInstruction(''); } }}
+                    placeholder={locale === 'ru' ? 'Опишите новую тему…' : locale === 'hy' ? 'Նկարագրեք նոր թեման…' : 'Describe a new theme…'}
+                    className="min-w-0 flex-1 rounded-lg border border-border/70 bg-card/60 px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                  />
+                  <button type="button" disabled={a.canvasBusy || !themeInstruction.trim() || !c.siteId}
+                    onClick={() => { if (c.siteId) { void a.previewTheme(c.siteId, themeInstruction); setThemeInstruction(''); } }}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity disabled:opacity-60">
+                    {a.canvasBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                    {t.canvasApply}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex h-full w-full flex-col md:w-80 lg:w-96 xl:w-[28rem]">
+        {header}
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-4 text-center text-xs text-muted-foreground">
+          <Globe className="h-6 w-6 opacity-40" />
+          <p>{t.canvasHint}</p>
+        </div>
+      </div>
+    );
+  };
+
   const renderSidebar = () => {
     const q = historyQuery.trim().toLowerCase();
     const filtered = q ? a.conversations.filter((c) => c.title.toLowerCase().includes(q)) : a.conversations;
@@ -331,7 +646,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
       { label: t.groupOlder, items: filtered.filter((c) => c.updatedAt < weekAgo) },
     ].filter((g) => g.items.length > 0);
     return (
-      <div className="flex h-full w-64 shrink-0 flex-col border-r border-border/60 bg-muted/20">
+      <div className="flex h-full w-[min(86vw,320px)] shrink-0 flex-col border-r border-border/60 bg-background shadow-2xl md:shadow-none sm:w-72">
         <div className="space-y-2 p-3">
           <button type="button" onClick={() => { a.newChat(); setSidebarOpen(false); }}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
@@ -378,15 +693,16 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
       <AnimatePresence>
         {open && (
           <motion.div
+            layout
             initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className={cn('fixed z-[60] flex overflow-hidden border border-border/70 bg-background/90 shadow-2xl backdrop-blur-xl',
               expanded ? 'inset-2 rounded-2xl sm:inset-6' : 'bottom-24 right-5 h-[min(70vh,560px)] w-[min(92vw,400px)] rounded-3xl')}>
 
-            {/* Sidebar (fullscreen only) */}
+            {/* Sidebar (desktop full size, mobile as fullscreen drawer only when expanded) */}
             {expanded && <div className="hidden md:flex">{renderSidebar()}</div>}
             {expanded && sidebarOpen && (
-              <div className="absolute inset-0 z-10 flex md:hidden">
+              <div className="absolute inset-0 z-20 flex md:hidden">
                 {renderSidebar()}
                 <button className="flex-1 bg-black/40" aria-label={t.close} onClick={() => setSidebarOpen(false)} />
               </div>
@@ -396,11 +712,12 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
             <div className="flex min-w-0 flex-1 flex-col">
               {/* Header */}
               <div className="relative flex items-center gap-2 border-b border-border/60 bg-gradient-to-r from-primary/10 to-transparent px-3 py-3 sm:px-4">
-                {expanded && (
-                  <button type="button" onClick={() => setSidebarOpen((v) => !v)} className={cn(iconBtn, 'md:hidden')} aria-label={t.history}>
-                    <PanelLeft className="h-4 w-4" />
-                  </button>
-                )}
+                <button type="button" onClick={() => {
+                  setExpanded(true);
+                  setSidebarOpen(true);
+                }} className={cn(iconBtn)} aria-label={t.history} title={t.history}>
+                  <PanelLeft className="h-4 w-4" />
+                </button>
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-md shadow-primary/30">
                   <Wand2 className="h-4.5 w-4.5" />
                 </span>
@@ -411,6 +728,18 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                 {a.messages.length > 0 && !expanded && (
                   <button type="button" onClick={a.newChat} aria-label={t.newChat} title={t.newChat} className={iconBtn}><Eraser className="h-4 w-4" /></button>
                 )}
+                {expanded && (
+                  <button type="button" onClick={() => {
+                    if (a.canvas.type !== 'none') a.closeCanvas();
+                    else {
+                      const site = a.entities.find((e) => e.type === 'site');
+                      if (site) a.openCanvasSite(site.id, site.hint ?? '', site.label);
+                    }
+                  }} aria-label={t.canvasTitle} title={t.canvasTitle}
+                    className={cn(iconBtn, a.canvas.type !== 'none' && 'bg-muted text-foreground')}>
+                    <PanelLeft className="h-4 w-4" />
+                  </button>
+                )}
                 <button type="button" onClick={() => { const next = !memoryOpen; setMemoryOpen(next); if (next) void a.loadMemories(); }}
                   aria-label={t.memory} title={t.memory}
                   className={cn(iconBtn, 'relative', memoryOpen && 'bg-muted text-foreground')}>
@@ -419,7 +748,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                     <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">{a.memories.length}</span>
                   )}
                 </button>
-                <button type="button" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? t.collapse : t.expand} title={expanded ? t.collapse : t.expand} className={cn(iconBtn, 'hidden sm:block')}>
+                <button type="button" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? t.collapse : t.expand} title={expanded ? t.collapse : t.expand} className={cn(iconBtn)}>
                   {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </button>
                 <button type="button" onClick={() => setOpen(false)} aria-label={t.close} className={iconBtn}><X className="h-4 w-4" /></button>
@@ -520,6 +849,22 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                           ))}
                         </div>
                       )}
+                      {m.role === 'assistant' && m.sources && m.sources.length > 0 && !a.isLoading && (
+                        <div className="flex flex-col gap-1 pl-1">
+                          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            <FileText className="h-3 w-3" /> {t.sources}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {m.sources.map((s, si) => (
+                              <span key={`${m.id}-src-${si}`}
+                                className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                                <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-bold text-primary">{si + 1}</span>
+                                <span className="max-w-[220px] truncate">{s}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {m.role === 'assistant' && m.route && !a.isLoading && (
                         <div className="pl-1">
                           <button type="button" onClick={() => handleNavigate(m.route!)}
@@ -539,6 +884,8 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                           ))}
                         </div>
                       )}
+                      {renderAction(m)}
+                      {renderFeedback(m)}
                       {m.role === 'assistant' && m.content && !a.isLoading && i === a.messages.length - 1 && (
                         <div className="flex flex-wrap gap-1.5 pl-1 pt-0.5">
                           {QUICK_ACTIONS.map((qa) => (
@@ -569,6 +916,11 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
               {/* Composer */}
               {!a.unavailable && (
                 <div className="border-t border-border/60 bg-background/60 p-3">
+                  {a.isLoading && (
+                    <div className={cn('mb-2 flex items-center gap-2', expanded && 'mx-auto w-full max-w-3xl')}>
+                      <StreamStatus status={a.streamStatus} thinkingLabel={t.statusThinking} writingLabel={t.statusWriting} fetchingLabel={t.statusFetching} />
+                    </div>
+                  )}
                   <div className={cn('relative mx-auto', expanded && 'w-full max-w-3xl')}>
                     <AnimatePresence>
                       {showSlash && (
@@ -591,6 +943,34 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                                     {cmd.hint && <span className="block truncate text-[11px] text-muted-foreground/70">{cmd.hint}</span>}
                                   </span>
                                   {i === slashIdx && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 opacity-60" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                      {showMention && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+                          className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-2xl border border-border/70 bg-popover/95 shadow-2xl backdrop-blur-xl">
+                          <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{t.mentionTitle}</p>
+                          <div className="max-h-56 overflow-y-auto p-1 [scrollbar-width:thin]">
+                            {mentionMatches.map((e, i) => {
+                              const Icon = entityIcon(e.type);
+                              return (
+                                <button key={`${e.type}:${e.id}`} type="button"
+                                  onMouseEnter={() => setMentionIdx(i)}
+                                  onClick={() => runMention(e)}
+                                  className={cn('flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors',
+                                    i === mentionIdx ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted')}>
+                                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="h-3.5 w-3.5" /></span>
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate font-medium text-foreground">{e.label}</span>
+                                    {e.hint && <span className="block truncate text-[11px] text-muted-foreground/70">{e.hint}</span>}
+                                  </span>
+                                  {i === mentionIdx && <CornerDownLeft className="h-3.5 w-3.5 shrink-0 opacity-60" />}
                                 </button>
                               );
                             })}
@@ -626,6 +1006,13 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
                 </div>
               )}
             </div>
+
+            {/* Canvas workspace (fullscreen only) */}
+            {expanded && a.canvas.type !== 'none' && (
+              <div className="hidden shrink-0 border-l border-border/60 md:flex">
+                {renderCanvas()}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
