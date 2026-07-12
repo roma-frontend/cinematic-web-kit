@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Image from 'next/image';
 import { motion, useScroll, useMotionValueEvent, useReducedMotion } from 'framer-motion';
 import { Wand2, LayoutTemplate, Rocket } from 'lucide-react';
 
@@ -89,19 +90,19 @@ export function StickyShowcase({
                       {shot ? (
                         <div className="relative flex-1 overflow-hidden">
                           {/* Real product screenshot (R2), scheme-aware swap. */}
-                          <img
+                          <Image
                             src={shot.dark}
                             alt={s.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="absolute inset-0 hidden h-full w-full object-cover object-top dark:block"
+                            fill
+                            sizes="(min-width: 1024px) 50vw, 100vw"
+                            className="hidden object-cover object-top dark:block"
                           />
-                          <img
+                          <Image
                             src={shot.light}
                             alt={s.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="absolute inset-0 block h-full w-full object-cover object-top dark:hidden"
+                            fill
+                            sizes="(min-width: 1024px) 50vw, 100vw"
+                            className="block object-cover object-top dark:hidden"
                           />
                         </div>
                       ) : (
@@ -174,8 +175,8 @@ export function StickyShowcase({
             >
               {shot && (
                 <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-border">
-                  <img src={shot.dark} alt={s.title} loading="lazy" decoding="async" className="absolute inset-0 hidden h-full w-full object-cover object-top dark:block" />
-                  <img src={shot.light} alt={s.title} loading="lazy" decoding="async" className="absolute inset-0 block h-full w-full object-cover object-top dark:hidden" />
+                  <Image src={shot.dark} alt={s.title} fill sizes="100vw" className="hidden object-cover object-top dark:block" />
+                  <Image src={shot.light} alt={s.title} fill sizes="100vw" className="block object-cover object-top dark:hidden" />
                 </div>
               )}
               <div className="p-6">

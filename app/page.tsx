@@ -273,8 +273,22 @@ export default async function Home() {
         <PricingCards currentPlan={currentPlan ?? null} plans={planCards} />
       </section>
 
-      {/* FAQ */}
+      {/* FAQ (+ FAQPage structured data → rich results in search) */}
       <Faq title={extra.faq.title} subtitle={extra.faq.subtitle} items={extra.faq.items} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: extra.faq.items.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }),
+        }}
+      />
 
       {/* Final CTA */}
       <section className="cv-section mx-auto max-w-[var(--container-max)] px-6 py-20 sm:px-10">

@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, Montserrat } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PrefsSync } from '@/components/prefs-sync';
+import { VitalsReporter } from '@/components/vitals-reporter';
 
 import {
   SITE_NAME,
@@ -104,6 +105,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.variable} ${playfair.variable} ${montserrat.variable} font-sans antialiased`}>
         <ThemeProvider disableTransitionOnChange={true} attribute="class" defaultTheme={initialTheme} enableSystem>
           <PrefsSync />
+          <VitalsReporter />
           {children}
         </ThemeProvider>
       </body>

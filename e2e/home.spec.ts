@@ -11,7 +11,7 @@ test.describe('home', () => {
 
   test('has a route into the app (login/register/dashboard link)', async ({ page }) => {
     await page.goto('/');
-    const authLink = page.locator('a[href*="/login"], a[href*="/register"], a[href*="/dashboard"]').first();
+    const authLink = page.locator('a[href*="/login"]:visible, a[href*="/register"]:visible, a[href*="/dashboard"]:visible').first();
     await expect(authLink).toBeVisible({ timeout: 15_000 });
   });
 });

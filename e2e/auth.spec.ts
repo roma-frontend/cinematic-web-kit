@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Auth flows — read-only. A rejected login mutates nothing, so this is safe
 // even against a populated instance. Uses stable data-testid selectors.
-test.describe('login', () => {
+test.describe.serial('login', () => {
   test('renders the login form', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByTestId('login-email')).toBeVisible({ timeout: 15_000 });

@@ -29,6 +29,8 @@ jobs:
         run: npm run test:coverage
       - name: Build
         run: npm run build
+      - name: JavaScript performance budget
+        run: npm run perf:budget
 
   e2e:
     name: E2E (Playwright)
@@ -40,8 +42,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox
       - name: Build
         run: npm run build
       - name: Run E2E

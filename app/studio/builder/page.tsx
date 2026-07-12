@@ -941,6 +941,21 @@ function BuilderEditor() {
     () => (selectedId && page ? findNode(page.blocks, selectedId) : null),
     [selectedId, page],
   );
+  const qualityChecks = useMemo(() => {
+    const nodes: BuilderNode[] = [];
+    const visit = (items: BuilderNode[]) => items.forEach((node) => { nodes.push(node); visit(node.children ?? []); });
+    visit(page?.blocks ?? []);
+    const text = nodes.map((node) => Object.values(node.props).filter((value): value is string => typeof value === 'string').join(' ')).join(' ').trim();
+    const hasCta = nodes.some((node) => node.type === 'button' || /заказ|купить|связ|начать|запис|order|buy|contact|start|book/i.test(String(node.props.text ?? node.props.label ?? '')));
+    const hasImageWithoutAlt = nodes.some((node) => node.type === 'image' && !String(node.props.alt ?? '').trim());
+    return [
+      { label: tr('Структура страницы'), ok: nodes.length >= 3, hint: tr('Добавьте ещё секции или контентные блоки.') },
+      { label: tr('Призыв к действию'), ok: hasCta, hint: tr('Добавьте заметную кнопку с целевым действием.') },
+      { label: tr('Контент'), ok: text.length >= 120, hint: tr('Добавьте понятное описание услуги или продукта.') },
+      { label: tr('Alt-тексты изображений'), ok: !hasImageWithoutAlt, hint: tr('Добавьте описание для каждого изображения.') },
+      { label: tr('Мобильная проверка'), ok: device === 'mobile', hint: tr('Переключитесь на мобильный предпросмотр и проверьте страницу.') },
+    ];
+  }, [page, device, tr]);
 
   // Reveal the active element in the Structure tree whenever the selection
   // changes (from the canvas or the tree): expand its collapsed ancestors so
@@ -1638,7 +1653,8 @@ function BuilderEditor() {
   // pricing (value-first).
   const [aiInstruction, setAiInstruction] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
-  const applyAi = async () => {
+  const [aiPlan, setAiPlan] = useState<{ action: { kind: string; themeId?: string; label?: string; message?: string }; instruction: string } | null>(null);
+  const requestAiPlan = async () => {
     const instruction = aiInstruction.trim();
     if (!instruction || aiBusy) return;
     setAiBusy(true);
@@ -1649,10 +1665,23 @@ function BuilderEditor() {
       });
       if (res.status === 403) { window.location.href = '/pricing'; return; }
       const data = await res.json().catch(() => ({}));
-      const a = data?.action;
-      if (!res.ok || !a) { setMsg(tr('Не удалось выполнить запрос ИИ.')); return; }
-      if (a.kind === 'theme') {
-        setDoc((d) => ({ ...d, themeId: a.themeId, ...(THEME_BTN_PRESETS[a.themeId] ?? {}) }));
+      if (!res.ok || !data?.action) { setMsg(tr('Не удалось составить план ИИ.')); return; }
+      if (data.action.kind === 'chat') { setMsg(data.action.message); return; }
+      setAiPlan({ action: data.action, instruction });
+    } catch {
+      setMsg(tr('Ошибка ИИ. Попробуйте ещё раз.'));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+  const applyAiPlan = async () => {
+    if (!aiPlan || aiBusy) return;
+    const { action: a, instruction } = aiPlan;
+    setAiBusy(true);
+    setMsg('');
+    try {
+      if (a.kind === 'theme' && a.themeId) {
+        setDoc((d) => ({ ...d, themeId: a.themeId!, ...(THEME_BTN_PRESETS[a.themeId!] ?? {}) }));
         setMsg(tr('Тема применена: {label}').replace('{label}', a.label || a.themeId));
         setAiInstruction('');
       } else if (a.kind === 'regenerate') {
@@ -1664,12 +1693,11 @@ function BuilderEditor() {
         const blocks = gd?.page?.blocks;
         if (gr.ok && Array.isArray(blocks) && blocks.length) {
           setBlocks(() => blocks);
-          setMsg(tr('Страница перегенерирована по вашему описанию.'));
+          setMsg(tr('Страница перегенерирована по вашему описанию. Ctrl+Z отменит это изменение.'));
           setAiInstruction('');
         } else setMsg(tr('Не удалось перегенерировать страницу.'));
-      } else if (a.kind === 'chat') {
-        setMsg(a.message);
       }
+      setAiPlan(null);
     } catch {
       setMsg(tr('Ошибка ИИ. Попробуйте ещё раз.'));
     } finally {
@@ -1843,17 +1871,43 @@ function BuilderEditor() {
         <input
           value={aiInstruction}
           onChange={(e) => setAiInstruction(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); applyAi(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); requestAiPlan(); } }}
           placeholder={tr('Попросите ИИ: «сделай неоновый ночной стиль» или «перепиши страницу под барбершоп»')}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           disabled={aiBusy}
           aria-label={tr('AI-редактирование')}
         />
-        <Button size="sm" onClick={applyAi} disabled={aiBusy || !aiInstruction.trim()} className="shrink-0 gap-1.5">
+        <Button size="sm" onClick={requestAiPlan} disabled={aiBusy || !aiInstruction.trim()} className="shrink-0 gap-1.5">
           {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-          <span className="hidden md:inline">{tr('Применить')}</span>
+          <span className="hidden md:inline">{tr('Показать план')}</span>
         </Button>
       </div>
+      {aiPlan && (
+        <div className="flex flex-wrap items-center gap-3 border-b border-primary/20 bg-primary/[0.06] px-3 py-2 text-sm sm:px-4" role="status">
+          <Wand2 className="h-4 w-4 shrink-0 text-primary" />
+          <p className="min-w-0 flex-1 text-muted-foreground">
+            {aiPlan.action.kind === 'theme'
+              ? tr('План: изменю визуальную тему на «{label}».').replace('{label}', aiPlan.action.label || aiPlan.action.themeId || '')
+              : tr('План: перегенерирую структуру и контент текущей страницы по вашему описанию. Текущую версию можно отменить через Ctrl+Z.')}
+          </p>
+          <Button size="sm" onClick={applyAiPlan} disabled={aiBusy} className="gap-1.5">
+            {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}{tr('Применить план')}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setAiPlan(null)} disabled={aiBusy}>{tr('Отмена')}</Button>
+        </div>
+      )}
+
+      <details className="border-b border-border/60 bg-card/30 px-3 py-2 sm:px-4">
+        <summary className="cursor-pointer text-sm font-semibold">{tr('Инспектор качества')} · {qualityChecks.filter((check) => check.ok).length}/{qualityChecks.length}</summary>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {qualityChecks.map((check) => (
+            <div key={check.label} className={`rounded-lg border px-3 py-2 text-xs ${check.ok ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'}`}>
+              <p className="font-semibold">{check.ok ? '✓' : '!' } {check.label}</p>
+              {!check.ok && <p className="mt-1 text-muted-foreground">{check.hint}</p>}
+            </div>
+          ))}
+        </div>
+      </details>
 
       <div className="flex min-h-0 flex-1">
         <aside className={cn('min-w-0 flex-1 overflow-y-auto px-3 pb-3 @container lg:border-r lg:border-border/60', mobileView === 'preview' && 'hidden lg:block')}>

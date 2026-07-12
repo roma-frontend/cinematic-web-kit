@@ -31,6 +31,17 @@ export type UiDict = {
   roles: { superadmin: string; admin: string };
   header: { tagline: string; noName: string };
   a11y: { openMenu: string; closeMenu: string; language: string };
+  palette: {
+    open: string;
+    placeholder: string;
+    navigation: string;
+    actions: string;
+    noResults: string;
+    themeLight: string;
+    themeDark: string;
+    language: string;
+    home: string;
+  };
   examples: { badge: string; title: string; subtitle: string };
   active: string;
   motion: string;
@@ -96,6 +107,17 @@ const ru: UiDict = {
   roles: { superadmin: 'Суперадмин', admin: 'Админ' },
   header: { tagline: 'ИИ-конструктор сайтов', noName: 'Без имени' },
   a11y: { openMenu: 'Открыть меню', closeMenu: 'Закрыть меню', language: 'Язык' },
+  palette: {
+    open: 'Командное меню',
+    placeholder: 'Команда или поиск…',
+    navigation: 'Навигация',
+    actions: 'Действия',
+    noResults: 'Ничего не найдено',
+    themeLight: 'Светлая тема',
+    themeDark: 'Тёмная тема',
+    language: 'Язык',
+    home: 'Главная',
+  },
   examples: {
     badge: 'Сделано на платформе',
     title: 'Пример живого сайта',
@@ -165,6 +187,17 @@ const en: UiDict = {
   roles: { superadmin: 'Superadmin', admin: 'Admin' },
   header: { tagline: 'AI website builder', noName: 'No name' },
   a11y: { openMenu: 'Open menu', closeMenu: 'Close menu', language: 'Language' },
+  palette: {
+    open: 'Command menu',
+    placeholder: 'Type a command or search…',
+    navigation: 'Navigation',
+    actions: 'Actions',
+    noResults: 'No results found',
+    themeLight: 'Light theme',
+    themeDark: 'Dark theme',
+    language: 'Language',
+    home: 'Home',
+  },
   examples: {
     badge: 'Made on the platform',
     title: 'A live site example',
@@ -234,6 +267,17 @@ const hy: UiDict = {
   roles: { superadmin: 'Գերադմին', admin: 'Ադմին' },
   header: { tagline: 'AI կայքերի կառուցիչ', noName: 'Առանց անվան' },
   a11y: { openMenu: 'Բացել ընտրացանկը', closeMenu: 'Փակել ընտրացանկը', language: 'Լեզու' },
+  palette: {
+    open: 'Հրամանների ընտրացանկ',
+    placeholder: 'Հրաման կամ որոնում…',
+    navigation: 'Նավիգացիա',
+    actions: 'Գործողություններ',
+    noResults: 'Ոչինչ չի գտնվել',
+    themeLight: 'Բաց թեմա',
+    themeDark: 'Մուգ թեմա',
+    language: 'Լեզու',
+    home: 'Գլխավոր',
+  },
   examples: {
     badge: 'Ստեղծված հարթակում',
     title: 'Կենդանի կայքի օրինակ',

@@ -23,7 +23,13 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // The builder is primarily a visual product: exercise both its desktop
+  // workspace and the touch-first customer flow in CI.
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
+  ],
   // Only manage a local server when targeting localhost.
   webServer: process.env.E2E_BASE_URL
     ? undefined

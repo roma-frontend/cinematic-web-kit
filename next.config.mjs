@@ -20,6 +20,13 @@ try {
 }
 
 const nextConfig = {
+  // This repository can sit under a workspace that has another lockfile.
+  // Pin Turbopack to this app so tracing and development never climb to the
+  // parent directory and accidentally include unrelated files.
+  turbopack: {
+    root: process.cwd(),
+  },
+
   // Core hardening / hygiene.
   reactStrictMode: true,
   poweredByHeader: false,

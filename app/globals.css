@@ -337,6 +337,16 @@
    dashed accent outline so it's obvious the element will drop INSIDE it. */
 .b-drop-into { outline: 2px dashed var(--primary) !important; outline-offset: -4px; background-color: color-mix(in oklch, var(--primary) 10%, transparent) !important; transform: scale(0.985); transition: transform 0.12s ease, background-color 0.12s ease, outline-color 0.12s ease; border-radius: 10px; }
 
+/* Mobile: large backdrop blurs are expensive on mobile GPUs (worst on iOS
+   Safari — every scroll frame re-samples the backdrop). Halve the radii on
+   small screens; at these element sizes the visual difference is negligible
+   but scrolling stays at 60fps. */
+@media (max-width: 640px) {
+  .b-glass { backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3); }
+  .b-glass-panel { backdrop-filter: blur(8px) saturate(1.15); -webkit-backdrop-filter: blur(8px) saturate(1.15); }
+  .b-aurora { filter: blur(40px) saturate(1.2); }
+}
+
 /* ── View Transitions (native, progressive enhancement) ──────────────────
    Cross-document navigations get a smooth cinematic cross-fade in supporting
    browsers (Chrome/Edge/Safari). Zero JS, zero dependencies; browsers without

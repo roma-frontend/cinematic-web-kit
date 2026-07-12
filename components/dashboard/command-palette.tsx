@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
+import { useLocale } from '@/hooks/use-locale';
+import { dashDict } from '@/lib/dashboard-dict';
 
 export interface Command { label: string; hint?: string; run: () => void; icon: React.ComponentType<{ className?: string }> }
 
 export function CommandPalette({ commands }: { commands: Command[] }) {
+  const t = dashDict(useLocale().locale);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     // Resetting query/highlight happens in the event handlers (not an effect):
@@ -19,19 +24,45 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         reset();
-        setOpen((o) => !o);
+        setOpen((wasOpen) => {
+          if (!wasOpen) returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          return !wasOpen;
+        });
       } else if (e.key === 'Escape') {
         setOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
-    const onOpen = () => { reset(); setOpen(true); };
+    const onOpen = () => {
+      returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      reset();
+      setOpen(true);
+    };
     window.addEventListener('cwk:open-palette', onOpen);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('cwk:open-palette', onOpen); };
   }, []);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 20);
+    if (!open) return;
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 20);
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      ));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', trapFocus);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('keydown', trapFocus);
+      returnFocusRef.current?.focus();
+      returnFocusRef.current = null;
+    };
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -51,7 +82,7 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[15vh]" role="dialog" aria-modal>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+      <div ref={dialogRef} className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
         <div className="flex items-center gap-2 border-b border-border/60 px-4">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
@@ -63,13 +94,13 @@ export function CommandPalette({ commands }: { commands: Command[] }) {
               else if (e.key === 'ArrowUp') { e.preventDefault(); setIdx((i) => Math.max(i - 1, 0)); }
               else if (e.key === 'Enter') { e.preventDefault(); runAt(idx); }
             }}
-            placeholder="Поиск команд и разделов…"
+            placeholder={t.searchCommands}
             className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">ESC</kbd>
         </div>
         <div className="max-h-80 overflow-y-auto p-2">
-          {filtered.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">Ничего не найдено</p>}
+          {filtered.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">{t.sidebar.noResults}</p>}
           {filtered.map((c, i) => (
             <button
               key={`${c.label}-${i}`}

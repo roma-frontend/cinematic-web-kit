@@ -31,6 +31,7 @@ export function LazyVideo({
   className,
   sound = false,
   fill = false,
+  priority = false,
 }: {
   src: string;
   srcMp4?: string;
@@ -39,6 +40,8 @@ export function LazyVideo({
   className?: string;
   sound?: boolean;
   fill?: boolean;
+  /** Above-the-fold clip (hero): its poster is the LCP — fetch it eagerly at high priority. */
+  priority?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -135,7 +138,15 @@ export function LazyVideo({
         <>
           {poster ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />
+            <img
+              src={poster}
+              alt=""
+              aria-hidden
+              loading={priority ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={priority ? 'high' : undefined}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <Play className="h-8 w-8 text-muted-foreground/40" />

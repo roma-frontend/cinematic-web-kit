@@ -54,7 +54,7 @@ export function LandingHero({
       {/* Layered animated background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <WebglGradient className="absolute inset-0 h-full w-full opacity-40 dark:opacity-55" />
-        <div className="b-aurora opacity-40" />
+        <div className="b-aurora opacity-25" />
         <div className="b-pattern-grid opacity-60" />
         {/* Vertical wash: transparent at top, solid background at the bottom. */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
@@ -136,7 +136,7 @@ export function LandingHero({
             <div className="space-y-4 p-5">
               <div className="relative flex h-28 items-center justify-center overflow-hidden rounded-xl" style={{ background: 'linear-gradient(120deg, var(--primary), color-mix(in oklch, var(--primary) 45%, #a855f7))' }}>
                 {heroVideo ? (
-                  <LazyVideo src={heroVideo.src} srcMp4={heroVideo.srcMp4} poster={heroVideo.poster} fill className="absolute inset-0" />
+                  <LazyVideo src={heroVideo.src} srcMp4={heroVideo.srcMp4} poster={heroVideo.poster} fill priority className="absolute inset-0" />
                 ) : (
                   <>
                     <div className="b-pattern-dots opacity-30" />

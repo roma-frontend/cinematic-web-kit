@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Globe, Rocket, Inbox, Users, Pencil, ExternalLink, CircleDashed, Plus } from 'lucide-react';
+import { Globe, Rocket, Inbox, Users, Pencil, ExternalLink, CircleDashed, Plus, ArrowRight } from 'lucide-react';
 import { getCurrentUser, isStaff, isSuperadmin } from '@/lib/auth';
 import { listSitesForUser, statsForUser } from '@/lib/sites';
 import { platformStats } from '@/lib/admin';
@@ -54,6 +54,31 @@ export default async function DashboardOverview() {
             primarySiteId={sites[0]?.id ?? null}
           />
         </>
+      )}
+
+      {sites[0] && (
+        <section className="mb-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card/70 to-card/50 p-5 sm:p-6">
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">{t.continueTitle}</p>
+              <h2 className="mt-2 truncate text-xl font-black tracking-tight">{sites[0].name}</h2>
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                {sites[0].publishedDoc ? <Rocket className="h-3.5 w-3.5 text-primary" /> : <CircleDashed className="h-3.5 w-3.5" />}
+                {sites[0].publishedDoc ? t.continueLive : d.sites.draft}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/studio/builder?site=${sites[0].id}`}>
+                <Button className="gap-1.5"><Pencil className="h-4 w-4" /> {t.continueEdit}</Button>
+              </Link>
+              {sites[0].publishedDoc ? (
+                <Link href="/dashboard/submissions"><Button variant="outline" className="gap-1.5"><Inbox className="h-4 w-4" /> {t.continueSubmissions}</Button></Link>
+              ) : (
+                <Link href={`/dashboard/sites`}><Button variant="outline" className="gap-1.5"><Rocket className="h-4 w-4" /> {t.continuePublish}<ArrowRight className="h-3.5 w-3.5" /></Button></Link>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">

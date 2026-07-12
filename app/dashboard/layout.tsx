@@ -8,6 +8,7 @@ import { disabledCapabilitiesFor } from '@/lib/access';
 import { getLocale } from '@/lib/i18n';
 import { dashDict } from '@/lib/dashboard-dict';
 import { DashboardShell, type Role } from '@/components/dashboard/shell';
+import { CommandPalette } from '@/components/command-palette';
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner';
 import { PageHeader } from '@/components/dashboard/ui';
 import { OrgOnboarding } from '@/components/dashboard/org-onboarding';
@@ -110,6 +111,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {!gated && llmConfigured() && getUserEntitlements(user).has('assistant.use') && (
         <StudioAssistant role={(user.role as Role) ?? 'customer'} />
       )}
+      {/* ⌘K / Ctrl+K command palette — keyboard-only inside the dashboard (the
+          shell has its own chrome, so no visual trigger is added here). */}
+      <CommandPalette
+        user={{ name: user.name, email: user.email, role: (user.role as Role) ?? 'customer' }}
+        showTrigger={false}
+      />
     </>
   );
 }

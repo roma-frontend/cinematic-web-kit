@@ -4,7 +4,7 @@
 // slide-over menu on mobile. Role-aware navigation (customer / admin /
 // superadmin). Rendered by app/dashboard/layout.tsx around every page.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -84,6 +84,8 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState('');
   const [subNav, setSubNav] = useState<'staff' | 'super' | null>(null);
+  const mobileMenuRef = useRef<HTMLElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const t = dashDict(useLocale().locale);
 
   // Persist the desktop collapse preference across sessions.
@@ -119,6 +121,31 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
       );
   const active = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
   const roleMeta = { label: t.roles[user.role], cls: ROLE_CLS[user.role], icon: ROLE_ICON[user.role] };
+
+  useEffect(() => {
+    if (!open) return;
+    const trigger = mobileMenuButtonRef.current;
+    const focusable = () => Array.from(mobileMenuRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+    ) ?? []);
+    const focusFirst = requestAnimationFrame(() => focusable()[0]?.focus());
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setOpen(false); return; }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      cancelAnimationFrame(focusFirst);
+      window.removeEventListener('keydown', onKeyDown);
+      trigger?.focus();
+    };
+  }, [open]);
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -392,7 +419,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-border/60 bg-background shadow-2xl">
+          <aside ref={mobileMenuRef} role="dialog" aria-modal="true" aria-label={t.menu} className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-border/60 bg-background shadow-2xl">
             <button onClick={() => setOpen(false)} aria-label={t.close} className="absolute right-3 top-4 rounded-lg p-1.5 text-muted-foreground hover:bg-muted">
               <X className="h-5 w-5" />
             </button>
@@ -405,6 +432,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-md sm:px-6">
           <button
+            ref={mobileMenuButtonRef}
             onClick={() => setOpen(true)}
             aria-label={t.menu}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground lg:hidden"

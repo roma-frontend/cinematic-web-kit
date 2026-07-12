@@ -118,6 +118,11 @@ export type DashDict = {
     statUsers: string;
     statAllSites: string;
     recentSites: string;
+    continueTitle: string;
+    continueEdit: string;
+    continuePublish: string;
+    continueSubmissions: string;
+    continueLive: string;
   };
   members: {
     status: { pending: string; approved: string; rejected: string; suspended: string };
@@ -364,6 +369,11 @@ const ru: DashDict = {
     statUsers: 'Пользователи',
     statAllSites: 'Всего сайтов',
     recentSites: 'Недавние сайты',
+    continueTitle: 'Продолжить работу',
+    continueEdit: 'Продолжить редактирование',
+    continuePublish: 'Опубликовать изменения',
+    continueSubmissions: 'Посмотреть заявки',
+    continueLive: 'Сайт опубликован',
   },
   members: {
     status: { pending: 'Ожидает', approved: 'Участник', rejected: 'Отклонён', suspended: 'Приостановлен' },
@@ -649,6 +659,11 @@ const en: DashDict = {
     statUsers: 'Users',
     statAllSites: 'Total sites',
     recentSites: 'Recent sites',
+    continueTitle: 'Continue working',
+    continueEdit: 'Continue editing',
+    continuePublish: 'Publish changes',
+    continueSubmissions: 'View submissions',
+    continueLive: 'Site is live',
   },
   members: {
     status: { pending: 'Pending', approved: 'Member', rejected: 'Rejected', suspended: 'Suspended' },
@@ -934,6 +949,11 @@ const hy: DashDict = {
     statUsers: 'Օգտատերեր',
     statAllSites: 'Ընդամենը կայքեր',
     recentSites: 'Վերջին կայքերը',
+    continueTitle: 'Շարունակել աշխատանքը',
+    continueEdit: 'Շարունակել խմբագրումը',
+    continuePublish: 'Հրապարակել փոփոխությունները',
+    continueSubmissions: 'Դիտել հայտերը',
+    continueLive: 'Կայքը հրապարակված է',
   },
   members: {
     status: { pending: 'Սպասում է', approved: 'Մասնակից', rejected: 'Մերժված', suspended: 'Կասեցված' },

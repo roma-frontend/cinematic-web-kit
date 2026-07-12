@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { CommandPalette } from '@/components/command-palette';
 import { useLocale } from '@/hooks/use-locale';
 import { useScrollDirection } from '@/hooks/use-scroll-direction';
 import { ui, type UiDict } from '@/lib/ui-dict';
@@ -256,6 +257,7 @@ export function SiteHeader({ initialUser }: { initialUser?: HeaderUser | null })
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
+          <CommandPalette user={user ?? null} />
           <LanguageSwitcher />
           <ThemeToggle />
           {user === undefined ? (
