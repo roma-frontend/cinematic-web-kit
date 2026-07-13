@@ -74,6 +74,7 @@ export function CommandPalette({
   const mounted = useMounted();
 
   const [open, setOpen] = useState(false);
+  const [ready, setReady] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -110,9 +111,11 @@ export function CommandPalette({
     const onOpen = () => openPalette();
     window.addEventListener('keydown', onKey);
     window.addEventListener('cwk:open-palette', onOpen);
+    setReady(true);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('cwk:open-palette', onOpen);
+      setReady(false);
     };
   }, [openPalette]);
 
@@ -389,6 +392,7 @@ export function CommandPalette({
       {showTrigger && (
         <button
           type="button"
+          data-command-palette-ready={ready ? 'true' : 'false'}
           onClick={openPalette}
           aria-label={t.palette.open}
           title={t.palette.open}
