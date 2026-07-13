@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getSiteForUser, parseDoc, saveDraft, publishSite } from '@/lib/sites';
+import { createSiteVersion, getSiteForUser, parseDoc, saveDraft, publishSite } from '@/lib/sites';
 import { syncsLiveOnSave } from '@/lib/landing-site';
 import type { BuilderDoc } from '@/lib/builder/types';
 import { DEFAULT_DOC } from '@/lib/builder/types';
@@ -60,6 +60,9 @@ export async function POST(request: Request) {
     paths.add(p.path);
   }
   try {
+    // Snapshot the previous persisted draft so every save is reversible.
+    const previous = parseDoc(site.draftDoc);
+    if (previous) createSiteVersion(site.id, site.userId, previous, 'Autosave');
     saveDraft(site, doc);
     // If the site is already live, keep the published snapshot in sync on every
     // save (and autosave) so edits appear on /s/<slug> immediately — no extra

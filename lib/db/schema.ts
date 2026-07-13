@@ -93,6 +93,20 @@ export const sites = sqliteTable(
   (t) => [uniqueIndex('sites_slug_idx').on(t.slug), index('sites_user_idx').on(t.userId)],
 );
 
+export const siteVersions = sqliteTable(
+  'site_versions',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id').notNull().references(() => sites.id, { onDelete: 'cascade' }),
+    createdBy: text('created_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    label: text('label').notNull().default(''),
+    doc: text('doc').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (t) => [index('site_versions_site_created_idx').on(t.siteId, t.createdAt)],
+);
+export type SiteVersion = typeof siteVersions.$inferSelect;
+
 export const domains = sqliteTable(
   'domains',
   {

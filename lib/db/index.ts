@@ -49,6 +49,16 @@ CREATE TABLE IF NOT EXISTS sites (
 CREATE UNIQUE INDEX IF NOT EXISTS sites_slug_idx ON sites (slug);
 CREATE INDEX IF NOT EXISTS sites_user_idx ON sites (user_id);
 
+CREATE TABLE IF NOT EXISTS site_versions (
+  id TEXT PRIMARY KEY,
+  site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  label TEXT NOT NULL DEFAULT '',
+  doc TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS site_versions_site_created_idx ON site_versions (site_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS domains (
   id TEXT PRIMARY KEY,
   site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,

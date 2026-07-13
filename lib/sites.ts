@@ -4,7 +4,7 @@
 
 import 'server-only';
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
-import { getDb, newId, sites, domains, submissions, type Site, type Domain } from '@/lib/db';
+import { getDb, newId, sites, domains, submissions, siteVersions, type Site, type Domain, type SiteVersion } from '@/lib/db';
 import { type BuilderDoc, type BuilderNode } from '@/lib/builder/types';
 import { legalPages } from '@/lib/builder/templates';
 import { trc, translatePage } from '@/lib/builder/templates-i18n';
@@ -153,6 +153,24 @@ export function saveDraft(site: Site, doc: BuilderDoc): void {
     .set({ draftDoc: JSON.stringify(doc), updatedAt: new Date() })
     .where(eq(sites.id, site.id))
     .run();
+}
+
+const MAX_SITE_VERSIONS = 50;
+
+export function createSiteVersion(siteId: string, userId: string, doc: BuilderDoc, label = ''): void {
+  const db = getDb();
+  db.insert(siteVersions).values({ id: newId('sv'), siteId, createdBy: userId, label, doc: JSON.stringify(doc), createdAt: new Date() }).run();
+  const excess = db.select({ id: siteVersions.id }).from(siteVersions).where(eq(siteVersions.siteId, siteId)).orderBy(desc(siteVersions.createdAt)).all().slice(MAX_SITE_VERSIONS);
+  for (const version of excess) db.delete(siteVersions).where(eq(siteVersions.id, version.id)).run();
+}
+
+export function listSiteVersions(siteId: string): Omit<SiteVersion, 'doc'>[] {
+  return getDb().select({ id: siteVersions.id, siteId: siteVersions.siteId, createdBy: siteVersions.createdBy, label: siteVersions.label, createdAt: siteVersions.createdAt })
+    .from(siteVersions).where(eq(siteVersions.siteId, siteId)).orderBy(desc(siteVersions.createdAt)).limit(MAX_SITE_VERSIONS).all();
+}
+
+export function getSiteVersion(siteId: string, versionId: string): SiteVersion | null {
+  return getDb().select().from(siteVersions).where(and(eq(siteVersions.siteId, siteId), eq(siteVersions.id, versionId))).get() ?? null;
 }
 
 /** Copy the draft over the published snapshot. */
