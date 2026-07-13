@@ -4,7 +4,7 @@ test.describe('command palette accessibility', () => {
   test('opens with the keyboard and closes with Escape', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByRole('button', { name: /command|команд|palette/i }).first();
-    await expect(trigger).toHaveAttribute('data-command-palette-ready', 'true');
+    await expect(page.locator('body')).toHaveAttribute('data-command-palette-ready', 'true');
     const hasVisibleTrigger = await trigger.isVisible();
 
     if (hasVisibleTrigger) await trigger.focus();

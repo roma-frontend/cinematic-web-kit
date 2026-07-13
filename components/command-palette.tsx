@@ -111,10 +111,12 @@ export function CommandPalette({
     const onOpen = () => openPalette();
     window.addEventListener('keydown', onKey);
     window.addEventListener('cwk:open-palette', onOpen);
+    document.body.dataset.commandPaletteReady = 'true';
     setReady(true);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('cwk:open-palette', onOpen);
+      delete document.body.dataset.commandPaletteReady;
       setReady(false);
     };
   }, [openPalette]);
