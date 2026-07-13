@@ -590,6 +590,18 @@ function ensureColumn(sqlite: Database.Database, table: string, column: string, 
 }
 
 function ensureRuntimeMigrations(sqlite: Database.Database): void {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS assistant_tasks (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL,
+      steps TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS assistant_tasks_user_updated_idx ON assistant_tasks (user_id, updated_at DESC);
+  `);
   ensureColumn(sqlite, 'domains', 'provisioning_provider', `provisioning_provider TEXT NOT NULL DEFAULT ''`);
   ensureColumn(sqlite, 'domains', 'provisioning_status', `provisioning_status TEXT NOT NULL DEFAULT 'pending'`);
   ensureColumn(sqlite, 'domains', 'provisioning_error', `provisioning_error TEXT NOT NULL DEFAULT ''`);

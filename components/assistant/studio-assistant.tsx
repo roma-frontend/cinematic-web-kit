@@ -6,7 +6,7 @@ import {
   Wand2, X, Send, Mic, Eraser, ArrowUpRight, Maximize2, Minimize2,
   Plus, Pencil, Trash2, Check, Copy, MessageSquare, PanelLeft, RotateCcw,
   Square, RefreshCw, Search, ArrowDown, CornerDownLeft, Sparkles, Database, Compass, Brain, FileText,
-  ThumbsUp, ThumbsDown, Loader2, PenLine, Globe, User, Inbox, ShieldCheck, AlertTriangle, CheckCircle2,
+  ThumbsUp, ThumbsDown, Loader2, PenLine, Globe, User, Inbox, ShieldCheck, AlertTriangle, CheckCircle2, ImagePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocale } from '@/hooks/use-locale';
@@ -17,6 +17,7 @@ import {
   parseMentionQuery, filterMentions, insertMention, type MentionEntity,
 } from '@/lib/assistant-commands';
 import { parseMarkdownTable, sitePreviewUrl } from '@/lib/assistant-canvas';
+import { taskProgress } from '@/lib/assistant-task-core';
 import { useStudioAssistant, type AssistantMessage } from './use-studio-assistant';
 import { AssistantMarkdown } from './assistant-markdown';
 
@@ -85,6 +86,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   // The FAB "ping" halo should invite the first open, then stop nagging.
   const [hasOpened, setHasOpened] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const starters = t.starters[role] ?? t.starters.customer;
 
   // ── Slash-command palette ────────────────────────────────────────────────
@@ -423,6 +425,13 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
       <div className={cn('group flex flex-col', isUser ? 'items-end' : 'items-start')}>
         <div className={cn('max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm',
           isUser ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border border-border/60 bg-card/80 text-foreground backdrop-blur')}>
+          {m.attachments && m.attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {m.attachments.map((attachment) => (
+                <img key={attachment.url} src={attachment.url} alt={attachment.name} className="h-20 w-20 rounded-lg border border-white/20 object-cover" />
+              ))}
+            </div>
+          )}
           {m.content
             ? (isUser
                 ? <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
@@ -633,6 +642,51 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
     );
   };
 
+  const renderTasks = () => {
+    if (a.tasks.length === 0) return null;
+    return (
+      <div className="border-b border-border/60 bg-muted/20 p-3">
+        <div className="mx-auto w-full max-w-3xl space-y-2">
+          {a.tasks.slice(0, 3).map((task) => {
+            const progress = taskProgress(task.steps);
+            return (
+              <div key={task.id} className="rounded-xl border border-border/60 bg-card/60 p-2.5">
+                <div className="mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  <p className="min-w-0 flex-1 truncate text-xs font-semibold">{task.title}</p>
+                  <span className="text-[11px] tabular-nums text-muted-foreground">{progress}%</span>
+                  <button type="button" onClick={() => void a.cancelTask(task.id)} className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-red-500" title={t.cancel} aria-label={t.cancel}>
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="space-y-1">
+                  {task.steps.map((step) => {
+                    const complete = step.status === 'done' || step.status === 'skipped';
+                    return (
+                      <label key={step.id} className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 text-xs hover:bg-muted/60">
+                        <input type="checkbox" checked={complete} onChange={() => void a.updateTaskStep(task.id, step.id, complete ? 'pending' : 'done')} className="accent-primary" />
+                        <span className={cn('min-w-0 flex-1 truncate', complete && 'text-muted-foreground line-through')}>{step.title}</span>
+                        {!complete && (
+                          <button type="button" onClick={(event) => { event.preventDefault(); void a.updateTaskStep(task.id, step.id, step.status === 'running' ? 'pending' : 'running'); }}
+                            className={cn('rounded px-1.5 py-0.5 text-[10px] font-medium', step.status === 'running' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted')}>
+                            {step.status === 'running' ? (locale === 'ru' ? 'В работе' : locale === 'hy' ? 'Ընթացքում' : 'Working') : (locale === 'ru' ? 'Начать' : locale === 'hy' ? 'Սկսել' : 'Start')}
+                          </button>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderSidebar = () => {
     const q = historyQuery.trim().toLowerCase();
     const filtered = q ? a.conversations.filter((c) => c.title.toLowerCase().includes(q)) : a.conversations;
@@ -795,6 +849,8 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                 )}
               </AnimatePresence>
 
+              {renderTasks()}
+
               {/* Messages */}
               <div className="relative min-h-0 flex-1">
               <div ref={scrollRef} onScroll={() => setAtBottom(isNearBottom())} role="log" aria-live="polite" aria-relevant="additions text" className="h-full space-y-3 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
@@ -838,6 +894,18 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   {a.messages.map((m, i) => (
                     <div key={m.id} className="space-y-2">
                       {renderBubble(m, a.isLoading && i === a.messages.length - 1 && m.role === 'assistant')}
+                      {m.role === 'user' && i === a.messages.length - 2 && !a.isLoading && !a.tasks.some((task) => task.title === m.content) && (
+                        <div className="flex justify-end pr-1">
+                          <button type="button" onClick={() => void a.createTask(m.content, [
+                            locale === 'ru' ? 'Уточнить цель и требования' : locale === 'hy' ? 'Հստակեցնել նպատակը և պահանջները' : 'Clarify goals and requirements',
+                            locale === 'ru' ? 'Подготовить и проверить изменения' : locale === 'hy' ? 'Պատրաստել և ստուգել փոփոխությունները' : 'Prepare and verify changes',
+                            locale === 'ru' ? 'Проверить результат и опубликовать' : locale === 'hy' ? 'Ստուգել արդյունքը և հրապարակել' : 'Review the result and publish',
+                          ])}
+                            className="rounded-full border border-border/60 bg-card/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
+                            {locale === 'ru' ? 'Создать план' : locale === 'hy' ? 'Ստեղծել պլան' : 'Create plan'}
+                          </button>
+                        </div>
+                      )}
                       {m.role === 'assistant' && m.remembered && m.remembered.length > 0 && (
                         <div className="flex flex-col gap-1 pl-1">
                           {m.remembered.map((fact, fi) => (
@@ -978,7 +1046,24 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                         </motion.div>
                       )}
                     </AnimatePresence>
+                    {a.attachments.length > 0 && (
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        {a.attachments.map((attachment) => (
+                          <div key={attachment.url} className="relative">
+                            <img src={attachment.url} alt={attachment.name} className="h-16 w-16 rounded-lg border border-border/70 object-cover" />
+                            <button type="button" onClick={() => a.removeAttachment(attachment.url)} className="absolute -right-1.5 -top-1.5 rounded-full bg-background p-0.5 shadow" aria-label={t.cancel}>
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-end gap-2 rounded-2xl border border-border/70 bg-card/60 px-2.5 py-2 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+                    <input ref={attachmentInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void a.uploadAttachment(file); e.currentTarget.value = ''; }} />
+                    <button type="button" onClick={() => attachmentInputRef.current?.click()} disabled={a.isUploading || a.attachments.length >= 3} aria-label="Attach image" title="Attach image (max 3, 10 MB each)"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40">
+                      {a.isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                    </button>
                     <textarea ref={a.inputRef} value={a.input} onChange={(e) => a.setInput(e.target.value)}
                       onKeyDown={onComposerKey}
                       rows={1} placeholder={a.isListening ? t.listening : t.placeholder}

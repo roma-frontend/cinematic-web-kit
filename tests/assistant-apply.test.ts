@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { classifyInstruction } from '@/lib/assistant-apply';
+import { classifyInstruction, safeSelectedBlockContext } from '@/lib/assistant-apply';
 import { chatComplete } from '@/lib/llm';
 
 vi.mock('@/lib/llm', () => ({ chatComplete: vi.fn() }));
@@ -9,6 +9,20 @@ const chatCompleteMock = vi.mocked(chatComplete);
 describe('classifyInstruction', () => {
   beforeEach(() => {
     chatCompleteMock.mockReset();
+  });
+
+  it('removes sensitive properties from selected-block context', () => {
+    expect(safeSelectedBlockContext({
+      type: 'button',
+      props: { text: 'Buy', href: '/checkout', webhook: 'https://example.test', customCss: 'color:red' },
+    })).toEqual({ type: 'button', props: { text: 'Buy' } });
+  });
+
+  it('bounds selected-block context values before sending them to the model', () => {
+    const props = Object.fromEntries(Array.from({ length: 45 }, (_, index) => [`prop${index}`, 'x'.repeat(2000)]));
+    const context = safeSelectedBlockContext({ type: 'heading', props });
+    expect(Object.keys(context?.props ?? {})).toHaveLength(40);
+    expect(context?.props.prop0).toHaveLength(1500);
   });
 
   it('returns a theme action from a valid LLM JSON reply', async () => {
@@ -83,5 +97,59 @@ describe('classifyInstruction', () => {
     expect(action.kind).toBe('theme');
     if (action.kind !== 'theme') throw new Error('expected theme action');
     expect(action.themeId).toBe('neon-night');
+  });
+
+  it('allows a selected-block patch only for existing changed properties', async () => {
+    chatCompleteMock.mockResolvedValue('{"kind":"patch","changes":{"text":"New headline","href":"https://bad.example","customCss":"color:red"},"summary":"Rewrite heading"}');
+    const action = await classifyInstruction('rewrite this heading', 'en', {
+      type: 'heading',
+      props: { text: 'Old headline', level: '2', href: '/safe', customCss: '' },
+    });
+    expect(action).toEqual({ kind: 'patch', changes: { text: 'New headline' }, summary: 'Rewrite heading' });
+  });
+
+  it('drops selected-block patch values that do not change', async () => {
+    chatCompleteMock.mockResolvedValue('{"kind":"patch","changes":{"text":"Same","level":"2"}}');
+    const action = await classifyInstruction('change this', 'en', {
+      type: 'heading',
+      props: { text: 'Same', level: '2' },
+    });
+    expect(action.kind).toBe('chat');
+  });
+
+  it('shortens selected text locally when the LLM is unavailable', async () => {
+    chatCompleteMock.mockResolvedValue(null);
+    const action = await classifyInstruction('сократи текст', 'ru', {
+      type: 'text',
+      props: { text: 'Раз два три четыре пять шесть' },
+    });
+    expect(action).toEqual({ kind: 'patch', changes: { text: 'Раз два три' }, summary: 'Сокращу текст выбранного блока' });
+  });
+
+  it('centers a selected block locally when the LLM is unavailable', async () => {
+    chatCompleteMock.mockResolvedValue(null);
+    const action = await classifyInstruction('выровняй по центру', 'ru', {
+      type: 'heading',
+      props: { text: 'Заголовок', align: 'left' },
+    });
+    expect(action).toEqual({ kind: 'patch', changes: { align: 'center' }, summary: 'Выровняю выбранный блок по центру' });
+  });
+
+  it('strengthens a selected CTA locally when the LLM is unavailable', async () => {
+    chatCompleteMock.mockResolvedValue(null);
+    const action = await classifyInstruction('усиль CTA', 'ru', {
+      type: 'button',
+      props: { text: 'Узнать' },
+    });
+    expect(action).toEqual({ kind: 'patch', changes: { text: 'Начать сейчас' }, summary: 'Сделаю призыв к действию более заметным' });
+  });
+
+  it('localises the CTA fallback to the selected locale', async () => {
+    chatCompleteMock.mockResolvedValue(null);
+    const action = await classifyInstruction('make CTA stronger', 'en', {
+      type: 'button',
+      props: { text: 'Learn more' },
+    });
+    expect(action).toEqual({ kind: 'patch', changes: { text: 'Get started' }, summary: 'Make the call to action more prominent' });
   });
 });

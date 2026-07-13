@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'assistant_unavailable' }, { status: 503 });
   }
 
-  let body: { messages?: { role: string; content: string }[]; lang?: string; conversationId?: string };
+  let body: { messages?: { role: string; content: string; attachments?: { url?: string; kind?: string; name?: string }[] }[]; lang?: string; conversationId?: string };
   try {
     body = await request.json();
   } catch {
@@ -66,10 +66,20 @@ export async function POST(request: Request) {
 
   // Sanitize history: keep the last 12 turns, cap each message length.
   const incoming = Array.isArray(body.messages) ? body.messages : [];
+  const appOrigin = new URL(request.url).origin;
   const history = incoming
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
     .slice(-12)
-    .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content.slice(0, 4000) }));
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content.slice(0, 4000),
+      attachments: Array.isArray(m.attachments)
+        ? m.attachments
+          .filter((a) => a?.kind === 'image' && typeof a.url === 'string' && /^\/(?:uploads|media)\//.test(a.url))
+          .slice(0, 3)
+          .map((a) => new URL(a.url!, appOrigin).toString())
+        : [],
+    }));
   if (history.length === 0) {
     return NextResponse.json({ error: 'No messages' }, { status: 400 });
   }
@@ -111,7 +121,18 @@ export async function POST(request: Request) {
         model,
         stream: true,
         temperature: 0.5,
-        messages: [{ role: 'system', content: system }, ...history],
+        messages: [
+          { role: 'system', content: system },
+          ...history.map((message) => ({
+            role: message.role,
+            content: message.attachments.length
+              ? [
+                  { type: 'text', text: message.content },
+                  ...message.attachments.map((url) => ({ type: 'image_url', image_url: { url, detail: 'low' } })),
+                ]
+              : message.content,
+          })),
+        ],
       }),
       signal: AbortSignal.timeout(30_000),
     });

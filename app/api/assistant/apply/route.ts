@@ -29,13 +29,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: t.tooManyRequests }, { status: 429 });
   }
   let instruction = '';
+  let selected: { type: string; props: Record<string, string> } | undefined;
+  let pageTitle = '';
   try {
-    instruction = String((await request.json())?.instruction ?? '').slice(0, 500);
+    const body = await request.json();
+    instruction = String(body?.instruction ?? '').slice(0, 500);
+    pageTitle = typeof body?.pageTitle === 'string' ? body.pageTitle.slice(0, 160) : '';
+    if (body?.selected && typeof body.selected.type === 'string' && body.selected.props && typeof body.selected.props === 'object') {
+      const props = Object.fromEntries(
+        Object.entries(body.selected.props as Record<string, unknown>)
+          .filter(([key, value]) => /^[a-zA-Z][a-zA-Z0-9]*$/.test(key) && typeof value === 'string')
+          .slice(0, 80)
+          .map(([key, value]) => [key, String(value).slice(0, 4000)]),
+      );
+      selected = { type: body.selected.type.slice(0, 80), props };
+    }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
   if (!instruction.trim()) return NextResponse.json({ error: t.badRequest }, { status: 400 });
 
-  const action = await classifyInstruction(instruction, locale);
+  const contextInstruction = pageTitle ? `${instruction}\n\nCurrent page title: ${pageTitle}` : instruction;
+  const action = await classifyInstruction(contextInstruction, locale, selected);
   return NextResponse.json({ ok: true, action });
 }

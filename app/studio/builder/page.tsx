@@ -1652,6 +1652,7 @@ function BuilderEditor() {
       if (mod && k === 'y') { e.preventDefault(); redo(); return; }
       // The rest are canvas shortcuts — skip them while editing text in a field.
       if (typing) return;
+      if (e.key === 'Escape' && aiPlan) { e.preventDefault(); setAiPlan(null); return; }
       if (mod && k === 'd' && selectedId) { e.preventDefault(); duplicate(selectedId); return; }
       if (mod && k === 'c' && selectedId) { e.preventDefault(); copyNode(selectedId); return; }
       if (mod && k === 'v' && clipboard.current) { e.preventDefault(); pasteNode(); return; }
@@ -1748,21 +1749,38 @@ function BuilderEditor() {
   // pricing (value-first).
   const [aiInstruction, setAiInstruction] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
-  const [aiPlan, setAiPlan] = useState<{ action: { kind: string; themeId?: string; label?: string; message?: string }; instruction: string } | null>(null);
-  const requestAiPlan = async () => {
-    const instruction = aiInstruction.trim();
+  const [aiPlan, setAiPlan] = useState<{ action: { kind: string; themeId?: string; label?: string; message?: string; changes?: Record<string, string>; summary?: string }; instruction: string; pageId?: string; selectedId?: string; before?: Record<string, string> } | null>(null);
+  useEffect(() => {
+    if ((aiPlan?.pageId && aiPlan.pageId !== pageId) || (aiPlan?.selectedId && aiPlan.selectedId !== selectedId)) setAiPlan(null);
+  }, [aiPlan?.pageId, aiPlan?.selectedId, pageId, selectedId]);
+
+  const requestAiPlan = async (instructionOverride?: string) => {
+    const instruction = (instructionOverride ?? aiInstruction).trim();
     if (!instruction || aiBusy) return;
+    setAiPlan(null);
     setAiBusy(true);
     setMsg('');
     try {
       const res = await fetch('/api/assistant/apply', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instruction }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+          instruction,
+          pageTitle: page?.title ?? '',
+          ...(selected ? { selected: { type: selected.type, props: selected.props } } : {}),
+        }),
       });
       if (res.status === 403) { window.location.href = '/pricing'; return; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.action) { setMsg(tr('Не удалось составить план ИИ.')); return; }
       if (data.action.kind === 'chat') { setMsg(data.action.message); return; }
-      setAiPlan({ action: data.action, instruction });
+      setAiPlan({
+        action: data.action,
+        instruction,
+        pageId: page?.id,
+        selectedId: data.action.kind === 'patch' ? selected?.id : undefined,
+        before: data.action.kind === 'patch' && selected
+          ? Object.fromEntries(Object.keys(data.action.changes ?? {}).map((key) => [key, selected.props[key] ?? '']))
+          : undefined,
+      });
     } catch {
       setMsg(tr('Ошибка ИИ. Попробуйте ещё раз.'));
     } finally {
@@ -1778,6 +1796,17 @@ function BuilderEditor() {
       if (a.kind === 'theme' && a.themeId) {
         setDoc((d) => ({ ...d, themeId: a.themeId!, ...(THEME_BTN_PRESETS[a.themeId!] ?? {}) }));
         setMsg(tr('Тема применена: {label}').replace('{label}', a.label || a.themeId));
+        setAiInstruction('');
+      } else if (a.kind === 'patch' && aiPlan.selectedId && a.changes) {
+        const current = page ? findNode(page.blocks, aiPlan.selectedId) : null;
+        const isStale = !current || Object.entries(aiPlan.before ?? {}).some(([key, value]) => (current.props[key] ?? '') !== value);
+        if (isStale) {
+          setMsg(tr('Блок изменился после формирования плана. Запросите новый diff перед применением.'));
+          setAiPlan(null);
+          return;
+        }
+        patch(aiPlan.selectedId, a.changes);
+        setMsg(tr('Изменения выбранного блока применены. Ctrl+Z отменит это изменение.'));
         setAiInstruction('');
       } else if (a.kind === 'regenerate') {
         const gr = await fetch('/api/generate-page', {
@@ -1994,16 +2023,52 @@ function BuilderEditor() {
       {/* In-builder AI agent bar */}
       <div className="flex items-center gap-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.06] to-transparent px-3 py-2 sm:px-4">
         <Wand2 className="h-4 w-4 shrink-0 text-primary" />
+        {page?.title && (
+          <span className="hidden max-w-36 shrink-0 truncate rounded-full border border-border/70 bg-card/60 px-2 py-1 text-[11px] text-muted-foreground xl:inline">
+            {page.title}
+          </span>
+        )}
+        {selected && (
+          <button
+            type="button"
+            onClick={() => setSelectedId(null)}
+            title={tr('Снять выделение')}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/15"
+          >
+            {NODE_LABELS[selected.type]} <X className="h-3 w-3" />
+          </button>
+        )}
+        {selected && (
+          <div className="hidden shrink-0 items-center gap-1 lg:flex">
+            {[
+              { label: tr('Сократить'), prompt: tr('Сократи текст, сохранив главный смысл.') },
+              { label: tr('По центру'), prompt: tr('Выровняй содержимое по центру.') },
+              { label: tr('Усилить CTA'), prompt: tr('Сделай призыв к действию более ясным и убедительным.') },
+            ].map((quick) => (
+              <button
+                key={quick.label}
+                type="button"
+                disabled={aiBusy}
+                onClick={() => { setAiInstruction(quick.prompt); void requestAiPlan(quick.prompt); }}
+                className="rounded-full border border-border/70 bg-card/60 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
+              >
+                {quick.label}
+              </button>
+            ))}
+          </div>
+        )}
         <input
           value={aiInstruction}
           onChange={(e) => setAiInstruction(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); requestAiPlan(); } }}
-          placeholder={tr('Попросите ИИ: «сделай неоновый ночной стиль» или «перепиши страницу под барбершоп»')}
+          placeholder={selected
+            ? tr('Опишите изменение выбранного блока, например: «сделай заголовок короче»')
+            : tr('Попросите ИИ: «сделай неоновый ночной стиль» или «перепиши страницу под барбершоп»')}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           disabled={aiBusy}
           aria-label={tr('AI-редактирование')}
         />
-        <Button size="sm" onClick={requestAiPlan} disabled={aiBusy || !aiInstruction.trim()} className="shrink-0 gap-1.5">
+        <Button size="sm" onClick={() => void requestAiPlan()} disabled={aiBusy || !aiInstruction.trim()} className="shrink-0 gap-1.5">
           {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
           <span className="hidden md:inline">{tr('Показать план')}</span>
         </Button>
@@ -2014,8 +2079,24 @@ function BuilderEditor() {
           <p className="min-w-0 flex-1 text-muted-foreground">
             {aiPlan.action.kind === 'theme'
               ? tr('План: изменю визуальную тему на «{label}».').replace('{label}', aiPlan.action.label || aiPlan.action.themeId || '')
-              : tr('План: перегенерирую структуру и контент текущей страницы по вашему описанию. Текущую версию можно отменить через Ctrl+Z.')}
+              : aiPlan.action.kind === 'patch'
+                ? aiPlan.action.summary || tr('План: обновлю выбранный блок.')
+                : tr('План: перегенерирую структуру и контент текущей страницы по вашему описанию. Текущую версию можно отменить через Ctrl+Z.')}
           </p>
+          {aiPlan.action.kind === 'patch' && (
+            <div className="w-full overflow-x-auto rounded-md border border-primary/20 bg-background/60 text-xs">
+              <div className="grid min-w-[420px] grid-cols-[110px_1fr_1fr] gap-2 border-b border-border/50 bg-muted/50 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <span>{tr('Свойство')}</span><span>{tr('Было')}</span><span>{tr('Станет')}</span>
+              </div>
+              {Object.entries(aiPlan.action.changes ?? {}).map(([key, value]) => (
+                <div key={key} className="grid min-w-[420px] grid-cols-[110px_1fr_1fr] gap-2 border-b border-border/50 px-2 py-1.5 last:border-b-0">
+                  <code className="font-semibold text-primary">{key}</code>
+                  <span className="truncate text-muted-foreground line-through">{aiPlan.before?.[key] || '—'}</span>
+                  <span className="truncate font-medium">{value || '—'}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <Button size="sm" onClick={applyAiPlan} disabled={aiBusy} className="gap-1.5">
             {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}{tr('Применить план')}
           </Button>

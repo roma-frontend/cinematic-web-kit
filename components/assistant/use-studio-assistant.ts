@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from '@/hooks/use-locale';
 import { ASSISTANT_ROUTES, ASSISTANT_DATA_KEYS, type AssistantRole } from '@/lib/assistant-routes';
 import type { MentionEntity } from '@/lib/assistant-commands';
+import type { AssistantTask, AssistantTaskStepStatus } from '@/lib/assistant-task-core';
 import { sitePreviewUrl, type MarkdownTable } from '@/lib/assistant-canvas';
 
 import type { Locale } from '@/lib/seo';
@@ -18,10 +19,17 @@ import {
   type ActionResult,
 } from '@/lib/assistant-action-tags';
 
+export interface AssistantAttachment {
+  url: string;
+  kind: 'image' | 'video';
+  name: string;
+}
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  attachments?: AssistantAttachment[];
   suggestions?: string[];
   route?: string;
   createdAt?: number;
@@ -154,6 +162,8 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<AssistantAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -162,6 +172,7 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const [streamStatus, setStreamStatus] = useState<'idle' | 'thinking' | 'writing' | 'fetching'>('idle');
   const [memories, setMemories] = useState<MemoryFact[]>([]);
   const [entities, setEntities] = useState<MentionEntity[]>([]);
+  const [tasks, setTasks] = useState<AssistantTask[]>([]);
   const [canvas, setCanvas] = useState<CanvasState>({ type: 'none' });
   const [canvasBusy, setCanvasBusy] = useState(false);
   const recRef = useRef<SR | null>(null);
@@ -208,6 +219,7 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const newChat = useCallback(() => {
     setCurrentId(null);
     setMessages([]);
+    setAttachments([]);
     setError(null);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
@@ -303,7 +315,7 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
       const res = await fetch('/api/assistant', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: history.map((m) => ({ role: m.role, content: m.content })),
+          messages: history.map((m) => ({ role: m.role, content: m.content, attachments: m.attachments })),
           lang: detectLanguage(firstText),
           conversationId: convId ?? undefined,
         }),
@@ -451,16 +463,42 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     }
   }, []);
 
+  const uploadAttachment = useCallback(async (file: File) => {
+    if (isUploading) return;
+    if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
+      setError('upload_error');
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url || data.kind !== 'image') throw new Error('upload_failed');
+      setAttachments((prev) => [...prev, { url: data.url as string, kind: 'image' as const, name: file.name }].slice(0, 3));
+    } catch {
+      setError('upload_error');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [isUploading]);
+
+  const removeAttachment = useCallback((url: string) => {
+    setAttachments((prev) => prev.filter((attachment) => attachment.url !== url));
+  }, []);
+
   const send = useCallback(async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && attachments.length === 0) || isLoading || isUploading) return;
     setError(null);
-    const userMsg: AssistantMessage = { id: `u${Date.now()}`, role: 'user', content: trimmed, createdAt: Date.now() };
+    const userMsg: AssistantMessage = { id: `u${Date.now()}`, role: 'user', content: trimmed || 'Проанализируй это изображение.', attachments, createdAt: Date.now() };
     const history = [...messages, userMsg];
     setMessages(history);
     setInput('');
-    await runStream(history, trimmed);
-  }, [isLoading, messages, runStream]);
+    setAttachments([]);
+    await runStream(history, userMsg.content);
+  }, [attachments, isLoading, isUploading, messages, runStream]);
 
   // Inline edit of a sent user message: replace its text, drop everything after
   // it, and regenerate the assistant reply from that point.
@@ -526,6 +564,43 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, actionResult: { ok: false, message: 'cancelled' } } : m)));
   }, []);
 
+  const loadTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assistant/tasks');
+      if (res.ok) setTasks((await res.json()).tasks ?? []);
+    } catch { /* tasks stay empty offline */ }
+  }, []);
+
+  const createTask = useCallback(async (title: string, steps: string[]) => {
+    if (tasks.some((task) => task.title === title && task.status !== 'cancelled')) return;
+    try {
+      const res = await fetch('/api/assistant/tasks', { 
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, steps }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.task) setTasks((prev) => [data.task, ...prev]);
+    } catch { /* task creation can be retried */ }
+  }, [tasks]);
+
+  const cancelTask = useCallback(async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/assistant/tasks?id=${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+      if (res.ok) setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    } catch { /* task remains visible until next refresh */ }
+  }, []);
+
+  const updateTaskStep = useCallback(async (taskId: string, stepId: string, status: AssistantTaskStepStatus) => {
+    try {
+      const res = await fetch('/api/assistant/tasks', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, stepId, status }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.task) setTasks((prev) => prev.map((task) => task.id === taskId ? data.task : task));
+    } catch { /* keep current UI state until next refresh */ }
+  }, []);
+
   const loadEntities = useCallback(async () => {
     try {
       const res = await fetch('/api/assistant/entities');
@@ -534,16 +609,21 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   }, []);
 
   // Load conversation history once on mount.
-  useEffect(() => { void loadConversations(); void loadMemories(); void loadEntities(); }, [loadConversations, loadMemories, loadEntities]);
+  useEffect(() => { void loadConversations(); void loadMemories(); void loadEntities(); void loadTasks(); }, [loadConversations, loadMemories, loadEntities, loadTasks]);
 
   return {
-    messages, conversations, currentId, input, setInput, isLoading, loadingConversation, isListening, unavailable, error,
+    messages, conversations, currentId, input, setInput, attachments, isUploading, uploadAttachment, removeAttachment, isLoading, loadingConversation, isListening, unavailable, error,
     voiceSupported, inputRef, send, editMessage, regenerate, stop, navigate, startVoice,
     loadConversations, newChat, selectConversation, rename, remove,
     memories, loadMemories, forgetMemory, clearMemory,
     sendFeedback,
     streamStatus,
     entities,
+    tasks,
+    loadTasks,
+    createTask,
+    cancelTask,
+    updateTaskStep,
     confirmAction,
     dismissAction,
     // Fullscreen canvas workspace
