@@ -35,6 +35,11 @@ function client(): AwsClient {
 
 const endpoint = () => `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}`;
 
+// Object keys include a generated id or media filename version, so immutable
+// browser caching is safe and prevents repeat visits from re-downloading large
+// hero videos, posters and uploads from the public R2 bucket.
+export const R2_IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
 export async function r2Put(key: string, body: Buffer, contentType: string): Promise<void> {
   const url = `${endpoint()}/${encodeURI(key)}`;
   const bytes = Buffer.from(body);
@@ -46,7 +51,7 @@ export async function r2Put(key: string, body: Buffer, contentType: string): Pro
   const signed = await client().sign(url, {
     method: 'PUT',
     body: new Uint8Array(bytes),
-    headers: { 'content-type': contentType },
+    headers: { 'content-type': contentType, 'cache-control': R2_IMMUTABLE_CACHE_CONTROL },
   });
   const headers: Record<string, string> = { 'content-length': String(bytes.length) };
   signed.headers.forEach((value, name) => { headers[name] = value; });

@@ -94,14 +94,14 @@ export function StickyShowcase({
                             src={shot.dark}
                             alt={s.title}
                             fill
-                            sizes="(min-width: 1024px) 50vw, 100vw"
+                            sizes="(min-width: 1280px) 574px, (min-width: 1024px) 45vw, 100vw"
                             className="hidden object-cover object-top dark:block"
                           />
                           <Image
                             src={shot.light}
                             alt={s.title}
                             fill
-                            sizes="(min-width: 1024px) 50vw, 100vw"
+                            sizes="(min-width: 1280px) 574px, (min-width: 1024px) 45vw, 100vw"
                             className="block object-cover object-top dark:hidden"
                           />
                         </div>

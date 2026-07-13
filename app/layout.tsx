@@ -93,10 +93,18 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
+  let mediaOrigin: string | null = null;
+  try {
+    mediaOrigin = process.env.NEXT_PUBLIC_MEDIA_BASE_URL ? new URL(process.env.NEXT_PUBLIC_MEDIA_BASE_URL).origin : null;
+  } catch {
+    /* malformed media URL: render normally without a resource hint */
+  }
   const initialTheme = await initialThemeChoice();
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        {mediaOrigin && <link rel="preconnect" href={mediaOrigin} crossOrigin="anonymous" />}
+        {mediaOrigin && <link rel="dns-prefetch" href={mediaOrigin} />}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }}

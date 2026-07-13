@@ -33,11 +33,12 @@ if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET |
 const PUBLIC_BASE = R2_PUBLIC_BASE_URL.replace(/\/$/, '');
 const endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}`;
 const aws = new AwsClient({ accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY, region: 'auto', service: 's3' });
+const CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 async function r2Put(key, body, contentType) {
   const url = `${endpoint}/${encodeURI(key)}`;
   const bytes = Buffer.from(body);
-  const signed = await aws.sign(url, { method: 'PUT', body: new Uint8Array(bytes), headers: { 'content-type': contentType } });
+  const signed = await aws.sign(url, { method: 'PUT', body: new Uint8Array(bytes), headers: { 'content-type': contentType, 'cache-control': CACHE_CONTROL } });
   const headers = { 'content-length': String(bytes.length) };
   signed.headers.forEach((v, n) => { headers[n] = v; });
   const u = new URL(url);

@@ -50,7 +50,15 @@ export function LazyVideo({
   const [muted, setMuted] = useState(true);
   const reducedMotion = usePrefersReducedMotion();
   const [motionOptIn, setMotionOptIn] = useState(false);
-  const showVideo = visible && (!reducedMotion || motionOptIn);
+  const [heroVideoReady, setHeroVideoReady] = useState(!priority);
+  // Keep the above-the-fold hero poster as the LCP element before mounting the
+  // video. Deferring decode until after the first paint avoids LCP render delay.
+  useEffect(() => {
+    if (!priority) return;
+    const timer = window.setTimeout(() => setHeroVideoReady(true), 2500);
+    return () => window.clearTimeout(timer);
+  }, [priority]);
+  const showVideo = heroVideoReady && visible && (!reducedMotion || motionOptIn);
 
   useEffect(() => {
     const el = ref.current;
