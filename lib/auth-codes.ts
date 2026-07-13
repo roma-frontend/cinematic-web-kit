@@ -75,6 +75,46 @@ export function createLoginOtp(user: Pick<User, 'id' | 'email'>): { challengeId:
   return { challengeId, code };
 }
 
+/** Issue a registration-verification code. The account remains inactive until
+ * the code is successfully redeemed. */
+export function createRegistrationOtp(user: Pick<User, 'id' | 'email'>): { challengeId: string; code: string } {
+  cleanupAuthCodes();
+  invalidateFor(user.id, 'registration_otp');
+  const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+  const challengeId = newId('reg');
+  getDb()
+    .insert(authCodes)
+    .values({
+      id: challengeId,
+      userId: user.id,
+      email: user.email,
+      purpose: 'registration_otp',
+      codeHash: sha256(code),
+      attempts: 0,
+      expiresAt: new Date(Date.now() + OTP_TTL_MS),
+      consumedAt: null,
+      createdAt: new Date(),
+    })
+    .run();
+  return { challengeId, code };
+}
+
+/** Verify a registration code. Kept separate so login challenges cannot activate accounts. */
+export function verifyRegistrationOtp(challengeId: string, code: string): OtpVerdict {
+  const db = getDb();
+  const row = db.select().from(authCodes).where(eq(authCodes.id, challengeId)).get();
+  if (!row || row.purpose !== 'registration_otp' || row.consumedAt) return { status: 'expired' };
+  if (row.expiresAt.getTime() < Date.now()) return { status: 'expired' };
+  if (row.attempts >= MAX_OTP_ATTEMPTS) return { status: 'too_many' };
+  if (!/^\d{6}$/.test(code) || !hashEquals(sha256(code), row.codeHash)) {
+    const attempts = row.attempts + 1;
+    db.update(authCodes).set({ attempts }).where(eq(authCodes.id, row.id)).run();
+    return attempts >= MAX_OTP_ATTEMPTS ? { status: 'too_many' } : { status: 'invalid', attemptsLeft: MAX_OTP_ATTEMPTS - attempts };
+  }
+  db.update(authCodes).set({ consumedAt: new Date() }).where(eq(authCodes.id, row.id)).run();
+  return { status: 'ok', userId: row.userId };
+}
+
 export type OtpVerdict =
   | { status: 'ok'; userId: string }
   | { status: 'invalid'; attemptsLeft: number }

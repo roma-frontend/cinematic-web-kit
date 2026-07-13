@@ -120,10 +120,20 @@ export async function sendEmail(msg: EmailMessage): Promise<SendResult> {
       ? [sendViaBrevo, sendViaResend]
       : [sendViaResend, sendViaBrevo];
 
-  let last: SendResult = { ok: false, provider: 'none', error: 'no provider' };
+  const failures: SendResult[] = [];
   for (const attempt of order) {
-    last = await attempt(msg);
-    if (last.ok) return last;
+    const result = await attempt(msg);
+    if (result.ok) return result;
+    failures.push(result);
   }
-  return last;
+  // Preserve the configured provider's response. The fallback provider may
+  // simply be absent, which must not hide the actual delivery failure.
+  const relevant = failures.find((result) => result.error !== 'not configured') ?? failures.at(-1) ?? {
+    ok: false,
+    provider: 'none',
+    error: 'no provider',
+  };
+  const error = failures.map((result) => `${result.provider}: ${result.error ?? 'unknown error'}`).join('; ');
+  console.error(`[email] delivery failed: ${error}`);
+  return { ...relevant, error };
 }

@@ -23,21 +23,20 @@ function useAuthSubmit(mode: 'login' | 'register') {
   const router = useRouter();
   const search = useSearchParams();
   const t = authDict(useLocale().locale);
-  return async (payload: Record<string, string>): Promise<string | null> => {
+  return async (payload: Record<string, string>): Promise<{ error?: string; data?: Record<string, string> }> => {
     try {
       const res = await fetch(`/api/auth/${mode}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) return data.error || t.genericError;
+      if (!res.ok) return { error: data.error || t.genericError };
+      if (data.verificationRequired) return { data };
       const next = search.get('next');
       router.push(next && next.startsWith('/') ? next : '/dashboard');
       router.refresh();
-      return null;
+      return {};
     } catch {
-      return t.networkError;
+      return { error: t.networkError };
     }
   };
 }
@@ -286,6 +285,8 @@ function RegisterWizard() {
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [challenge, setChallenge] = useState('');
+  const [code, setCode] = useState('');
   const pwScore = useMemo(() => passwordScore(form.password), [form.password]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -316,8 +317,24 @@ function RegisterWizard() {
     for (const s of [0, 1]) { const err = validate(s); if (err) { setError(err); setStep(s); return; } }
     setBusy(true);
     setError('');
-    const err = await submitAuth({ name: form.name.trim(), email: form.email.trim(), password: form.password });
-    if (err) { setError(err); setBusy(false); }
+    const result = await submitAuth({ name: form.name.trim(), email: form.email.trim(), password: form.password });
+    if (result.error) { setError(result.error); setBusy(false); return; }
+    if (result.data?.verificationRequired) {
+      setChallenge(result.data.challenge ?? '');
+      setBusy(false);
+    }
+  };
+
+  const verifyRegistration = async () => {
+    if (code.length !== 6 || busy) return;
+    setBusy(true); setError('');
+    try {
+      const res = await fetch('/api/auth/register/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ challenge, code }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || t.genericError); setCode(''); setBusy(false); return; }
+      const next = new URLSearchParams(window.location.search).get('next');
+      window.location.assign(next?.startsWith('/') ? next : '/dashboard');
+    } catch { setError(t.networkError); setBusy(false); }
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -337,7 +354,21 @@ function RegisterWizard() {
         <p className="mt-0.5 text-xs text-muted-foreground">{STEP_DESCS[step]}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {challenge ? (
+        <form onSubmit={(e) => { e.preventDefault(); void verifyRegistration(); }} className="space-y-4">
+          <p className="text-center text-sm text-muted-foreground">{t.otpSentTo} {form.email}</p>
+          <div className="flex justify-center">
+            <InputOTP maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={code} onChange={setCode} onComplete={(value) => { setCode(value); void verifyRegistration(); }} disabled={busy} autoFocus>
+              <InputOTPGroup><InputOTPSlot index={0} /><InputOTPSlot index={1} /><InputOTPSlot index={2} /></InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup><InputOTPSlot index={3} /><InputOTPSlot index={4} /><InputOTPSlot index={5} /></InputOTPGroup>
+            </InputOTP>
+          </div>
+          <p className="text-center text-xs text-muted-foreground">{t.otpHint}</p>
+          {error && <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-500">{error}</div>}
+          <Button type="submit" disabled={busy || code.length !== 6} size="lg" className="w-full gap-2">{busy && <Loader2 className="h-4 w-4 animate-spin" />}{t.verify}</Button>
+        </form>
+      ) : <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative -mx-1.5 overflow-hidden px-1.5 py-1">
           <AnimatePresence mode="wait" initial={false} custom={dir}>
             <motion.div
@@ -442,9 +473,9 @@ function RegisterWizard() {
             </Button>
           )}
         </div>
-      </form>
+      </form>}
 
-      {step === 0 && (
+      {!challenge && step === 0 && (
         <p className="mt-5 text-center text-sm text-muted-foreground">
           {t.haveAccount}{' '}
           <Link href="/login" data-testid="to-login" className="font-medium text-primary hover:underline">

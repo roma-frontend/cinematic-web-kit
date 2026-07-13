@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createUser, createSession, findUserByEmail, rateLimit, requestMeta, setSessionCookie } from '@/lib/auth';
+import { eq } from 'drizzle-orm';
+import { createUser, findUserByEmail, rateLimit } from '@/lib/auth';
+import { createRegistrationOtp, maskEmail, OTP_TTL_MIN } from '@/lib/auth-codes';
+import { getDb, users } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
-import { notifyRegistration } from '@/lib/notify';
+import { sendEmail } from '@/lib/email';
+import { renderLoginOtpEmail } from '@/lib/email-templates';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
 
@@ -31,14 +35,25 @@ export async function POST(request: Request) {
   if (password.length < 8) return NextResponse.json({ error: t.passwordMin8Dot }, { status: 400 });
   if (name.length > 80 || email.length > 254) return NextResponse.json({ error: t.dataTooLong }, { status: 400 });
 
-  if (findUserByEmail(email)) {
+  const existingUser = findUserByEmail(email);
+  if (existingUser?.isActive) {
     return NextResponse.json({ error: t.emailTakenDot }, { status: 409 });
   }
 
-  const user = createUser(email, password, name);
-  const { token, expiresAt } = createSession(user.id, requestMeta(request));
-  await setSessionCookie(token, expiresAt);
-  recordAudit({ id: user.id, email: user.email }, 'auth.register', user.email, `ip=${ip}`);
-  notifyRegistration({ name: user.name, email: user.email, role: user.role });
-  return NextResponse.json({ ok: true, user: { id: user.id, email: user.email, name: user.name } });
+  // A previous attempt may have created an inactive account but failed before
+  // the user received or entered the code. Re-issue instead of stranding them.
+  const user = existingUser ?? createUser(email, password, name);
+  if (!existingUser) {
+    getDb().update(users).set({ isActive: false }).where(eq(users.id, user.id)).run();
+    user.isActive = false;
+  }
+  const { challengeId, code } = createRegistrationOtp(user);
+  const locale = await getLocale();
+  const mail = renderLoginOtpEmail({ name: user.name, code, ttlMinutes: OTP_TTL_MIN }, locale);
+  const sent = await sendEmail({ to: user.email, ...mail });
+  if (!sent.ok) {
+    return NextResponse.json({ error: 'Не удалось отправить код подтверждения. Попробуйте позже.' }, { status: 502 });
+  }
+  recordAudit({ id: user.id, email: user.email }, 'auth.register_pending_verification', user.email, `ip=${ip} provider=${sent.provider}`);
+  return NextResponse.json({ ok: true, verificationRequired: true, challenge: challengeId, email: maskEmail(user.email) });
 }
