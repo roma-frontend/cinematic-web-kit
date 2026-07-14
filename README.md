@@ -8,7 +8,7 @@ It ships with a **media pipeline** that does the boring part for you:
 prompt → AI video (muapi.ai) → download → optimize to .webm + poster → write data/media.json → render
 ```
 
-You describe the clip in a prompt, run one command, and it appears in a polished section on the page.
+You describe the clip in a prompt, run one command, and it appears in a polished section on the page..
 
 ---
 
