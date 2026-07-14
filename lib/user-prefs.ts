@@ -15,14 +15,21 @@ export type Prefs = Record<string, PrefValue>;
 export const MAX_PREFS_BYTES = 32 * 1024;
 export const MAX_KEY_LENGTH = 120;
 
-/** All stored preferences for a user ({} when none were ever saved). */
+/**
+ * All stored preferences for a user ({} when none were ever saved).
+ *
+ * Preferences are non-critical UI state. A read-only filesystem, a temporarily
+ * locked database, or an older production database must not take down the root
+ * Server Component render, so reads deliberately degrade to platform defaults.
+ */
 export function getUserPrefs(userId: string): Prefs {
-  const row = getDb().select().from(userPrefs).where(eq(userPrefs.userId, userId)).get();
-  if (!row) return {};
   try {
+    const row = getDb().select().from(userPrefs).where(eq(userPrefs.userId, userId)).get();
+    if (!row) return {};
     const parsed = JSON.parse(row.prefs);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch {
+  } catch (error) {
+    console.error('Failed to read user preferences; using defaults.', error);
     return {};
   }
 }

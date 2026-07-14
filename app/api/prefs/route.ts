@@ -32,7 +32,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const result = patchUserPrefs(user.id, patch);
-  if (typeof result === 'string') return NextResponse.json({ error: result }, { status: 400 });
-  return NextResponse.json({ ok: true, prefs: result });
+  try {
+    const result = patchUserPrefs(user.id, patch);
+    if (typeof result === 'string') return NextResponse.json({ error: result }, { status: 400 });
+    return NextResponse.json({ ok: true, prefs: result });
+  } catch (error) {
+    console.error('Failed to persist user preferences.', error);
+    return NextResponse.json({ error: 'Preferences are temporarily unavailable' }, { status: 503 });
+  }
 }
