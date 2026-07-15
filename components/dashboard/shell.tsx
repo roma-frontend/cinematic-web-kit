@@ -464,7 +464,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
 
         <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
           {banner}
-          <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+          <div className={pathname === '/dashboard/database' ? 'w-full p-3 sm:p-4 lg:p-5' : 'mx-auto max-w-6xl p-4 sm:p-6 lg:p-8'}>
             {/* Smooth content reveal on every sidebar navigation. Keyed by the
                 path so each page remounts and replays the entrance (same feel
                 as the tenant account tabs). */}

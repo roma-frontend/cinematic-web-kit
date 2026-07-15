@@ -4,6 +4,8 @@ import { listTables } from '@/lib/db-admin';
 import { PageHeader } from '@/components/dashboard/ui';
 import { DbBrowser } from '@/components/dashboard/db-browser';
 import { StoragePanel } from '@/components/dashboard/storage-panel';
+import { DbSqlConsole } from '@/components/dashboard/db-sql-console';
+import { DbToolbox } from '@/components/dashboard/db-toolbox';
 import { getLocale } from '@/lib/i18n';
 import { staffDict } from '@/lib/staff-dict';
 
@@ -24,6 +26,8 @@ export default async function DatabasePage() {
     <>
       <PageHeader title={t.dbTitle} description={t.dbSubtitle} />
       <StoragePanel />
+      <DbToolbox />
+      <DbSqlConsole />
       <DbBrowser tables={listTables()} />
     </>
   );
