@@ -112,7 +112,7 @@ export function TelegramLink() {
 
   return (
     <div className="mt-6 rounded-2xl border border-border/60 bg-card/50 p-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${linked ? 'bg-[#229ED9]/15 text-[#229ED9]' : 'bg-muted text-muted-foreground'}`}>
             <Send className="h-5 w-5" />

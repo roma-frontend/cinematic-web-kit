@@ -429,7 +429,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold tracking-tight">
+          <span className="hidden sm:inline-block text-sm font-semibold tracking-tight">
             {gated ? t.gatedTitle : (() => {
               if (pathname === HUB.staff) return t.sidebar.groupStaff;
               if (pathname === HUB.super) return t.sidebar.groupSuper;
