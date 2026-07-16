@@ -27,10 +27,22 @@ export type UiDict = {
     account: string;
     allThemes: string;
     openDashboard: string;
+    cancel: string;
+    confirm: string;
   };
   roles: { superadmin: string; admin: string };
   header: { tagline: string; noName: string };
-  a11y: { openMenu: string; closeMenu: string; language: string; skipContent: string; toggleTheme: string };
+  a11y: {
+    openMenu: string;
+    closeMenu: string;
+    language: string;
+    skipContent: string;
+    toggleTheme: string;
+    unmute: string;
+    mute: string;
+    playVideo: string;
+    beforeAfter: string;
+  };
   palette: {
     open: string;
     placeholder: string;
@@ -103,10 +115,22 @@ const ru: UiDict = {
     account: 'Аккаунт',
     allThemes: 'Все темы',
     openDashboard: 'Открыть дашборд',
+    cancel: 'Отмена',
+    confirm: 'Подтвердить',
   },
   roles: { superadmin: 'Суперадмин', admin: 'Админ' },
   header: { tagline: 'ИИ-конструктор сайтов', noName: 'Без имени' },
-  a11y: { openMenu: 'Открыть меню', closeMenu: 'Закрыть меню', language: 'Язык', skipContent: 'Перейти к содержимому', toggleTheme: 'Переключить тему' },
+  a11y: {
+    openMenu: 'Открыть меню',
+    closeMenu: 'Закрыть меню',
+    language: 'Язык',
+    skipContent: 'Перейти к содержимому',
+    toggleTheme: 'Переключить тему',
+    unmute: 'Включить звук',
+    mute: 'Выключить звук',
+    playVideo: 'Воспроизвести видео',
+    beforeAfter: 'Сравнение до/после',
+  },
   palette: {
     open: 'Командное меню',
     placeholder: 'Команда или поиск…',
@@ -183,10 +207,22 @@ const en: UiDict = {
     account: 'Account',
     allThemes: 'All themes',
     openDashboard: 'Open dashboard',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
   },
   roles: { superadmin: 'Superadmin', admin: 'Admin' },
   header: { tagline: 'AI website builder', noName: 'No name' },
-  a11y: { openMenu: 'Open menu', closeMenu: 'Close menu', language: 'Language', skipContent: 'Skip to content', toggleTheme: 'Toggle theme' },
+  a11y: {
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    language: 'Language',
+    skipContent: 'Skip to content',
+    toggleTheme: 'Toggle theme',
+    unmute: 'Unmute',
+    mute: 'Mute',
+    playVideo: 'Play video',
+    beforeAfter: 'Before/after comparison',
+  },
   palette: {
     open: 'Command menu',
     placeholder: 'Type a command or search…',
@@ -263,10 +299,22 @@ const hy: UiDict = {
     account: 'Հաշիվ',
     allThemes: 'Բոլոր թեմաները',
     openDashboard: 'Բացել վահանակը',
+    cancel: 'Չեղարկել',
+    confirm: 'Հաստատել',
   },
   roles: { superadmin: 'Գերադմին', admin: 'Ադմին' },
   header: { tagline: 'AI կայքերի կառուցիչ', noName: 'Առանց անվան' },
-  a11y: { openMenu: 'Բացել ընտրացանկը', closeMenu: 'Փակել ընտրացանկը', language: 'Լեզու', skipContent: 'Անցնել բովանդակությանը', toggleTheme: 'Փոխել թեման' },
+  a11y: {
+    openMenu: 'Բացել ընտրացանկը',
+    closeMenu: 'Փակել ընտրացանկը',
+    language: 'Լեզու',
+    skipContent: 'Անցնել բովանդակությանը',
+    toggleTheme: 'Փոխել թեման',
+    unmute: 'Միացնել ձայնը',
+    mute: 'Անջատել ձայնը',
+    playVideo: 'Նվագարկել տեսանյութը',
+    beforeAfter: 'Համեմատություն՝ առաջ/հետո',
+  },
   palette: {
     open: 'Հրամանների ընտրացանկ',
     placeholder: 'Հրաման կամ որոնում…',

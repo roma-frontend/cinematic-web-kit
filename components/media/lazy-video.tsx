@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
+import { useLocale } from '@/hooks/use-locale';
+import { ui } from '@/lib/ui-dict';
 
 /** Convert an "16:9" aspect string to a CSS aspect-ratio value. */
 function toAspect(ratio?: string) {
@@ -51,6 +53,7 @@ export function LazyVideo({
   const reducedMotion = usePrefersReducedMotion();
   const [motionOptIn, setMotionOptIn] = useState(false);
   const [heroVideoReady, setHeroVideoReady] = useState(!priority);
+  const a11y = ui(useLocale().locale).a11y;
   // Keep the above-the-fold hero poster as the LCP element before mounting the
   // video. Deferring decode until after the first paint avoids LCP render delay.
   useEffect(() => {
@@ -135,7 +138,7 @@ export function LazyVideo({
             <button
               type="button"
               onClick={toggleSound}
-              aria-label={muted ? 'Включить звук' : 'Выключить звук'}
+              aria-label={muted ? a11y.unmute : a11y.mute}
               className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60"
             >
               {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -166,7 +169,7 @@ export function LazyVideo({
             <button
               type="button"
               onClick={() => setMotionOptIn(true)}
-              aria-label="Воспроизвести видео"
+              aria-label={a11y.playVideo}
               className="absolute inset-0 z-10 flex items-center justify-center"
             >
               <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur transition-colors hover:bg-black/65">

@@ -240,8 +240,8 @@ export function DbBrowser({ tables }: { tables: { name: string; count: number }[
   );
 
   const tablesPanel = (withSearch: boolean) => (
-    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card/90 p-2 shadow-xl shadow-black/5 backdrop-blur-xl lg:h-max">
-      <div className="mb-2 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-3">
+    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card/90 shadow-xl shadow-black/5 backdrop-blur-xl lg:h-max">
+      <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20"><Database className="h-4 w-4" /></span>
         <div><p className="text-sm font-extrabold">Database</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground">{counts.length} tables</p></div>
       </div>
@@ -251,7 +251,7 @@ export function DbBrowser({ tables }: { tables: { name: string; count: number }[
           <Input value={tableFilter} onChange={(e) => setTableFilter(e.target.value)} placeholder={t.searchTables} className="h-9 pl-10" />
         </div>
       )}
-      <ul className={`space-y-0.5 overflow-y-auto ${full ? 'max-h-[calc(100dvh-200px)]' : 'max-h-[75dvh]'}`}>
+      <ul className={`space-y-0.5 overflow-y-auto p-2 ${full ? 'max-h-[calc(100dvh-200px)]' : 'max-h-[75dvh]'}`}>
         {shownTables.map((c) => (
           <li key={c.name}>
             <button onClick={() => selectTable(c.name)}
@@ -377,7 +377,7 @@ function InlineCell({ column, value, rowid, secret, t, onSave }: {
       title={column.pk ? t.pkReadonly : secret ? '' : String(value ?? '')}
       className={`group/cell max-w-[300px] truncate border-b border-r border-border/50 px-4 py-3 font-mono text-xs outline-none transition-all ${column.pk ? 'cursor-default bg-amber-500/[0.025]' : 'cursor-text hover:bg-primary/[0.08] focus:bg-primary/[0.08] focus:ring-2 focus:ring-inset focus:ring-primary/30'}`}
     >
-      <span className={`inline-flex max-w-full items-center rounded-lg px-1.5 py-0.5 transition-all ${column.pk ? 'font-semibold text-amber-700 dark:text-amber-300' : 'group-hover/cell:bg-background group-hover/cell:shadow-sm'}`}>
+      <span className={`inline-flex max-w-full items-center rounded-lg px-1.5 py-0.5 transition-all line-clamp-1 ${column.pk ? 'font-semibold text-amber-700 dark:text-amber-300' : 'group-hover/cell:bg-background group-hover/cell:shadow-sm'}`}>
         {secret ? <span className="tracking-widest text-muted-foreground">••••••</span> : format(value)}
       </span>
     </td>

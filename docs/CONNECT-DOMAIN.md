@@ -1,94 +1,52 @@
-# Подключение домена — чек-лист «всё уже готово»
+# Подключение домена
 
-Код полностью подготовлен: и адреса сайта (canonical/SEO/sitemap/OG), и почта
-(`info@`, `support@`, `sales@`), и контакты в футере завязаны на **переменные
-окружения**. Когда появится домен — просто выполни шаги ниже, редактировать код
-не нужно.
-
-Пусть домен = `example.com` (замени на свой).
-
----
+> Эта инструкция описывает, как привязать собственный домен к приложению и
+> настроить HTTPS для него. Используется либо Fly.io + Cloudflare, либо выделенный
+> сервер с Caddy.
 
 ## 1. Домен → приложение Fly
 
-```bash
-fly certs add example.com -a builder-studio
-fly certs add www.example.com -a builder-studio   # опционально
-```
+1. Добавь домен в приложение:
+   ```bash
+   fly certs add example.com
+   fly certs add www.example.com
+   ```
+2. Проверь, какие DNS-записи ожидает Fly:
+   ```bash
+   fly certs show example.com
+   ```
+3. В панели регистратора / Cloudflare пропиши записи:
+   - ** apex ** (`example.com`) — `A` и `AAAA` на IP машины;
+   - **`www`** — `CNAME` на `<app>.fly.dev` (или на IP, если используешь Caddy/Nginx).
+4. Подожди, пока DNS растечётся, и убедись, что сертификат выдан:
+   ```bash
+   fly certs show example.com
+   ```
+5. Обнови `NEXT_PUBLIC_APP_HOST` в `fly.toml` на реальный хост, иначе ссылки
+   поддоменов тенантов будут формироваться неправильно.
 
-Fly покажет нужные DNS-записи. Пропиши их у регистратора / в Cloudflare:
-- `A` / `AAAA` (или `CNAME` на `builder-studio.fly.dev`) на apex/`www`.
-- Дождись, пока `fly certs show example.com` покажет валидный TLS-сертификат.
+## 2. HTTPS и сертификаты через Caddy
 
-> Если DNS ведёшь через Cloudflare — поставь запись в режим **DNS only (серое
-> облако)** на время выпуска сертификата, потом можно включить проксирование.
+Если деплой идёт на собственном VM, Caddy может взять выдачу TLS на себя:
 
-## 2. Хост приложения
+- Запусти приложение на `127.0.0.1:3000`;
+- Подними Caddy с конфигом из `deploy/Caddyfile`:
+  ```bash
+  sudo caddy run --config deploy/Caddyfile
+  ```
+- Caddy сам получит Let's Encrypt для основного хоста и wildcard
+  `*.your-host`, а также on-demand TLS для доменов тенантов через
+  `/api/tls-check?domain=<host>`.
+- DNS должна уже вести на внешний IP этого сервера.
 
-В `fly.toml` замени оба значения:
+## 3. Почта info@ / support@
 
-```toml
-NEXT_PUBLIC_APP_HOST = "example.com"   # было builder-studio.fly.dev (2 места: [build.args] и [env])
-```
+Чтобы принимать письма на адреса вида `info@example.com`, настрой **Cloudflare
+Email Routing**: создай правила для нужных получателей и укажи внешний почтовый
+ящик (Gmail, Яндекс и т.д.), на который будет пересылаться входящая почта.
 
-Это автоматически чинит: canonical-ссылки, `sitemap.xml`, `robots.txt`,
-OpenGraph/Twitter, ссылки на поддомены арендаторов и redirect-URL биллинга.
+## 4. Проверка
 
-## 3. Почта info@ / support@ / sales@
-
-Два независимых механизма — включай оба:
-
-**a) Приём писем (бесплатно, Cloudflare Email Routing)**
-Домен в Cloudflare → **Email → Email Routing** → включить → создать адреса
-`info@`, `sales@`, `support@` с пересылкой на свой личный ящик. Cloudflare сам
-добавит MX/TXT.
-
-**b) Отправка писем из приложения (коды входа, сброс пароля, уведомления)**
-Заведи бесплатный провайдер и подтверди домен (DNS: SPF/DKIM):
-- Resend — 3 000 писем/мес, или
-- Brevo — 300 писem/день.
-
-Затем задай секреты на Fly:
-
-```bash
-fly secrets set RESEND_API_KEY=re_xxx -a builder-studio
-fly secrets set EMAIL_FROM=info@example.com -a builder-studio
-fly secrets set EMAIL_REPLY_TO=support@example.com -a builder-studio
-# EMAIL_FROM_NAME по желанию (по умолчанию "Builder Studio")
-```
-
-Подробности и альтернативы — в `docs/EMAIL_SETUP.md`.
-
-## 4. Контакты в футере сайта
-
-Ничего делать не нужно: `info@/support@/sales@` в футере генерируются из домена
-автоматически (см. `lib/seo.ts → contactEmails`). Источник домена, по приоритету:
-
-1. `NEXT_PUBLIC_CONTACT_DOMAIN` (явно, если нужен домен, отличный от EMAIL_FROM);
-2. домен из `EMAIL_FROM` (обычный случай);
-3. `NEXT_PUBLIC_APP_HOST`, если это настоящий домен (не `*.fly.dev`).
-
-На `localhost` и `*.fly.dev` блок контактов скрыт, чтобы не показывать нерабочие
-ссылки до подключения домена.
-
-## 5. Деплой и проверка
-
-```bash
-fly deploy -a builder-studio
-```
-
-Проверь после выката:
-- `https://example.com` открывается, TLS валиден;
-- в футере появилась колонка «Контакты» с `info@/sales@/support@`;
-- письмо-код при входе приходит с `info@example.com`;
-- `https://example.com/sitemap.xml` и `/robots.txt` содержат новый домен.
-
----
-
-### Что уже сделано в коде (трогать не надо)
-- Обложки пресетов и статичная медиа отдаются из Cloudflare R2
-  (`NEXT_PUBLIC_MEDIA_BASE_URL`), в `public/` их больше нет.
-- Все URL/SEO — из `NEXT_PUBLIC_APP_HOST`.
-- Отправка почты — провайдеро-независимая (`lib/email.ts`, Resend/Brevo,
-  failover, консольный fallback без ключей).
-- Контакты — единый источник в `lib/seo.ts`, используется и сайтом, и письмами.
+- `https://example.com` открывается без предупреждений о сертификате.
+- В заголовке ответа/логах Caddy видно, что TLS успешно согласован.
+- Письмо на `info@example.com` доходит до конечного ящика.

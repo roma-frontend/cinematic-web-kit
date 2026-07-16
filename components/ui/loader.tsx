@@ -27,7 +27,7 @@ export function Loader({
   const s = SIZES[size];
   return (
     <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
-      <div className={cn('relative', s.box)} role="status" aria-label={message || 'Загрузка'}>
+      <div className={cn('relative', s.box)} role="status" aria-label={message || 'Loading'}>
         {/* track */}
         <div className={cn('absolute inset-0 rounded-full border-muted/40', s.ring)} />
         {/* spinning arc */}

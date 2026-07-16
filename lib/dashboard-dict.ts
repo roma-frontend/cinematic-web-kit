@@ -20,6 +20,8 @@ export type DashDict = {
     audit: string;
     access: string;
     activity: string;
+    tenantUsers: string;
+    sessions: string;
     trash: string;
     billing: string;
     billingAdmin: string;
@@ -283,6 +285,8 @@ const ru: DashDict = {
     audit: 'Журнал аудита',
     access: 'Доступ ролей',
     activity: 'Активность персонала',
+    tenantUsers: 'Пользователи тенантов',
+    sessions: 'Сессии',
     trash: 'Корзина',
     billing: 'Подписка',
     billingAdmin: 'Платежи',
@@ -578,6 +582,8 @@ const en: DashDict = {
     audit: 'Audit log',
     access: 'Role access',
     activity: 'Staff activity',
+    tenantUsers: 'Tenant users',
+    sessions: 'Sessions',
     trash: 'Trash',
     billing: 'Subscription',
     billingAdmin: 'Billing',
@@ -873,6 +879,8 @@ const hy: DashDict = {
     audit: 'Աուդիտի մատյան',
     access: 'Դերերի հասանելիություն',
     activity: 'Անձնակազմի ակտիվություն',
+    tenantUsers: 'Թենանտների օգտատերեր',
+    sessions: 'Սեսիաներ',
     trash: 'Աղբարկղ',
     billing: 'Բաժանորդագրություն',
     billingAdmin: 'Վճարումներ',
