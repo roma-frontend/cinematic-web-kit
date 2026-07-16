@@ -769,7 +769,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                 <button type="button" onClick={() => {
                   setExpanded(true);
                   setSidebarOpen(true);
-                }} className={cn(iconBtn)} aria-label={t.history} title={t.history}>
+                }} className={cn(iconBtn, "block md:hidden")} aria-label={t.history} title={t.history}>
                   <PanelLeft className="h-4 w-4" />
                 </button>
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-md shadow-primary/30">
