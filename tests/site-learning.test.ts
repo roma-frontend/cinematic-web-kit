@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createCourse, updateCourse, deleteCourse, listCoursesForAdmin,
-  createLesson, listLessonsForAdmin,
+  createLesson, listLessonsForAdmin, deleteLesson,
   listPublishedCourses, getCourseForMember, setLessonProgress, countPublishedCourses,
 } from '@/lib/site-learning';
 import { createUser } from '@/lib/auth';

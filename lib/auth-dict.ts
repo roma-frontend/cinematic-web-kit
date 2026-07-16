@@ -86,6 +86,35 @@ export type AuthDict = {
     noEmail: string;
     suspended: string;
   };
+  // Password strength meter
+  pwStrengthPrefix: string; // "Password strength:"
+  pwStrength: [string, string, string, string, string]; // '', weak, medium, good, strong
+  // Forgot / reset password UI
+  reset: {
+    metaForgot: string;
+    metaReset: string;
+    metaLogin: string;
+    metaRegister: string;
+    metaChange: string;
+    forgotTitle: string;
+    forgotSubtitle: string;
+    sendLink: string;
+    checkEmailTitle: string;
+    checkEmailSubtitle: string; // {email}
+    checkEmailHint: string;
+    backToLogin: string;
+    rememberPassword: string;
+    newTitle: string;
+    newSubtitle: string;
+    newPassword: string;
+    savePassword: string;
+    invalidTitle: string;
+    invalidSubtitle: string;
+    requestNewLink: string;
+    doneTitle: string;
+    doneSubtitle: string;
+    goLogin: string;
+  };
 };
 
 const ru: AuthDict = {
@@ -162,6 +191,33 @@ const ru: AuthDict = {
     failed: 'Не удалось войти через Apple, попробуйте снова.',
     noEmail: 'Apple не предоставил email.',
     suspended: 'Пользователь заблокирован.',
+  },
+  pwStrengthPrefix: 'Надёжность пароля',
+  pwStrength: ['', 'слабый', 'средний', 'хороший', 'надёжный'],
+  reset: {
+    metaForgot: 'Восстановление пароля — Builder Studio',
+    metaReset: 'Новый пароль — Builder Studio',
+    metaLogin: 'Вход — Builder Studio',
+    metaRegister: 'Регистрация — Builder Studio',
+    metaChange: 'Смена пароля — Builder Studio',
+    forgotTitle: 'Восстановление пароля',
+    forgotSubtitle: 'Укажите email — мы отправим ссылку для сброса',
+    sendLink: 'Отправить ссылку',
+    checkEmailTitle: 'Проверьте почту',
+    checkEmailSubtitle: 'Если аккаунт с адресом {email} существует, мы отправили на него ссылку для сброса пароля.',
+    checkEmailHint: 'Ссылка действует 60 минут. Не пришло письмо — проверьте «Спам».',
+    backToLogin: 'Вернуться ко входу',
+    rememberPassword: 'Вспомнили пароль?',
+    newTitle: 'Новый пароль',
+    newSubtitle: 'Придумайте новый надёжный пароль для аккаунта',
+    newPassword: 'Новый пароль',
+    savePassword: 'Сохранить пароль',
+    invalidTitle: 'Ссылка недействительна',
+    invalidSubtitle: 'В адресе нет токена сброса. Запросите новую ссылку.',
+    requestNewLink: 'Запросить новую ссылку',
+    doneTitle: 'Пароль обновлён',
+    doneSubtitle: 'Теперь войдите с новым паролем. Все старые сессии завершены.',
+    goLogin: 'Войти',
   },
 };
 
@@ -240,6 +296,33 @@ const en: AuthDict = {
     noEmail: 'Apple did not provide an email.',
     suspended: 'This user is blocked.',
   },
+  pwStrengthPrefix: 'Password strength',
+  pwStrength: ['', 'weak', 'medium', 'good', 'strong'],
+  reset: {
+    metaForgot: 'Password recovery — Builder Studio',
+    metaReset: 'New password — Builder Studio',
+    metaLogin: 'Sign in — Builder Studio',
+    metaRegister: 'Sign up — Builder Studio',
+    metaChange: 'Change password — Builder Studio',
+    forgotTitle: 'Password recovery',
+    forgotSubtitle: 'Enter your email — we will send a reset link',
+    sendLink: 'Send link',
+    checkEmailTitle: 'Check your email',
+    checkEmailSubtitle: 'If an account for {email} exists, we sent a password reset link there.',
+    checkEmailHint: 'The link is valid for 60 minutes. No email? Check your spam folder.',
+    backToLogin: 'Back to sign in',
+    rememberPassword: 'Remembered your password?',
+    newTitle: 'New password',
+    newSubtitle: 'Choose a strong new password for your account',
+    newPassword: 'New password',
+    savePassword: 'Save password',
+    invalidTitle: 'Invalid link',
+    invalidSubtitle: 'The address has no reset token. Request a new link.',
+    requestNewLink: 'Request a new link',
+    doneTitle: 'Password updated',
+    doneSubtitle: 'Sign in with your new password. All old sessions have been ended.',
+    goLogin: 'Sign in',
+  },
 };
 
 const hy: AuthDict = {
@@ -316,6 +399,33 @@ const hy: AuthDict = {
     failed: 'Չհաջողվեց մուտք գործել Apple-ով, փորձեք կրկին։',
     noEmail: 'Apple-ը չտրամադրեց էլ. փոստ։',
     suspended: 'Օգտատերն արգելափակված է։',
+  },
+  pwStrengthPrefix: 'Գաղտնաբառի ամրություն',
+  pwStrength: ['', 'թույլ', 'միջին', 'լավ', 'ամուր'],
+  reset: {
+    metaForgot: 'Գաղտնաբառի վերականգնում — Builder Studio',
+    metaReset: 'Նոր գաղտնաբառ — Builder Studio',
+    metaLogin: 'Մուտք — Builder Studio',
+    metaRegister: 'Գրանցում — Builder Studio',
+    metaChange: 'Գաղտնաբառի փոփոխություն — Builder Studio',
+    forgotTitle: 'Գաղտնաբառի վերականգնում',
+    forgotSubtitle: 'Նշեք էլ. փոստը — մենք կուղարկենք վերակայման հղում',
+    sendLink: 'Ուղարկել հղումը',
+    checkEmailTitle: 'Ստուգեք փոստը',
+    checkEmailSubtitle: 'Եթե {email} հասցեով հաշիվ կա, մենք ուղարկել ենք գաղտնաբառի վերակայման հղում։',
+    checkEmailHint: 'Հղումը գործում է 60 րոպե։ Նամակը չի՞ եկել — ստուգեք «Սպամ» պանակը։',
+    backToLogin: 'Վերադառնալ մուտքին',
+    rememberPassword: 'Հիշե՞լ եք գաղտնաբառը',
+    newTitle: 'Նոր գաղտնաբառ',
+    newSubtitle: 'Ընտրեք նոր ամուր գաղտնաբառ ձեր հաշվի համար',
+    newPassword: 'Նոր գաղտնաբառ',
+    savePassword: 'Պահել գաղտնաբառը',
+    invalidTitle: 'Հղումն անվավեր է',
+    invalidSubtitle: 'Հասցեում վերակայման նշան չկա։ Հայցեք նոր հղում։',
+    requestNewLink: 'Հայցել նոր հղում',
+    doneTitle: 'Գաղտնաբառը թարմացվեց',
+    doneSubtitle: 'Այժմ մուտք գործեք նոր գաղտնաբառով։ Բոլոր հին սեսիաներն ավարտված են։',
+    goLogin: 'Մուտք',
   },
 };
 

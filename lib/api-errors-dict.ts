@@ -45,6 +45,10 @@ export type ApiErrorsDict = {
   otpExpired: string;
   otpTooMany: string;
   otpInvalid: string; // {n} attemptsLeft
+  otpExpiredRegister: string;
+  otpTooManyRegister: string;
+  accountBlockedAdmin: string;
+  accountNotFound: string;
   loginSessionExpired: string;
   resetLinkInvalid: string;
   passwordTooLong: string;
@@ -172,6 +176,10 @@ const ru: ApiErrorsDict = {
   otpExpired: '\u041a\u043e\u0434 \u0443\u0441\u0442\u0430\u0440\u0435\u043b. \u0412\u043e\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043d\u043e\u0432\u043e, \u043c\u044b \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u043c \u043d\u043e\u0432\u044b\u0439.',
   otpTooMany: '\u0421\u043b\u0438\u0448\u043a\u043e\u043c \u043c\u043d\u043e\u0433\u043e \u043d\u0435\u0432\u0435\u0440\u043d\u044b\u0445 \u043f\u043e\u043f\u044b\u0442\u043e\u043a. \u0412\u043e\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043d\u043e\u0432\u043e.',
   otpInvalid: '\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043a\u043e\u0434. \u041e\u0441\u0442\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u043f\u044b\u0442\u043e\u043a: {n}.',
+  otpExpiredRegister: 'Код устарел. Зарегистрируйтесь снова.',
+  otpTooManyRegister: 'Слишком много неверных попыток. Зарегистрируйтесь снова.',
+  accountBlockedAdmin: 'Аккаунт заблокирован администратором.',
+  accountNotFound: 'Аккаунт не найден.',
   loginSessionExpired: '\u0421\u0435\u0441\u0441\u0438\u044f \u0432\u0445\u043e\u0434\u0430 \u0443\u0441\u0442\u0430\u0440\u0435\u043b\u0430. \u0412\u043e\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043d\u043e\u0432\u043e.',
   resetLinkInvalid: '\u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u0430 \u0438\u043b\u0438 \u0443\u0441\u0442\u0430\u0440\u0435\u043b\u0430. \u0417\u0430\u043f\u0440\u043e\u0441\u0438\u0442\u0435 \u0441\u0431\u0440\u043e\u0441 \u043f\u0430\u0440\u043e\u043b\u044f \u0435\u0449\u0451 \u0440\u0430\u0437.',
   passwordTooLong: '\u041f\u0430\u0440\u043e\u043b\u044c \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u0434\u043b\u0438\u043d\u043d\u044b\u0439.',
@@ -277,6 +285,10 @@ const en: ApiErrorsDict = {
   otpExpired: 'The code has expired. Sign in again and we will send a new one.',
   otpTooMany: 'Too many incorrect attempts. Sign in again.',
   otpInvalid: 'Incorrect code. Attempts left: {n}.',
+  otpExpiredRegister: 'The code has expired. Please register again.',
+  otpTooManyRegister: 'Too many incorrect attempts. Please register again.',
+  accountBlockedAdmin: 'This account has been blocked by an administrator.',
+  accountNotFound: 'Account not found.',
   loginSessionExpired: 'The sign-in session has expired. Sign in again.',
   resetLinkInvalid: 'The link is invalid or expired. Request a password reset again.',
   passwordTooLong: 'The password is too long.',
@@ -382,6 +394,10 @@ const hy: ApiErrorsDict = {
   otpExpired: '\u053f\u0578\u0564\u0568 \u056a\u0561\u0574\u056f\u0565\u057f\u0561\u0576\u0581 \u0567\u0589 \u053f\u0580\u056f\u056b\u0576 \u0574\u0578\u0582\u057f\u0584 \u0563\u0578\u0580\u056e\u0565\u0584, \u0574\u0565\u0576\u0584 \u0576\u0578\u0580\u0568 \u056f\u0578\u0582\u0572\u0561\u0580\u056f\u0565\u0576\u0584\u0589',
   otpTooMany: '\u0549\u0561\u0583\u0561\u0566\u0561\u0576\u0581 \u0577\u0561\u057f \u057d\u056d\u0561\u056c \u0583\u0578\u0580\u0571\u0565\u0580\u0589 \u053f\u0580\u056f\u056b\u0576 \u0574\u0578\u0582\u057f\u0584 \u0563\u0578\u0580\u056e\u0565\u0584\u0589',
   otpInvalid: '\u054d\u056d\u0561\u056c \u056f\u0578\u0564\u0589 \u0544\u0576\u0561\u0581\u0561\u056e \u0583\u0578\u0580\u0571\u0565\u0580\u055d {n}\u0589',
+  otpExpiredRegister: 'Կոդը ժամկետանց է։ Գրանցվեք կրկին։',
+  otpTooManyRegister: 'Չափազանց շատ սխալ փորձեր։ Գրանցվեք կրկին։',
+  accountBlockedAdmin: 'Հաշիվն արգելափակված է ադմինիստրատորի կողմից։',
+  accountNotFound: 'Հաշիվը չի գտնվել։',
   loginSessionExpired: '\u0544\u0578\u0582\u057f\u0584\u056b \u057d\u0565\u057d\u056b\u0561\u0576 \u056a\u0561\u0574\u056f\u0565\u057f\u0561\u0576\u0581 \u0567\u0589 \u053f\u0580\u056f\u056b\u0576 \u0574\u0578\u0582\u057f\u0584 \u0563\u0578\u0580\u056e\u0565\u0584\u0589',
   resetLinkInvalid: '\u0540\u0572\u0578\u0582\u0574\u0576 \u0561\u0576\u057e\u0561\u057e\u0565\u0580 \u0567 \u056f\u0561\u0574 \u056a\u0561\u0574\u056f\u0565\u057f\u0561\u0576\u0581\u0589 \u053f\u0580\u056f\u056b\u0576 \u057a\u0561\u0570\u0561\u0576\u057b\u0565\u0584 \u0563\u0561\u0572\u057f\u0576\u0561\u0562\u0561\u057c\u056b \u057e\u0565\u0580\u0561\u056f\u0561\u0576\u0563\u0576\u0578\u0582\u0574\u0589',
   passwordTooLong: '\u0533\u0561\u0572\u057f\u0576\u0561\u0562\u0561\u057c\u0568 \u0579\u0561\u0583\u0561\u0566\u0561\u0576\u0581 \u0565\u0580\u056f\u0561\u0580 \u0567\u0589',

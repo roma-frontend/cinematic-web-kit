@@ -27,7 +27,7 @@ export function SiteSocialButtons({ siteId }: { siteId: string }) {
   const [googleOn, setGoogleOn] = useState(false);
   const [appleOn, setAppleOn] = useState(false);
   const [telegramOn, setTelegramOn] = useState(false);
-  const [returnUrl] = useState('');
+  const [returnUrl, setReturnUrl] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -41,6 +41,7 @@ export function SiteSocialButtons({ siteId }: { siteId: string }) {
     const here = new URL(window.location.href);
     here.searchParams.delete('error');
     here.searchParams.delete('g_handoff');
+    setReturnUrl(here.toString());
   }, [siteId]);
 
   if ((!googleOn && !appleOn && !telegramOn) || !returnUrl) return null;

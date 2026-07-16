@@ -112,6 +112,7 @@ export function CommandPalette({
     window.addEventListener('keydown', onKey);
     window.addEventListener('cwk:open-palette', onOpen);
     document.body.dataset.commandPaletteReady = 'true';
+    setReady(true);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('cwk:open-palette', onOpen);

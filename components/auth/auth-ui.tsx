@@ -7,6 +7,8 @@
 
 import Link from 'next/link';
 import { Blocks, User, Lock, ShieldCheck, Check, type LucideIcon } from 'lucide-react';
+import { useLocale } from '@/hooks/use-locale';
+import { authDict } from '@/lib/auth-dict';
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const iconCls = 'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground';
@@ -24,7 +26,7 @@ export function passwordScore(pw: string): number {
 }
 
 export function StrengthMeter({ score }: { score: number }) {
-  const labels = ['', 'слабый', 'средний', 'хороший', 'надёжный'];
+  const t = authDict(useLocale().locale);
   const colors = ['bg-muted', 'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'];
   const textColors = ['text-muted-foreground', 'text-red-500', 'text-orange-500', 'text-yellow-600', 'text-green-600'];
   return (
@@ -36,7 +38,7 @@ export function StrengthMeter({ score }: { score: number }) {
           </div>
         ))}
       </div>
-      {score > 0 && <p className={`text-xs ${textColors[score]}`}>Надёжность пароля: {labels[score]}</p>}
+      {score > 0 && <p className={`text-xs ${textColors[score]}`}>{t.pwStrengthPrefix}: {t.pwStrength[score]}</p>}
     </div>
   );
 }

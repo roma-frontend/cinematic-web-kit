@@ -30,8 +30,13 @@ export type PagesDict = {
     title: string;
     intro: string;
     lcpTitle: string; lcpDesc: string;
-    scoresTitle: string; good: string; medium: string; bad: string; scoresDesc: string; // uses good/medium/bad
+    scoresTitle: string; good: string; medium: string; bad: string; pending: string; scoresDesc: string; // uses good/medium/bad
     prodDevTitle: string; prodDevDesc: string;
+    hintLcp: string;
+    hintInp: string;
+    hintCls: string;
+    hintFcp: string;
+    hintTtfb: string;
   };
 };
 
@@ -67,9 +72,15 @@ const ru: PagesDict = {
     good: 'Хорошо',
     medium: 'Средне',
     bad: 'Плохо',
+    pending: 'Ожидание…',
     scoresDesc: '{good} ≤ порога, {medium} — между, {bad} — выше верхнего порога.',
     prodDevTitle: 'Прод vs дев',
     prodDevDesc: 'В dev-режиме числа хуже из-за несжатых бандлов — сверяйся на проде.',
+    hintLcp: 'Скорость отрисовки главного контента',
+    hintInp: 'Отзывчивость на действия',
+    hintCls: 'Стабильность вёрстки',
+    hintFcp: 'Первая отрисовка',
+    hintTtfb: 'Ответ сервера',
   },
 };
 
@@ -105,9 +116,15 @@ const en: PagesDict = {
     good: 'Good',
     medium: 'Medium',
     bad: 'Poor',
+    pending: 'Waiting…',
     scoresDesc: '{good} ≤ threshold, {medium} — in between, {bad} — above the upper threshold.',
     prodDevTitle: 'Prod vs dev',
     prodDevDesc: 'In dev mode the numbers are worse due to uncompressed bundles — verify on production.',
+    hintLcp: 'How fast the main content paints',
+    hintInp: 'Responsiveness to interactions',
+    hintCls: 'Layout stability',
+    hintFcp: 'First paint',
+    hintTtfb: 'Server response time',
   },
 };
 
@@ -143,9 +160,15 @@ const hy: PagesDict = {
     good: 'Լավ',
     medium: 'Միջին',
     bad: 'Վատ',
+    pending: 'Սպասում…',
     scoresDesc: '{good} ≤ շեմի, {medium} — միջև, {bad} — վերին շեմից բարձր։',
     prodDevTitle: 'Պրոդ vs դեv',
     prodDevDesc: 'Dev-ռեժիմում թվերն ավելի վատ են չսեղմված բանդլների պատճառով — ստուգեք պրոդում։',
+    hintLcp: 'Հիմնական բովանդակության ցուցադրման արագություն',
+    hintInp: 'Արձագանք փոխազդեցություններին',
+    hintCls: 'Դասավորության կայունություն',
+    hintFcp: 'Առաջին ցուցադրում',
+    hintTtfb: 'Սերվերի պատասխան',
   },
 };
 

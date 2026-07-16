@@ -74,12 +74,12 @@ export function TutorialModal({ src, locale = 'ru', scenes, labels }: TutorialMo
     else setFailed(true);
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => { setMounted(true); }, []);
 
   // Gently pull attention to the tutorial: a first pulse ~30s after arriving,
   // then every 5 minutes (~6s each). Paused while the tutorial is open.
   useEffect(() => {
-    if (open) { return; }
+    if (open) { setPulse(false); return; }
     const fire = () => { setPulse(true); setTimeout(() => setPulse(false), 6000); };
     const first = setTimeout(fire, 30 * 1000);
     const id = setInterval(fire, 5 * 60 * 1000);

@@ -8,13 +8,16 @@ import { createSession, rateLimit, requestMeta, setSessionCookie } from '@/lib/a
 import { verifyLoginOtp, verifyTotpLogin, getChallenge } from '@/lib/auth-codes';
 import { getDb, users } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
+  const t = apiErrors(await getLocale());
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   if (!rateLimit(`otp-verify:${ip}`, 30)) {
-    return NextResponse.json({ error: 'Слишком много попыток, подождите немного.' }, { status: 429 });
+    return NextResponse.json({ error: t.tooManyAttemptsDot }, { status: 429 });
   }
 
   let body: { challenge?: string; code?: string };
@@ -37,21 +40,21 @@ export async function POST(request: Request) {
     verdict = verifyLoginOtp(challenge, code);
   }
   if (verdict.status === 'expired') {
-    return NextResponse.json({ error: 'Код устарел. Войдите заново, мы отправим новый.' }, { status: 401 });
+    return NextResponse.json({ error: t.otpExpired }, { status: 401 });
   }
   if (verdict.status === 'too_many') {
-    return NextResponse.json({ error: 'Слишком много неверных попыток. Войдите заново.' }, { status: 429 });
+    return NextResponse.json({ error: t.otpTooMany }, { status: 429 });
   }
   if (verdict.status === 'invalid') {
     return NextResponse.json(
-      { error: `Неверный код. Осталось попыток: ${verdict.attemptsLeft}.` },
+      { error: t.otpInvalid.replace('{n}', String(verdict.attemptsLeft)) },
       { status: 401 },
     );
   }
 
   const user = getDb().select().from(users).where(eq(users.id, verdict.userId)).get();
   if (!user || !user.isActive) {
-    return NextResponse.json({ error: 'Аккаунт заблокирован администратором.' }, { status: 403 });
+    return NextResponse.json({ error: t.accountBlockedAdmin }, { status: 403 });
   }
 
   const { token, expiresAt } = createSession(user.id, requestMeta(request));

@@ -101,7 +101,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
   const initialTheme = await initialThemeChoice();
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {mediaOrigin && <link rel="preconnect" href={mediaOrigin} crossOrigin="anonymous" />}
         {mediaOrigin && <link rel="dns-prefetch" href={mediaOrigin} />}

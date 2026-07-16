@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createUser } from '@/lib/auth';
 import { createSite } from '@/lib/sites';
-import { createSiteUser } from '@/lib/site-auth';
+import { createSiteUser, getSiteUserById } from '@/lib/site-auth';
 import { loginOrCreateSiteGoogleUser } from '@/lib/site-google-auth';
 import { createSiteOauthHandoff, consumeSiteOauthHandoff } from '@/lib/site-auth-codes';
 import type { GoogleProfile } from '@/lib/google-auth';

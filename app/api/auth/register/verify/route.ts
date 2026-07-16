@@ -5,13 +5,16 @@ import { verifyRegistrationOtp } from '@/lib/auth-codes';
 import { getDb, users } from '@/lib/db';
 import { recordAudit } from '@/lib/audit';
 import { notifyRegistration } from '@/lib/notify';
+import { getLocale } from '@/lib/i18n';
+import { apiErrors } from '@/lib/api-errors-dict';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
+  const t = apiErrors(await getLocale());
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   if (!rateLimit(`register-verify:${ip}`, 30)) {
-    return NextResponse.json({ error: 'Слишком много попыток, подождите немного.' }, { status: 429 });
+    return NextResponse.json({ error: t.tooManyAttemptsDot }, { status: 429 });
   }
 
   let body: { challenge?: string; code?: string };
@@ -22,15 +25,15 @@ export async function POST(request: Request) {
   }
 
   const verdict = verifyRegistrationOtp(body.challenge ?? '', (body.code ?? '').trim());
-  if (verdict.status === 'expired') return NextResponse.json({ error: 'Код устарел. Зарегистрируйтесь снова.' }, { status: 401 });
-  if (verdict.status === 'too_many') return NextResponse.json({ error: 'Слишком много неверных попыток. Зарегистрируйтесь снова.' }, { status: 429 });
+  if (verdict.status === 'expired') return NextResponse.json({ error: t.otpExpiredRegister }, { status: 401 });
+  if (verdict.status === 'too_many') return NextResponse.json({ error: t.otpTooManyRegister }, { status: 429 });
   if (verdict.status === 'invalid') {
-    return NextResponse.json({ error: `Неверный код. Осталось попыток: ${verdict.attemptsLeft}.` }, { status: 401 });
+    return NextResponse.json({ error: t.otpInvalid.replace('{n}', String(verdict.attemptsLeft)) }, { status: 401 });
   }
 
   const db = getDb();
   const user = db.select().from(users).where(eq(users.id, verdict.userId)).get();
-  if (!user) return NextResponse.json({ error: 'Аккаунт не найден.' }, { status: 404 });
+  if (!user) return NextResponse.json({ error: t.accountNotFound }, { status: 404 });
 
   db.update(users).set({ isActive: true }).where(eq(users.id, user.id)).run();
   const { token, expiresAt } = createSession(user.id, requestMeta(request));

@@ -83,6 +83,7 @@ export function OnboardingTour({ steps, chrome, soundOn, onToggleSound, reduced,
   // to actually appear (tab content re-renders), scroll it into view so the
   // page visibly moves to the spot, then align the spotlight.
   useLayoutEffect(() => {
+    setReady(false);
     step?.onEnter?.();
     let raf = 0;
     const reveal = (attempt: number) => {
