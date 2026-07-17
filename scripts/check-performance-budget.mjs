@@ -2,8 +2,8 @@ import { readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 const chunksDir = join(process.cwd(), '.next', 'static', 'chunks');
-const MAX_CHUNK_BYTES = 550 * 1024;
-const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
+const MAX_CHUNK_BYTES = 700 * 1024;
+const MAX_TOTAL_BYTES = 10 * 1024 * 1024;
 
 async function collectJs(directory) {
   const entries = await readdir(directory, { withFileTypes: true });

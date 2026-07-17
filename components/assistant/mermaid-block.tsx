@@ -37,7 +37,9 @@ export function MermaidBlock({ chart }: { chart: string }) {
       <div className="flex items-center justify-between bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
         <span>mermaid</span>
       </div>
-      <div ref={ref} className="flex justify-center bg-card/60 p-4" dangerouslySetInnerHTML={{ __html: svg || '<span class=&quot;text-xs text-muted-foreground&quot;>Rendering...</span>' }} />
+      <div ref={ref} className="flex justify-center bg-card/60 p-4" dangerouslySetInnerHTML={{ __html: svg || '<span class="text-xs text-muted-foreground">Rendering...</span>' }} />
     </div>
   );
 }
+
+export default MermaidBlock;

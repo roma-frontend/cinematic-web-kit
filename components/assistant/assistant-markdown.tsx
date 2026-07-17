@@ -1,15 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Check, Copy } from 'lucide-react';
-import { MermaidBlock } from './mermaid-block';
+import { Check, Copy, Loader2 } from 'lucide-react';
 import { copyToClipboard } from '@/lib/clipboard';
 
-function CodeBlock({ language, children }: { language: string; children: string }) {
+const LazyCodeBlock = lazy(() => import('./code-block'));
+const LazyMermaidBlock = lazy(() => import('./mermaid-block'));
+
+function CodeFallback() {
+  return (
+    <div className="my-2 flex items-center justify-center rounded-lg border border-border/50 bg-muted/30 py-4">
+      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+function CodeWrapper({ language, children }: { language: string; children: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     const success = await copyToClipboard(children);
@@ -18,10 +26,6 @@ function CodeBlock({ language, children }: { language: string; children: string 
       setTimeout(() => setCopied(false), 1600);
     }
   };
-
-  if (language === 'mermaid') {
-    return <MermaidBlock chart={children} />;
-  }
 
   return (
     <div className="group relative my-2 overflow-hidden rounded-lg border border-border/50">
@@ -37,14 +41,13 @@ function CodeBlock({ language, children }: { language: string; children: string 
           <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
-      <SyntaxHighlighter
-        language={language || 'text'}
-        style={oneDark}
-        customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8em' }}
-        wrapLongLines
-      >
-        {children}
-      </SyntaxHighlighter>
+      <Suspense fallback={<CodeFallback />}>
+        {language === 'mermaid' ? (
+          <LazyMermaidBlock chart={children} />
+        ) : (
+          <LazyCodeBlock language={language} code={children} />
+        )}
+      </Suspense>
     </div>
   );
 }
@@ -83,7 +86,7 @@ export function AssistantMarkdown({ content, onNavigate }: { content: string; on
             const text = String(children).replace(/\n$/, '');
             const isBlock = match || text.includes('\n');
             if (isBlock) {
-              return <CodeBlock language={match ? match[1] : ''}>{text}</CodeBlock>;
+              return <CodeWrapper language={match ? match[1] : ''}>{text}</CodeWrapper>;
             }
             const inlineText = String(children);
             if (onNavigate && /^\/[A-Za-z0-9/_-]*$/.test(inlineText) && inlineText.length > 1) {
