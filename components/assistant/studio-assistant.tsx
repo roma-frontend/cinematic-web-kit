@@ -22,6 +22,7 @@ import { parseMarkdownTable, sitePreviewUrl } from '@/lib/assistant-canvas';
 import { taskProgress } from '@/lib/assistant-task-core';
 import { exportConversation, type ExportFormat } from '@/lib/assistant-export';
 import { useStudioAssistant, type AssistantMessage } from './use-studio-assistant';
+import { copyToClipboard } from '@/lib/clipboard';
 import { AssistantMarkdown } from './assistant-markdown';
 import { ArtifactsCanvas, type Artifact } from './artifacts-canvas';
 
@@ -129,31 +130,13 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
 
   const copyShareLink = useCallback(async () => {
     if (!shareLink) return;
-    try {
-      // Проверяем доступность navigator и clipboard API
-      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(shareLink);
-      } else {
-        // Fallback для старых браузеров или не-HTTPS контекстов
-        const textArea = document.createElement('textarea');
-        textArea.value = shareLink;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+    const success = await copyToClipboard(shareLink);
+    if (success) {
       setLinkCopied(true);
       setTimeout(() => {
         setLinkCopied(false);
         setShareLink(null);
       }, 1500);
-    } catch (err) {
-      console.error('Copy failed:', err);
-      // Если копирование не удалось, просто выделяем текст
     }
   }, [shareLink]);
 
@@ -356,26 +339,11 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
     try { return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(ts); } catch { return ''; }
   };
   const copy = async (id: string, text: string) => {
-    try {
-      // Проверяем доступность navigator и clipboard API
-      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // Fallback для старых браузеров или не-HTTPS контекстов
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+    const success = await copyToClipboard(text);
+    if (success) {
       setCopiedId(id);
       setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1600);
-    } catch { /* ignore */ }
+    }
   };
   // Navigate, but first gracefully dismiss the panel so it doesn't linger on
   // top of the destination page — the AnimatePresence exit animation plays,

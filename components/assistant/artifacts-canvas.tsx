@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Code, Eye, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { copyToClipboard } from '@/lib/clipboard';
 
 export interface Artifact {
   id: string;
@@ -146,24 +147,11 @@ export function ArtifactsCanvas({ artifact, onClose, dict }: ArtifactsCanvasProp
 
   const handleCopy = async () => {
     if (!artifact) return;
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(artifact.content);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = artifact.content;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+    const success = await copyToClipboard(artifact.content);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    }
   };
 
   if (!artifact) return null;

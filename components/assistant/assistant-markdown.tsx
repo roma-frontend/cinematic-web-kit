@@ -7,28 +7,16 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy } from 'lucide-react';
 import { MermaidBlock } from './mermaid-block';
+import { copyToClipboard } from '@/lib/clipboard';
 
 function CodeBlock({ language, children }: { language: string; children: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(children);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = children;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+    const success = await copyToClipboard(children);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {}
+    }
   };
 
   if (language === 'mermaid') {
