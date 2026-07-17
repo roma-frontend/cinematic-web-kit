@@ -24,6 +24,7 @@ import { studioDict } from '@/lib/studio-dict';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { dashDict } from '@/lib/dashboard-dict';
 import { getCurrentUser } from '@/lib/auth';
+import { copyToClipboard } from '@/lib/clipboard';
 
 const ALL_BLOCKS = ['hero', 'split', 'cards', 'mosaic', 'sticky', 'background', 'beams', 'marquee'];
 
@@ -267,9 +268,11 @@ export default function StudioPage() {
   };
 
   const copyImageUrl = async (src: string) => {
-    await navigator.clipboard.writeText(new URL(src, window.location.origin).href);
-    setCopiedImg(src);
-    setTimeout(() => setCopiedImg(''), 1500);
+    const success = await copyToClipboard(new URL(src, window.location.origin).href);
+    if (success) {
+      setCopiedImg(src);
+      setTimeout(() => setCopiedImg(''), 1500);
+    }
   };
 
   // Site theme
@@ -601,9 +604,11 @@ export default function StudioPage() {
   };
 
   const copyPrompt = async () => {
-    await navigator.clipboard.writeText(prompt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    const success = await copyToClipboard(prompt);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
   };
 
   const create = async () => {
