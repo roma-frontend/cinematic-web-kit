@@ -356,7 +356,26 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
     try { return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(ts); } catch { return ''; }
   };
   const copy = async (id: string, text: string) => {
-    try { await navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1600); } catch { /* ignore */ }
+    try {
+      // Проверяем доступность navigator и clipboard API
+      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback для старых браузеров или не-HTTPS контекстов
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1600);
+    } catch { /* ignore */ }
   };
   // Navigate, but first gracefully dismiss the panel so it doesn't linger on
   // top of the destination page — the AnimatePresence exit animation plays,

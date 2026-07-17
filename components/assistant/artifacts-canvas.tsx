@@ -146,9 +146,24 @@ export function ArtifactsCanvas({ artifact, onClose, dict }: ArtifactsCanvasProp
 
   const handleCopy = async () => {
     if (!artifact) return;
-    await navigator.clipboard.writeText(artifact.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(artifact.content);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = artifact.content;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
   };
 
   if (!artifact) return null;
