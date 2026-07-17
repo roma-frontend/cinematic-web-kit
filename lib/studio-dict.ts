@@ -101,6 +101,11 @@ export type StudioDict = {
   open: string; refresh: string;
   resizeHint: string;
   previewTitle: string;
+  // cinematic DNA
+  dnaLabel: string;
+  dnaActive: string;
+  dnaDescription: string;
+  dnaApplyHint: string;
 };
 
 const ru: StudioDict = {
@@ -195,6 +200,10 @@ const ru: StudioDict = {
   open: 'Открыть', refresh: 'Обновить',
   resizeHint: 'Потяни, чтобы изменить ширину панели',
   previewTitle: 'Предпросмотр сайта',
+  dnaLabel: 'Кинематографичный стиль:',
+  dnaActive: 'DNA активен — стиль применится при генерации видео, изображений и страниц через AI',
+  dnaDescription: '🎬 Кинематографичный стиль (DNA)',
+  dnaApplyHint: 'DNA задаёт режиссёрский стиль для всех AI-видео на сайте. При генерации видео через AI-агент или CLI, prompt обогащается кинематографичными слоями: объектив, освещение, цветокоррекция, движение камеры, настроение, плёнка.',
 };
 
 const en: StudioDict = {
@@ -289,6 +298,10 @@ const en: StudioDict = {
   open: 'Open', refresh: 'Refresh',
   resizeHint: 'Drag to resize the panel',
   previewTitle: 'Site preview',
+  dnaLabel: 'Cinematic style:',
+  dnaActive: 'DNA active — style will be applied when generating videos, images and pages via AI',
+  dnaDescription: '🎬 Cinematic style (DNA)',
+  dnaApplyHint: 'DNA sets the directorial style for all AI videos on the site. When generating video via AI agent or CLI, the prompt is enriched with cinematic layers: lens, lighting, color grading, camera movement, mood, film stock.',
 };
 
 const hy: StudioDict = {
@@ -383,6 +396,10 @@ const hy: StudioDict = {
   open: 'Բացել', refresh: 'Թարմացնել',
   resizeHint: 'Քաշեք՝ վահանակի լայնությունը փոխելու համար',
   previewTitle: 'Կայքի նախադիտում',
+  dnaLabel: 'Cinematic style:',
+  dnaActive: 'DNA active — style will be applied when generating videos, images and pages via AI',
+  dnaDescription: '🎬 Cinematic style (DNA)',
+  dnaApplyHint: 'DNA sets the directorial style for all AI videos on the site. When generating video via AI agent or CLI, the prompt is enriched with cinematic layers: lens, lighting, color grading, camera movement, mood, film stock.',
 };
 
 export const STUDIO: Record<Locale, StudioDict> = { ru, en, hy };

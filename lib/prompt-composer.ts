@@ -21,6 +21,17 @@ export type StyleId =
   | 'noir'
   | 'dreamy';
 
+export type DnaId =
+  | 'nolan'
+  | 'villeneuve'
+  | 'anderson'
+  | 'kubrick'
+  | 'tarantino'
+  | 'miyazaki'
+  | 'fincher'
+  | 'wong'
+  | 'custom';
+
 export interface StylePreset {
   id: Exclude<StyleId, 'auto'>;
   label: string;
@@ -165,15 +176,43 @@ export interface ComposeInput {
   index?: number;
   /** Shared seed so a whole page stays visually consistent. */
   seed?: string;
+  /** Cinematic DNA — режиссёрский стиль, заменяющий style при наличии. */
+  dna?: DnaInput;
+}
+
+export interface DnaInput {
+  lens: string;
+  lighting: string;
+  colorGrade: string;
+  filmStock: string;
+  mood: string;
+  motion: string;
 }
 
 /** Compose one layered cinematic prompt from a brief + section + style. */
-export function composePrompt({ brief, section, style = 'auto', index = 0, seed }: ComposeInput): string {
+export function composePrompt({ brief, section, style = 'auto', index = 0, seed, dna }: ComposeInput): string {
   const subject = brief.trim().replace(/\.$/, '');
   if (!subject) return '';
   const s = seed ?? subject;
-  const preset = resolveStyle(style, s);
   const motion = pick(MOTION, `${s}-${section}-${index}-m`);
+
+  if (dna) {
+    return [
+      FRAMING[section],
+      `of ${subject}`,
+      dna.lens,
+      dna.lighting,
+      dna.colorGrade,
+      dna.motion || motion,
+      dna.mood,
+      dna.filmStock,
+      QUALITY,
+    ]
+      .filter(Boolean)
+      .join(', ');
+  }
+
+  const preset = resolveStyle(style, s);
 
   return [
     FRAMING[section],
@@ -196,6 +235,7 @@ export interface PlanItem {
   prompt: string;
   aspect: string;
   style: Exclude<StyleId, 'auto'>;
+  dna?: DnaInput;
 }
 
 /**
@@ -204,7 +244,7 @@ export interface PlanItem {
  * is resolved for the whole page (from `style`, or auto-derived from the brief)
  * and threaded into every item so the page reads as a single, cohesive film.
  */
-export function planFromBrief(brief: string, style: StyleId = 'auto'): PlanItem[] {
+export function planFromBrief(brief: string, style: StyleId = 'auto', dna?: DnaInput): PlanItem[] {
   const lines = brief
     .split(/\r?\n/)
     .map((l) => l.replace(/^[-*+#>\d.\s]+/, '').trim())
@@ -220,18 +260,20 @@ export function planFromBrief(brief: string, style: StyleId = 'auto'): PlanItem[
     {
       section: 'hero',
       title: titleCase(first),
-      prompt: composePrompt({ brief: first, section: 'hero', style: preset.id, seed }),
+      prompt: composePrompt({ brief: first, section: 'hero', style: preset.id, seed, dna }),
       aspect: '16:9',
       style: preset.id,
+      dna,
     },
   ];
   rest.slice(0, 6).forEach((line, i) => {
     plan.push({
       section: 'card',
       title: titleCase(line),
-      prompt: composePrompt({ brief: line, section: 'card', style: preset.id, index: i + 1, seed }),
+      prompt: composePrompt({ brief: line, section: 'card', style: preset.id, index: i + 1, seed, dna }),
       aspect: '1:1',
       style: preset.id,
+      dna,
     });
   });
   return plan;

@@ -82,12 +82,18 @@ const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9а-яё]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'image';
 
 /** Compose a photographic prompt from the brief + a cinematic style preset. */
-function composeImagePrompt(prompt: string, styleId: string, seed: number): { text: string; style?: string } {
+function composeImagePrompt(prompt: string, styleId: string, seed: number, dna?: { lens: string; lighting: string; colorGrade: string; filmStock: string; mood: string }): { text: string; style?: string } {
+  const quality = 'ultra-detailed, high resolution, photorealistic, professional photography, sharp focus, no text, no watermark';
+  if (dna) {
+    return {
+      text: `${prompt}, ${dna.lens}, ${dna.lighting}, ${dna.colorGrade}, ${dna.filmStock}, ${dna.mood}, ${quality}`,
+      style: 'dna',
+    };
+  }
   const preset =
     styleId === 'auto'
       ? STYLE_PRESETS[seed % STYLE_PRESETS.length]
       : STYLE_PRESETS.find((p) => p.id === styleId);
-  const quality = 'ultra-detailed, high resolution, photorealistic, professional photography, sharp focus, no text, no watermark';
   if (!preset) return { text: `${prompt}, ${quality}` };
   return {
     text: `${prompt}, ${preset.lens}, ${preset.lighting}, ${preset.colorGrade}, ${preset.filmStock}, ${preset.mood}, ${quality}`,
@@ -169,6 +175,7 @@ interface GenerateImageBody {
   aspect?: string;
   style?: StyleId;
   count?: number;
+  dna?: { lens: string; lighting: string; colorGrade: string; filmStock: string; mood: string };
 }
 
 export async function POST(request: Request) {
@@ -201,7 +208,7 @@ export async function POST(request: Request) {
   // Sequential on purpose — the free tier throttles parallel requests.
   for (let i = 0; i < count; i++) {
     const seed = Math.floor(Math.random() * 1_000_000);
-    const composed = composeImagePrompt(prompt, body.style ?? 'auto', seed);
+    const composed = composeImagePrompt(prompt, body.style ?? 'auto', seed, body.dna);
     try {
       const buf = await fetchImage(composed.text, w, h, seed);
       const base = `${slug}-${Date.now().toString(36)}-${seed.toString(36)}`;

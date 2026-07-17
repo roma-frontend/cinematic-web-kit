@@ -69,6 +69,10 @@ export interface BuilderPage {
 export interface BuilderDoc {
   brand: string;
   themeId: string;
+  /** Cinematic DNA — режиссёрский стиль, пронизывающий весь сайт.
+   *  Определяет lens, lighting, color grade, motion для всех видео-секций.
+   *  См. lib/cinematic-dna-client.ts для списка доступных DNA. */
+  dnaId?: string;
   /** Optional brand logo image (URL). When set it can replace or accompany the
    *  brand text in header/footer, per `brandMode`. */
   logoUrl?: string;

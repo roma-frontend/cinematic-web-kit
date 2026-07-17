@@ -7,6 +7,7 @@ import { isStaff } from '@/lib/auth';
 import { getLocale } from '@/lib/i18n';
 import { apiErrors } from '@/lib/api-errors-dict';
 import { chatComplete } from '@/lib/llm';
+import { getDna } from '@/lib/cinematic-dna';
 
 export const runtime = 'nodejs';
 
@@ -87,8 +88,12 @@ function fallbackBlocks(brief: string): BuilderNode[] {
   return [hero, features, faq, cta];
 }
 
-async function llmBlocks(brief: string): Promise<BuilderNode[] | null> {
-  const sys = `You output ONLY a JSON array of website builder nodes. Allowed types: ${ALLOWED.join(', ')}. Each node: {"type": string, "props": object of string values, "children"?: array}. Containers: section, stack, row, grid, card, form. Build a complete, responsive Russian-language landing page.`;
+async function llmBlocks(brief: string, dnaId?: string): Promise<BuilderNode[] | null> {
+  const dna = dnaId ? getDna(dnaId) : undefined;
+  const dnaContext = dna
+    ? `\n\nCinematic DNA: ${dna.label} — ${dna.description}. Visual style: ${dna.lens}, ${dna.lighting}, ${dna.colorGrade}. Mood: ${dna.mood}.`
+    : '';
+  const sys = `You output ONLY a JSON array of website builder nodes. Allowed types: ${ALLOWED.join(', ')}. Each node: {"type": string, "props": object of string values, "children"?: array}. Containers: section, stack, row, grid, card, form. Build a complete, responsive Russian-language landing page.${dnaContext}`;
   const content = await chatComplete(
     [
       { role: 'system', content: sys },
@@ -124,17 +129,19 @@ export async function POST(request: Request) {
   let brief = '';
   let title = 'Новая страница';
   let path = '';
+  let dnaId = '';
   try {
     const body = await request.json();
     brief = String(body?.brief ?? '');
     if (body?.title) title = String(body.title);
     if (typeof body?.path === 'string') path = body.path.replace(/^\/+|\/+$/g, '');
+    if (body?.dnaId) dnaId = String(body.dnaId);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
   if (!brief.trim()) return NextResponse.json({ error: t.emptyBrief }, { status: 400 });
 
-  const viaLlm = await llmBlocks(brief);
+  const viaLlm = await llmBlocks(brief, dnaId || undefined);
   const blocks = viaLlm ?? fallbackBlocks(brief);
   return NextResponse.json({
     ok: true,

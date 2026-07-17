@@ -42,6 +42,16 @@ import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { studioDict } from '@/lib/studio-dict';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { DnaSelector } from '@/components/builder/dna-selector';
+import { CinematicScoreCard } from '@/components/builder/cinematic-score-card';
+import { MoodBoardUploader } from '@/components/builder/mood-board-uploader';
+import { BrandVoiceCard } from '@/components/builder/brand-voice-card';
+import { BrandFilmGenerator } from '@/components/builder/brand-film-generator';
+import { CinematicTransitionsCard } from '@/components/builder/cinematic-transitions-card';
+import { VoiceToSiteCard } from '@/components/builder/voice-to-site-card';
+import { SceneDirectorCard } from '@/components/builder/scene-director-card';
+import { CinematicABCard } from '@/components/builder/cinematic-ab-card';
+import { calculateCinematicScore, type CinematicScoreResult } from '@/lib/cinematic-score';
 
 type Field = { k: string; label: string; kind?: 'text' | 'textarea'; opts?: string[]; dynamic?: 'plans' };
 
@@ -616,6 +626,7 @@ function BuilderEditor() {
   const siteId = resolveBuilderRouteSiteId(searchSiteId, contextSiteId);
   const [siteMeta, setSiteMeta] = useState<SiteMeta | null>(null);
   const [doc, setDoc] = useState<BuilderDoc>(seed as unknown as BuilderDoc);
+  const [cinematicScore, setCinematicScore] = useState<CinematicScoreResult | null>(null);
   const [pageId, setPageId] = useState<string>((seed as unknown as BuilderDoc).pages[0]?.id ?? '');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [device, setDevice] = useState<keyof typeof DEVICE>('full');
@@ -646,6 +657,9 @@ function BuilderEditor() {
       .catch(() => {});
     return () => { alive = false; };
   }, []);
+  useEffect(() => {
+    setCinematicScore(calculateCinematicScore(doc, locale));
+  }, [doc, locale]);
   const [selRect, setSelRect] = useState<{ top: number; left: number; width: number; height: number; vw: number; vh: number } | null>(null);
   const [selColors, setSelColors] = useState<{ color: string; bg: string; hasText: boolean } | null>(null);
   // Stable indirection so the preview message listener can commit inline text
@@ -889,6 +903,9 @@ function BuilderEditor() {
     // document message until the user commits a theme selection.
     previewRef.current?.contentWindow?.postMessage({ source: 'builder-editor', type: 'theme', themeId: hoverTheme ?? doc.themeId }, '*');
   }, [hoverTheme, doc.themeId]);
+  useEffect(() => {
+    previewRef.current?.contentWindow?.postMessage({ source: 'builder-editor', type: 'dna', dnaId: doc.dnaId || 'none' }, '*');
+  }, [doc.dnaId]);
   // Coalesced to one postMessage per frame: serializing the full doc for the
   // iframe on every keystroke is the single biggest source of typing jank.
   const postRaf = useRef(0);
@@ -1460,7 +1477,7 @@ function BuilderEditor() {
       const res = await fetch('/api/generate-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, title: brief.trim().slice(0, 40), path: '' }),
+        body: JSON.stringify({ brief, title: brief.trim().slice(0, 40), path: '', dnaId: doc.dnaId }),
       });
       const data = await res.json();
       if (res.ok && data.page) {
@@ -1866,6 +1883,7 @@ function BuilderEditor() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
           instruction,
           pageTitle: page?.title ?? '',
+          dnaId: doc.dnaId,
           ...(selected ? { selected: { type: selected.type, props: selected.props } } : {}),
         }),
       });
@@ -1911,7 +1929,7 @@ function BuilderEditor() {
         setAiInstruction('');
       } else if (a.kind === 'regenerate') {
         const gr = await fetch('/api/generate-page', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brief: instruction, title: page?.title }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brief: instruction, title: page?.title, dnaId: doc.dnaId }),
         });
         if (gr.status === 403) { window.location.href = '/pricing'; return; }
         const gd = await gr.json().catch(() => ({}));
@@ -2020,7 +2038,7 @@ function BuilderEditor() {
               <Home className="h-3.5 w-3.5" /> {tr('Лендинг «/»')}
             </span>
           )}
-          <Input value={doc.brand} onChange={(e) => setDoc((d) => ({ ...d, brand: e.target.value }))} className="hidden h-8 w-32 min-w-0 sm:block xl:w-44" aria-label={tr('Название сайта')} />
+          <Input value={doc.brand} onChange={(e) => setDoc((d) => ({ ...d, brand: e.target.value }))} className="hidden h-8 w-32 min-w-0 sm:block xl:w-100" aria-label={tr('Название сайта')} />
           <div className="hidden items-center gap-1 md:flex">
             <Palette className="h-4 w-4 text-muted-foreground" />
             {/* Switching theme also applies its recommended chrome-button
@@ -2125,6 +2143,21 @@ function BuilderEditor() {
         </div>
         {msg && <div className="border-t border-border/60 bg-muted/40 px-4 py-1 text-center text-xs text-muted-foreground">{msg}</div>}
       </header>
+
+      {/* DNA Selector — второй слой под toolbar */}
+      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3 py-1.5 sm:px-4">
+        <span className="text-xs font-medium text-muted-foreground">🎬 Кинематографичный стиль:</span>
+        <DnaSelector
+          value={doc.dnaId}
+          onChange={(dnaId) => setDoc((d) => ({ ...d, dnaId }))}
+          currentThemeId={doc.themeId}
+        />
+        {doc.dnaId && doc.dnaId !== 'none' && (
+          <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+            DNA активен — стиль применится при генерации видео, изображений и страниц через AI
+          </span>
+        )}
+      </div>
 
       {/* In-builder AI agent bar */}
       <div className="flex items-center gap-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.06] to-transparent px-3 py-2 sm:px-4">
@@ -2863,6 +2896,23 @@ function BuilderEditor() {
 
           {/* TAB: Сайт */}
           <div className={tab === 'design' ? 'space-y-4' : 'hidden'}>
+          <CinematicScoreCard score={cinematicScore} locale={locale} />
+          <MoodBoardUploader
+            locale={locale}
+            onDnaRecommended={(dnaId) => setDoc((d) => ({ ...d, dnaId }))}
+          />
+          <BrandVoiceCard siteId={siteId || ''} locale={locale} />
+          <BrandFilmGenerator locale={locale} dnaId={doc.dnaId} />
+          <CinematicTransitionsCard locale={locale} />
+          <VoiceToSiteCard
+            locale={locale}
+            onTranscript={(text) => {
+              setAiInstruction(text);
+              setTab('blocks');
+            }}
+          />
+          <SceneDirectorCard locale={locale} />
+          <CinematicABCard locale={locale} />
           {/* The landing (/) keeps the platform header/footer — chrome settings
               (logo, header/footer variants, nav) do not apply and are hidden. */}
           {isLanding && (
@@ -2909,6 +2959,23 @@ function BuilderEditor() {
               </div>
             )}
             <p className="mt-2 text-[11px] text-muted-foreground">{tr('Alt и размеры задаются автоматически, чтобы не было ошибок Lighthouse (CLS/доступность).')}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="mb-2 text-sm font-semibold">🎬 Кинематографичный стиль (DNA)</p>
+            <p className="mb-3 text-xs leading-snug text-muted-foreground">
+              DNA задаёт режиссёрский стиль для всех AI-видео на сайте. При генерации видео через AI-агент или CLI, prompt обогащается кинематографичными слоями: объектив, освещение, цветокоррекция, движение камеры, настроение, плёнка.
+            </p>
+            <DnaSelector
+              value={doc.dnaId}
+              onChange={(dnaId) => setDoc((d) => ({ ...d, dnaId }))}
+              currentThemeId={doc.themeId}
+            />
+            {doc.dnaId && doc.dnaId !== 'none' && (
+              <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-2 text-xs">
+                <p className="font-semibold text-primary">✓ DNA активен</p>
+                <p className="mt-1 text-muted-foreground">Стиль применится при следующей генерации видео</p>
+              </div>
+            )}
           </Card>
           <Card className="p-3">
             <p className="mb-2 text-sm font-semibold">{tr('Шапка (header)')}</p>

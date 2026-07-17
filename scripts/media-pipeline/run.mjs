@@ -40,6 +40,19 @@ async function main() {
   const negativePrompt = str(args.negative) || '';
   const style = str(args.style) || '';
   const keepAudio = args.audio === true || str(args.audio) === 'true';
+  const dnaJson = str(args.dna) || '';
+
+  let enrichedPrompt = prompt;
+  if (dnaJson) {
+    try {
+      const dna = JSON.parse(dnaJson);
+      const dnaLayers = [dna.lens, dna.lighting, dna.colorGrade, dna.motion, dna.mood, dna.filmStock].filter(Boolean).join(', ');
+      if (dnaLayers) enrichedPrompt = `${prompt}, ${dnaLayers}`;
+      console.log(`[run] DNA applied: ${dna.label || 'custom'}`);
+    } catch {
+      console.warn('[run] Invalid DNA JSON, ignoring');
+    }
+  }
 
   let sourcePath;
   if (str(args.from)) {
@@ -47,7 +60,7 @@ async function main() {
     console.log(`[run] local source: ${sourcePath}`);
   } else {
     const videoUrl = await generateVideo({
-      prompt,
+      prompt: enrichedPrompt,
       negativePrompt,
       model: str(args.model),
       aspectRatio: aspect,

@@ -165,6 +165,10 @@ export default function BuilderPreview() {
         themeFadeTimer.current = window.setTimeout(() => { delete document.documentElement.dataset.themeSwitching; }, 160);
         return;
       }
+      if (e.data.type === 'dna') {
+        document.documentElement.dataset.dnaId = typeof e.data.dnaId === 'string' ? e.data.dnaId : 'none';
+        return;
+      }
       if (e.data.type === 'selection') {
         // Selection is a tiny editor-only interaction. Do not replace React
         // state (which would redraw the entire preview document) just to move
@@ -322,6 +326,11 @@ export default function BuilderPreview() {
             __html: `[data-nid="${selectedId}"]{outline:2px solid var(--primary)!important;outline-offset:2px;border-radius:2px}`,
           }}
         />
+      )}
+      {previewDoc.dnaId && previewDoc.dnaId !== 'none' && (
+        <div className="fixed bottom-4 right-4 z-50 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary shadow-lg backdrop-blur">
+          🎬 DNA: {previewDoc.dnaId}
+        </div>
       )}
       {page ? (
         <SiteAuthProvider siteId={previewDoc.siteId ?? ''}>

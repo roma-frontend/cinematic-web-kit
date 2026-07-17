@@ -12,7 +12,8 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LazyVideo } from '@/components/media/lazy-video';
-import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Section, type StyleId, type PlanItem } from '@/lib/prompt-composer';
+import { planFromBrief, composePrompt, STYLE_PRESETS, NEGATIVE_PROMPT, type Section, type StyleId, type PlanItem, type DnaInput } from '@/lib/prompt-composer';
+import { DNA_PRESETS } from '@/lib/cinematic-dna-client';
 import { THEMES, getTheme } from '@/lib/themes';
 import siteConfig from '@/data/site.json';
 import mediaData from '@/data/media.json';
@@ -53,7 +54,7 @@ type StudioContext = {
 // platform-only tabs (landing/content/composition/config) stay superadmin-only.
 const TENANT_TABS: StudioTab[] = ['generate', 'images', 'theme'];
 type LogLine = { line: string; stream: 'stdout' | 'stderr' };
-type GenBody = { prompt: string; title: string; section: Section; aspect: string; style?: string; negative?: string };
+type GenBody = { prompt: string; title: string; section: Section; aspect: string; style?: string; negative?: string; dna?: DnaInput };
 
 /**
  * POST to /api/generate and consume the NDJSON stream. Each `log` event is
@@ -206,6 +207,7 @@ export default function StudioPage() {
   const [section, setSection] = useState<Section>('hero');
   const [aspect, setAspect] = useState('16:9');
   const [styleId, setStyleId] = useState<StyleId>('auto');
+  const [dnaId, setDnaId] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
   // Step 3 — generation
@@ -245,7 +247,7 @@ export default function StudioPage() {
       const res = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: imgPrompt, aspect: imgAspect, style: imgStyle, count: Number(imgCount) }),
+        body: JSON.stringify({ prompt: imgPrompt, aspect: imgAspect, style: imgStyle, count: Number(imgCount), dna: getDnaInput() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t.imgFailed);
@@ -529,8 +531,23 @@ export default function StudioPage() {
     return streamGenerate({ negative: NEGATIVE_PROMPT, ...body }, appendLog);
   }
 
+  const getDnaInput = (): DnaInput | undefined => {
+    if (!dnaId) return undefined;
+    const dna = DNA_PRESETS.find((d) => d.id === dnaId);
+    if (!dna) return undefined;
+    return {
+      lens: dna.lens,
+      lighting: dna.lighting,
+      colorGrade: dna.colorGrade,
+      filmStock: dna.filmStock,
+      mood: dna.mood,
+      motion: dna.motion,
+    };
+  };
+
   const planWholePage = () => {
-    const plan = planFromBrief(brief, styleId);
+    const dna = getDnaInput();
+    const plan = planFromBrief(brief, styleId, dna);
     setBatch(plan.map((p) => ({ ...p, state: 'pending' as const })));
   };
 
@@ -551,7 +568,7 @@ export default function StudioPage() {
         let lastErr: unknown = null;
         for (let attempt = 0; attempt <= RETRIES; attempt++) {
           try {
-            await runOne({ prompt: items[i].prompt, title: items[i].title, section: items[i].section, aspect: items[i].aspect, style: items[i].style });
+            await runOne({ prompt: items[i].prompt, title: items[i].title, section: items[i].section, aspect: items[i].aspect, style: items[i].style, dna: getDnaInput() });
             lastErr = null;
             break;
           } catch (e) {
@@ -592,14 +609,15 @@ export default function StudioPage() {
   );
 
   const generatePrompt = () => {
-    const plan = planFromBrief(brief, styleId);
+    const dna = getDnaInput();
+    const plan = planFromBrief(brief, styleId, dna);
     if (plan.length) {
       setPrompt(plan[0].prompt);
       setTitle(plan[0].title);
       setSection(plan[0].section);
       setAspect(plan[0].aspect);
     } else {
-      setPrompt(composePrompt({ brief, section, style: styleId }));
+      setPrompt(composePrompt({ brief, section, style: styleId, dna }));
     }
   };
 
@@ -617,7 +635,7 @@ export default function StudioPage() {
     setResult(null);
     setLogs([]);
     try {
-      const entry = await streamGenerate({ prompt, title, section, aspect, style: styleId, negative: NEGATIVE_PROMPT }, appendLog);
+      const entry = await streamGenerate({ prompt, title, section, aspect, style: styleId, negative: NEGATIVE_PROMPT, dna: getDnaInput() }, appendLog);
       setResult(entry);
       setStatus('done');
     } catch (e) {
@@ -836,6 +854,20 @@ export default function StudioPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={dnaId} onValueChange={setDnaId}>
+                  <SelectTrigger className="w-52 gap-1.5"><Clapperboard className="h-4 w-4 opacity-60" /><SelectValue placeholder="🎬 Кинематографичный стиль" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Без DNA</SelectItem>
+                    {DNA_PRESETS.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{d.label}</span>
+                          <span className="text-xs text-muted-foreground">{d.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button size="sm" variant="outline" onClick={planWholePage} disabled={!brief.trim()} className="gap-1.5">
                   <ListVideo className="h-4 w-4" /> {t.buildWholePage}
                 </Button>
@@ -870,6 +902,20 @@ export default function StudioPage() {
                     <SelectItem value="auto">{t.styleAuto}</SelectItem>
                     {STYLE_PRESETS.map((p) => (
                       <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={dnaId} onValueChange={setDnaId}>
+                  <SelectTrigger className="w-52 gap-1.5"><Clapperboard className="h-4 w-4 opacity-60" /><SelectValue placeholder="🎬 DNA" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Без DNA</SelectItem>
+                    {DNA_PRESETS.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{d.label}</span>
+                          <span className="text-xs text-muted-foreground">{d.description}</span>
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

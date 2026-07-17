@@ -39,6 +39,15 @@ interface GenerateBody {
   duration?: number;
   style?: string;
   negative?: string;
+  dna?: {
+    lens: string;
+    lighting: string;
+    colorGrade: string;
+    filmStock: string;
+    mood: string;
+    motion: string;
+    label?: string;
+  };
 }
 
 function argsFrom(body: GenerateBody): string[] {
@@ -59,6 +68,9 @@ function argsFrom(body: GenerateBody): string[] {
   push('--duration', body.duration);
   push('--style', body.style?.trim());
   push('--negative', body.negative?.trim());
+  if (body.dna) {
+    push('--dna', JSON.stringify(body.dna));
+  }
   return a;
 }
 
