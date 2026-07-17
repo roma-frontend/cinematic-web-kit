@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Wand2, X, Send, Mic, Eraser, ArrowUpRight, Maximize2, Minimize2,
   Plus, Pencil, Trash2, Check, Copy, MessageSquare, PanelLeft, RotateCcw,
   Square, RefreshCw, Search, ArrowDown, CornerDownLeft, Sparkles, Database, Compass, Brain, FileText,
   ThumbsUp, ThumbsDown, Loader2, PenLine, Globe, User, Inbox, ShieldCheck, AlertTriangle, CheckCircle2, ImagePlus,
+  Bold, Italic, Code, List, ListOrdered, Quote, Download, Pin, Keyboard, Volume2, VolumeX, Share2, Settings, GitBranch,
+  ChevronLeft, ChevronRight, Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocale } from '@/hooks/use-locale';
@@ -18,8 +20,10 @@ import {
 } from '@/lib/assistant-commands';
 import { parseMarkdownTable, sitePreviewUrl } from '@/lib/assistant-canvas';
 import { taskProgress } from '@/lib/assistant-task-core';
+import { exportConversation, type ExportFormat } from '@/lib/assistant-export';
 import { useStudioAssistant, type AssistantMessage } from './use-studio-assistant';
 import { AssistantMarkdown } from './assistant-markdown';
+import { ArtifactsCanvas, type Artifact } from './artifacts-canvas';
 
 const DRAFT_KEY = 'cwk:assistant:draft';
 const HISTORY_KEY = 'cwk:assistant:input-history';
@@ -88,6 +92,90 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const starters = t.starters[role] ?? t.starters.customer;
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [variantIdx, setVariantIdx] = useState<Record<string, number>>({});
+  const [isDragging, setIsDragging] = useState(false);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [searchResults, setSearchResults] = useState<Array<{ conversationId: string; messageId: string; role: string; content: string; conversationTitle: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [artifact, setArtifact] = useState<Artifact | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    if (!a.currentId) return;
+    setIsSharing(true);
+    try {
+      const res = await fetch('/api/assistant/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: a.currentId }),
+      });
+      if (res.ok) {
+        const { shareToken } = await res.json();
+        const link = `${window.location.origin}/shared/${shareToken}`;
+        setShareLink(link);
+        setLinkCopied(false);
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+    } finally {
+      setIsSharing(false);
+    }
+  }, [a.currentId]);
+
+  const copyShareLink = useCallback(async () => {
+    if (!shareLink) return;
+    try {
+      // Проверяем доступность navigator и clipboard API
+      if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareLink);
+      } else {
+        // Fallback для старых браузеров или не-HTTPS контекстов
+        const textArea = document.createElement('textarea');
+        textArea.value = shareLink;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setLinkCopied(true);
+      setTimeout(() => {
+        setLinkCopied(false);
+        setShareLink(null);
+      }, 1500);
+    } catch (err) {
+      console.error('Copy failed:', err);
+      // Если копирование не удалось, просто выделяем текст
+    }
+  }, [shareLink]);
+
+  const handleSearch = useCallback(async (query: string) => {
+    setHistoryQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/assistant/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data.results || []);
+      }
+    } catch (err) {
+      console.error('Search failed:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
   // ── Slash-command palette ────────────────────────────────────────────────
   const commands = buildSlashCommands(role, {
@@ -164,8 +252,11 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); setOpen((v) => !v); }
-      // Esc closes the panel — but let it first dismiss an in-progress inline
-      // edit / rename / delete confirmation instead of nuking the whole panel.
+      if (e.key === '?' && !open && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
+      if (e.key === 'Escape' && showShortcuts) { setShowShortcuts(false); return; }
       if (e.key === 'Escape' && open) {
         if (editing) { setEditing(null); return; }
         if (renaming) { setRenaming(null); return; }
@@ -177,7 +268,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, editing, renaming, pendingDelete, sidebarOpen, memoryOpen]);
+  }, [open, editing, renaming, pendingDelete, sidebarOpen, memoryOpen, showShortcuts]);
 
   // On the first open, reveal the history sidebar smoothly so the conversation
   // list is visible immediately instead of staying hidden in the compact mode.
@@ -270,11 +361,12 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
   // Navigate, but first gracefully dismiss the panel so it doesn't linger on
   // top of the destination page — the AnimatePresence exit animation plays,
   // then we push the route.
-  const handleNavigate = (route: string) => {
+  const handleNavigate = async (route: string) => {
     setSidebarOpen(false);
     setExpanded(false);
     setOpen(false);
-    setTimeout(() => a.navigate(route), 300);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await a.navigate(route);
   };
 
   const editUserMsg = (id: string, content: string) => setEditing({ id, value: content });
@@ -282,6 +374,43 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
     if (editing && editing.value.trim()) a.editMessage(editing.id, editing.value);
     setEditing(null);
   };
+
+  const insertMarkdown = useCallback((prefix: string, suffix = '') => {
+    const el = a.inputRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = a.input.slice(start, end);
+    const before = a.input.slice(0, start);
+    const after = a.input.slice(end);
+    a.setInput(`${before}${prefix}${selected}${suffix}${after}`);
+    setTimeout(() => {
+      el.focus();
+      const pos = start + prefix.length + selected.length + suffix.length;
+      el.setSelectionRange(pos, pos);
+    }, 0);
+  }, [a.input, a.inputRef, a.setInput]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
+    for (const file of files.slice(0, 3 - a.attachments.length)) {
+      void a.uploadAttachment(file);
+    }
+  }, [a.attachments.length, a.uploadAttachment]);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItem = items.find((item) => item.type.startsWith('image/'));
+    if (imageItem && a.attachments.length < 3) {
+      const file = imageItem.getAsFile();
+      if (file) {
+        e.preventDefault();
+        void a.uploadAttachment(file);
+      }
+    }
+  }, [a.attachments.length, a.uploadAttachment]);
 
   const iconBtn = 'rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground';
 
@@ -441,7 +570,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   </div>)
             : <div className="flex items-center gap-2"><StreamStatus status={a.streamStatus} inline thinkingLabel={t.statusThinking} writingLabel={t.statusWriting} fetchingLabel={t.statusFetching} /></div>}
         </div>
-        {/* Row actions: edit (user) · copy (both) · regenerate (assistant) · time */}
+        {/* Row actions: edit (user) · copy (both) · regenerate (assistant) · tts · fork · time */}
         {m.content && (
           <div className={cn('mt-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100', isUser ? 'flex-row-reverse' : '')}>
             {isUser && (
@@ -452,10 +581,37 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
             <button type="button" onClick={() => copy(m.id, m.content)} title={t.copy} aria-label={t.copy} className={iconBtn}>
               {copiedId === m.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
+            {!isUser && a.ttsSupported && (
+              <button type="button" onClick={() => a.speak(m.content)} title={a.isSpeaking ? t.stopSpeaking : t.speak} aria-label={a.isSpeaking ? t.stopSpeaking : t.speak} className={cn(iconBtn, a.isSpeaking && 'text-primary')}>
+                {a.isSpeaking ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              </button>
+            )}
             {!isUser && !a.isLoading && (
               <button type="button" onClick={() => a.regenerate(m.id)} title={t.regenerate} aria-label={t.regenerate} className={iconBtn}>
                 <RefreshCw className="h-3.5 w-3.5" />
               </button>
+            )}
+            {!isUser && !a.isLoading && (
+              <button type="button" onClick={() => {
+                const idx = a.messages.indexOf(m);
+                if (idx > 0) {
+                  const userMsg = a.messages.slice(0, idx).reverse().find((prev: AssistantMessage) => prev.role === 'user');
+                  if (userMsg) a.send(userMsg.content);
+                }
+              }} title={t.fork} aria-label={t.fork} className={iconBtn}>
+                <GitBranch className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {a.responseVariants[m.id] && a.responseVariants[m.id].length > 1 && (
+              <div className="flex items-center gap-0.5">
+                <button type="button" onClick={() => setVariantIdx((prev) => ({ ...prev, [m.id]: Math.max(0, (prev[m.id] ?? 0) - 1) }))} className={iconBtn} disabled={(variantIdx[m.id] ?? 0) === 0}>
+                  <ChevronLeft className="h-3 w-3" />
+                </button>
+                <span className="text-[10px] tabular-nums text-muted-foreground">{(variantIdx[m.id] ?? 0) + 1}/{a.responseVariants[m.id].length}</span>
+                <button type="button" onClick={() => setVariantIdx((prev) => ({ ...prev, [m.id]: Math.min(a.responseVariants[m.id].length - 1, (prev[m.id] ?? 0) + 1) }))} className={iconBtn} disabled={(variantIdx[m.id] ?? 0) >= a.responseVariants[m.id].length - 1}>
+                  <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
             )}
             {m.createdAt && <span className="px-1 text-[10px] tabular-nums text-muted-foreground/60">{fmtTime(m.createdAt)}</span>}
           </div>
@@ -487,6 +643,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
       );
     }
     const active = a.currentId === c.id;
+    const pinned = a.pinnedIds.has(c.id);
     return (
       <div key={c.id} className={cn('group/item flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm transition-colors',
         active ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted')}>
@@ -494,6 +651,10 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
           className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-70" />
           <span className="truncate">{c.title}</span>
+        </button>
+        <button type="button" onClick={() => a.togglePin(c.id)} title={t.pin} aria-label={t.pin}
+          className={cn('rounded p-1 transition-opacity', pinned ? 'text-primary opacity-100' : 'opacity-0 group-hover/item:opacity-100 hover:bg-background')}>
+          <Pin className="h-3 w-3" />
         </button>
         <button type="button" onClick={() => setRenaming({ id: c.id, value: c.title })} title={t.renameAction} aria-label={t.renameAction}
           className="rounded p-1 opacity-0 transition-opacity hover:bg-background group-hover/item:opacity-100"><Pencil className="h-3 w-3" /></button>
@@ -690,14 +851,15 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
   const renderSidebar = () => {
     const q = historyQuery.trim().toLowerCase();
     const filtered = q ? a.conversations.filter((c) => c.title.toLowerCase().includes(q)) : a.conversations;
-    // Bucket by recency (based on updatedAt) for a tidy, scannable history.
+    const pinned = filtered.filter((c) => a.pinnedIds.has(c.id));
+    const unpinned = filtered.filter((c) => !a.pinnedIds.has(c.id));
     const now = Date.now();
     const startOfToday = new Date().setHours(0, 0, 0, 0);
     const weekAgo = now - 7 * 864e5;
     const groups: { label: string; items: typeof filtered }[] = [
-      { label: t.groupToday, items: filtered.filter((c) => c.updatedAt >= startOfToday) },
-      { label: t.groupWeek, items: filtered.filter((c) => c.updatedAt < startOfToday && c.updatedAt >= weekAgo) },
-      { label: t.groupOlder, items: filtered.filter((c) => c.updatedAt < weekAgo) },
+      { label: t.groupToday, items: unpinned.filter((c) => c.updatedAt >= startOfToday) },
+      { label: t.groupWeek, items: unpinned.filter((c) => c.updatedAt < startOfToday && c.updatedAt >= weekAgo) },
+      { label: t.groupOlder, items: unpinned.filter((c) => c.updatedAt < weekAgo) },
     ].filter((g) => g.items.length > 0);
     return (
       <div className="flex h-full w-[min(86vw,320px)] shrink-0 flex-col border-r border-border/60 bg-background shadow-2xl md:shadow-none sm:w-72">
@@ -708,22 +870,57 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
           </button>
           <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/60 px-2.5 py-1.5 focus-within:border-primary/50">
             <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <input value={historyQuery} onChange={(e) => setHistoryQuery(e.target.value)} placeholder={t.searchHistory}
+            <input value={historyQuery} onChange={(e) => handleSearch(e.target.value)} placeholder={t.searchHistory}
               className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground" />
-            {historyQuery && (
-              <button type="button" onClick={() => setHistoryQuery('')} className="text-muted-foreground hover:text-foreground" aria-label={t.cancel}><X className="h-3.5 w-3.5" /></button>
+            {isSearching && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+            {historyQuery && !isSearching && (
+              <button type="button" onClick={() => { setHistoryQuery(''); setSearchResults([]); }} className="text-muted-foreground hover:text-foreground" aria-label={t.cancel}><X className="h-3.5 w-3.5" /></button>
             )}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-2 pb-2 [scrollbar-width:thin]">
-          {a.conversations.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted-foreground">{t.emptyHistory}</p>}
-          {a.conversations.length > 0 && filtered.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted-foreground">{t.noMatches}</p>}
-          {groups.map((g) => (
-            <div key={g.label} className="mb-1">
-              <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g.label}</p>
-              <div className="space-y-0.5">{g.items.map(renderConvRow)}</div>
+          {searchResults.length > 0 ? (
+            <div className="space-y-1">
+              <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-primary/70">
+                {t.searchResults} ({searchResults.length})
+              </p>
+              {searchResults.map((result) => (
+                <button
+                  key={result.messageId}
+                  type="button"
+                  onClick={() => {
+                    a.selectConversation(result.conversationId);
+                    setSidebarOpen(false);
+                    setSearchResults([]);
+                    setHistoryQuery('');
+                  }}
+                  className="w-full rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+                >
+                  <p className="truncate font-medium text-foreground">{result.conversationTitle}</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{result.content}</p>
+                </button>
+              ))}
             </div>
-          ))}
+          ) : (
+            <>
+              {a.conversations.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted-foreground">{t.emptyHistory}</p>}
+              {a.conversations.length > 0 && filtered.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted-foreground">{t.noMatches}</p>}
+              {pinned.length > 0 && (
+                <div className="mb-1">
+                  <p className="flex items-center gap-1 px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-primary/70">
+                    <Pin className="h-2.5 w-2.5" /> {t.pinned}
+                  </p>
+                  <div className="space-y-0.5">{pinned.map(renderConvRow)}</div>
+                </div>
+              )}
+              {groups.map((g) => (
+                <div key={g.label} className="mb-1">
+                  <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g.label}</p>
+                  <div className="space-y-0.5">{g.items.map(renderConvRow)}</div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
     );
@@ -743,6 +940,94 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
         </AnimatePresence>
         {!open && !hasOpened && <span className="absolute inset-0 -z-10 rounded-2xl bg-primary/30 motion-safe:animate-ping" style={{ animationDuration: '2.4s' }} />}
       </motion.button>
+
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowShortcuts(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Keyboard className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">{t.shortcuts}</p>
+                </div>
+                <button type="button" onClick={() => setShowShortcuts(false)} className={iconBtn}><X className="h-4 w-4" /></button>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto p-4 [scrollbar-width:thin]">
+                <div className="space-y-3">
+                  {[
+                    { keys: '⌘/Ctrl + J', desc: t.shortcutToggle },
+                    { keys: 'Esc', desc: t.shortcutClose },
+                    { keys: 'Enter', desc: t.shortcutSend },
+                    { keys: 'Shift + Enter', desc: t.shortcutNewline },
+                    { keys: '/', desc: t.shortcutCommands },
+                    { keys: '@', desc: t.shortcutMentions },
+                    { keys: '↑/↓', desc: t.shortcutHistory },
+                    { keys: '?', desc: t.shortcutHelp },
+                  ].map((s) => (
+                    <div key={s.keys} className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{s.desc}</span>
+                      <kbd className="rounded-md border border-border/70 bg-muted/60 px-2 py-0.5 font-mono text-[11px] font-medium text-foreground">{s.keys}</kbd>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {shareLink && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => setShareLink(null)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Share2 className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">{t.shareLink}</p>
+                </div>
+                <button type="button" onClick={() => setShareLink(null)} className={iconBtn}><X className="h-4 w-4" /></button>
+              </div>
+              <div className="p-4">
+                <p className="mb-3 text-xs text-muted-foreground">{t.shareLinkDescription}</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={shareLink}
+                    readOnly
+                    className="flex-1 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs outline-none"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <button
+                    type="button"
+                    onClick={copyShareLink}
+                    className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  >
+                    {linkCopied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        {t.copied}
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        {t.copy}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {open && (
@@ -794,6 +1079,35 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                     <PanelLeft className="h-4 w-4" />
                   </button>
                 )}
+                {a.messages.length > 0 && (
+                  <div className="relative">
+                    <button type="button" onClick={() => setShowExport((v) => !v)} aria-label={t.exportChat} title={t.exportChat} className={iconBtn}>
+                      <Download className="h-4 w-4" />
+                    </button>
+                    <AnimatePresence>
+                      {showExport && (
+                        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                          className="absolute right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-border/70 bg-popover/95 p-1 shadow-xl backdrop-blur-xl">
+                          {(['markdown', 'json', 'text'] as ExportFormat[]).map((fmt) => (
+                            <button key={fmt} type="button" onClick={() => { exportConversation(a.messages, a.conversations.find((c) => c.id === a.currentId)?.title ?? 'Chat', fmt); setShowExport(false); }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-muted">
+                              <FileText className="h-3 w-3" /> {fmt.toUpperCase()}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+                {a.messages.length > 0 && a.currentId && (
+                  <button type="button" onClick={handleShare} disabled={isSharing} aria-label={t.shareConversation} title={t.shareConversation} className={iconBtn}>
+                    {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+                  </button>
+                )}
+                <button type="button" onClick={() => setShowSettings((v) => !v)} aria-label={t.customInstructions} title={t.customInstructions}
+                  className={cn(iconBtn, showSettings && 'bg-muted text-foreground')}>
+                  <Settings className="h-4 w-4" />
+                </button>
                 <button type="button" onClick={() => { const next = !memoryOpen; setMemoryOpen(next); if (next) void a.loadMemories(); }}
                   aria-label={t.memory} title={t.memory}
                   className={cn(iconBtn, 'relative', memoryOpen && 'bg-muted text-foreground')}>
@@ -801,6 +1115,21 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   {a.memories.length > 0 && (
                     <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground">{a.memories.length}</span>
                   )}
+                </button>
+                {a.tokenLimit && (
+                  <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-1" title={`${a.tokenCount} / ${a.tokenLimit} ${t.messagesUsed}`}>
+                    <span className="text-[10px] font-medium text-muted-foreground">{a.tokenCount}</span>
+                    <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
+                      <div 
+                        className="h-full bg-primary transition-all" 
+                        style={{ width: `${Math.min(100, (a.tokenCount / a.tokenLimit) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">/ {a.tokenLimit}</span>
+                  </div>
+                )}
+                <button type="button" onClick={() => setShowShortcuts(true)} aria-label={t.shortcuts} title={t.shortcuts} className={iconBtn}>
+                  <Keyboard className="h-4 w-4" />
                 </button>
                 <button type="button" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? t.collapse : t.expand} title={expanded ? t.collapse : t.expand} className={cn(iconBtn)}>
                   {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -844,6 +1173,28 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                           <p className="mt-2 text-[10px] text-muted-foreground/70">{t.memoryHint}</p>
                         </>
                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {showSettings && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden border-b border-border/60 bg-muted/20">
+                    <div className={cn('mx-auto p-3', expanded && 'w-full max-w-3xl')}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <Settings className="h-3.5 w-3.5 text-primary" />
+                        <p className="flex-1 text-xs font-semibold">{t.customInstructions}</p>
+                      </div>
+                      <textarea
+                        value={a.customInstructions}
+                        onChange={(e) => a.setCustomInstructions(e.target.value)}
+                        placeholder={t.customInstructionsHint}
+                        rows={3}
+                        className="w-full resize-none rounded-xl border border-border/70 bg-card/60 px-3 py-2 text-xs outline-none placeholder:text-muted-foreground focus:border-primary/50"
+                      />
                     </div>
                   </motion.div>
                 )}
@@ -933,6 +1284,62 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                           </div>
                         </div>
                       )}
+                      {m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0 && (
+                        <div className="flex flex-col gap-1 pl-1">
+                          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            <Database className="h-3 w-3" /> {t.toolCalls}
+                          </p>
+                          <div className="space-y-1">
+                            {m.toolCalls.map((tc, ti) => (
+                              <div key={`${m.id}-tool-${ti}`} className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1.5 text-[11px]">
+                                {tc.status === 'running' && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                                {tc.status === 'done' && <Check className="h-3 w-3 text-emerald-500" />}
+                                {tc.status === 'error' && <AlertTriangle className="h-3 w-3 text-red-500" />}
+                                <span className="font-medium text-foreground">{tc.name}</span>
+                                {tc.result && <span className="truncate text-muted-foreground">{tc.result}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {m.role === 'assistant' && m.imageUrl && !a.isLoading && (
+                        <div className="flex flex-col gap-2 pl-1">
+                          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            <ImagePlus className="h-3 w-3" /> {t.generateImage}
+                          </p>
+                          <div className="overflow-hidden rounded-xl border border-border/60">
+                            <img src={m.imageUrl} alt="Generated" className="w-full max-w-md" loading="lazy" />
+                          </div>
+                        </div>
+                      )}
+                      {m.role === 'assistant' && m.webSearchResults && m.webSearchResults.length > 0 && !a.isLoading && (
+                        <div className="flex flex-col gap-2 pl-1">
+                          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            <Search className="h-3 w-3" /> {t.webSearchResults}
+                          </p>
+                          <div className="space-y-2">
+                            {m.webSearchResults.slice(0, 5).map((result, ri) => (
+                              <a key={`${m.id}-ws-${ri}`} href={result.url} target="_blank" rel="noopener noreferrer"
+                                className="block rounded-lg border border-border/60 bg-card/60 p-3 text-xs transition-colors hover:border-primary/50 hover:bg-primary/5">
+                                <p className="mb-1 font-semibold text-foreground">{result.title}</p>
+                                <p className="mb-1.5 line-clamp-2 text-muted-foreground">{result.snippet}</p>
+                                <p className="truncate text-[10px] text-primary/70">{result.url}</p>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {m.role === 'assistant' && m.artifact && !a.isLoading && (
+                        <div className="flex flex-col gap-2 pl-1">
+                          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            <Code className="h-3 w-3" /> {t.artifact}
+                          </p>
+                          <button type="button" onClick={() => setArtifact({ id: m.id, title: t.artifact, type: m.artifact!.type as 'html' | 'react' | 'code' | 'markdown', content: m.artifact!.content })}
+                            className="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20">
+                            <Eye className="h-3.5 w-3.5" /> {t.artifactPreview}
+                          </button>
+                        </div>
+                      )}
                       {m.role === 'assistant' && m.route && !a.isLoading && (
                         <div className="pl-1">
                           <button type="button" onClick={() => handleNavigate(m.route!)}
@@ -987,6 +1394,13 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   {a.isLoading && (
                     <div className={cn('mb-2 flex items-center gap-2', expanded && 'mx-auto w-full max-w-3xl')}>
                       <StreamStatus status={a.streamStatus} thinkingLabel={t.statusThinking} writingLabel={t.statusWriting} fetchingLabel={t.statusFetching} />
+                      {a.streamStatus === 'thinking' && (
+                        <div className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary/60 motion-safe:animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary/60 motion-safe:animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary/60 motion-safe:animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className={cn('relative mx-auto', expanded && 'w-full max-w-3xl')}>
@@ -1058,16 +1472,36 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                         ))}
                       </div>
                     )}
-                    <div className="flex items-end gap-2 rounded-2xl border border-border/70 bg-card/60 px-2.5 py-2 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
-                    <input ref={attachmentInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void a.uploadAttachment(file); e.currentTarget.value = ''; }} />
-                    <button type="button" onClick={() => attachmentInputRef.current?.click()} disabled={a.isUploading || a.attachments.length >= 3} aria-label="Attach image" title="Attach image (max 3, 10 MB each)"
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40">
-                      {a.isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                    </button>
-                    <textarea ref={a.inputRef} value={a.input} onChange={(e) => a.setInput(e.target.value)}
-                      onKeyDown={onComposerKey}
-                      rows={1} placeholder={a.isListening ? t.listening : t.placeholder}
-                      className="max-h-28 flex-1 resize-none bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground" />
+                    <div ref={composerRef}
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={handleDrop}
+                      className={cn('flex flex-col rounded-2xl border bg-card/60 px-2.5 py-2 transition-colors focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20',
+                        isDragging ? 'border-primary/60 bg-primary/5' : 'border-border/70')}>
+                      <div className="mb-1 flex items-center gap-0.5 border-b border-border/40 pb-1">
+                        <button type="button" onClick={() => insertMarkdown('**', '**')} title="Bold" aria-label="Bold" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Bold className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('*', '*')} title="Italic" aria-label="Italic" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Italic className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('`', '`')} title="Code" aria-label="Code" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Code className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('- ')} title="List" aria-label="List" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><List className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('1. ')} title="Numbered list" aria-label="Numbered list" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><ListOrdered className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('> ')} title="Quote" aria-label="Quote" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Quote className="h-3 w-3" /></button>
+                        <div className="flex-1" />
+                        <input ref={attachmentInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void a.uploadAttachment(file); e.currentTarget.value = ''; }} />
+                        <button type="button" onClick={() => attachmentInputRef.current?.click()} disabled={a.isUploading || a.attachments.length >= 3} aria-label="Attach image" title="Attach image (max 3, 10 MB each)"
+                          className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40">
+                          {a.isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
+                        </button>
+                      </div>
+                      {isDragging && (
+                        <div className="mb-1 flex items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 py-3 text-xs text-primary/70">
+                          {t.dropHere}
+                        </div>
+                      )}
+                      <div className="flex items-end gap-2">
+                      <textarea ref={a.inputRef} value={a.input} onChange={(e) => a.setInput(e.target.value)}
+                        onKeyDown={onComposerKey} onPaste={handlePaste}
+                        rows={1} placeholder={a.isListening ? t.listening : t.placeholder}
+                        className="max-h-28 flex-1 resize-none bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground" />
                     {a.voiceSupported && (
                       <button type="button" onClick={a.startVoice} aria-label={t.voice} title={t.voice}
                         className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors', a.isListening ? 'bg-red-500/15 text-red-500' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
@@ -1085,7 +1519,8 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                         <Send className="h-4 w-4" />
                       </button>
                     )}
-                  </div>
+                      </div>
+                    </div>
                     <p className="mt-1.5 text-center text-[10px] text-muted-foreground/70">{t.shiftEnterHint}</p>
                   </div>
                 </div>
@@ -1096,6 +1531,22 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
             {expanded && a.canvas.type !== 'none' && (
               <div className="hidden shrink-0 border-l border-border/60 md:flex">
                 {renderCanvas()}
+              </div>
+            )}
+            {/* Artifacts canvas (fullscreen only) */}
+            {expanded && artifact && (
+              <div className="hidden shrink-0 border-l border-border/60 md:flex md:w-96 lg:w-[28rem]">
+                <ArtifactsCanvas
+                  artifact={artifact}
+                  onClose={() => setArtifact(null)}
+                  dict={{
+                    close: t.close,
+                    preview: t.artifactPreview,
+                    code: t.artifactCode,
+                    copy: t.copy,
+                    copied: t.copied,
+                  }}
+                />
               </div>
             )}
           </motion.div>

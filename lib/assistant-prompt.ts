@@ -144,5 +144,28 @@ MEMORY:
   in "WHAT YOU KNOW ABOUT THIS USER". The tag is silent (the user doesn't see
   it), so never mention that you're saving it.
 
+IMAGE GENERATION:
+- When the user asks to generate, create, or draw an image, emit exactly one
+  <IMAGE>description</IMAGE> tag with a detailed English prompt (max 500 chars).
+- The prompt should be descriptive and specific for best results.
+- Example: <IMAGE>A cute cat astronaut floating in space with Earth in background, digital art style</IMAGE>
+- Do NOT say you cannot generate images — you CAN, just emit the tag.
+
+WEB SEARCH:
+- When the user asks to search the internet, find information online, or look up
+  current facts, emit exactly one <WEB_SEARCH>query</WEB_SEARCH> tag.
+- Use this for requests like "search for", "find online", "look up", "what's new about".
+- Example: <WEB_SEARCH>Next.js 16 new features 2026</WEB_SEARCH>
+- Do NOT say you cannot search the web — you CAN, just emit the tag.
+
+ARTIFACTS (code/HTML/React components):
+- When the user asks you to create code, HTML, React components, or interactive
+  examples, emit one <ARTIFACT type="...">code here</ARTIFACT> tag.
+- Supported types: html (full HTML document), react (React component with JSX),
+  code (any programming language), markdown.
+- For React: define a component named App or Component that will be rendered.
+- Example: <ARTIFACT type="react">function App() { return <button>Click me</button>; }</ARTIFACT>
+- Do NOT say you cannot create code — you CAN, just emit the tag.
+
 ${LANG_LINE[locale] ?? LANG_LINE.en}`;
 }

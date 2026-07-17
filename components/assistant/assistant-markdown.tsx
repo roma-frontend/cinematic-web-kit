@@ -1,11 +1,53 @@
 'use client';
 
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Check, Copy } from 'lucide-react';
+import { MermaidBlock } from './mermaid-block';
 
-// Renders assistant markdown with GitHub-flavored tables/lists styled like a
-// clean printed document (PDF-like): bordered header band, zebra rows, tidy
-// lists, code and links. Kept theme-aware via CSS tokens.
+function CodeBlock({ language, children }: { language: string; children: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(children);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {}
+  };
+
+  if (language === 'mermaid') {
+    return <MermaidBlock chart={children} />;
+  }
+
+  return (
+    <div className="group relative my-2 overflow-hidden rounded-lg border border-border/50">
+      <div className="flex items-center justify-between bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground">
+        <span>{language || 'code'}</span>
+        <button
+          type="button"
+          onClick={copy}
+          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors hover:bg-muted"
+          aria-label={copied ? 'Copied' : 'Copy code'}
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+      <SyntaxHighlighter
+        language={language || 'text'}
+        style={oneDark}
+        customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8em' }}
+        wrapLongLines
+      >
+        {children}
+      </SyntaxHighlighter>
+    </div>
+  );
+}
+
 export function AssistantMarkdown({ content, onNavigate }: { content: string; onNavigate?: (route: string) => void }) {
   const isInternal = (href?: string) => Boolean(href && /^\/(?!\/)/.test(href));
   return (
@@ -35,20 +77,25 @@ export function AssistantMarkdown({ content, onNavigate }: { content: string; on
           blockquote: ({ children }) => (
             <blockquote className="border-l-2 border-primary/50 pl-3 text-muted-foreground">{children}</blockquote>
           ),
-          code: ({ children }) => {
-            const text = String(children);
-            if (onNavigate && /^\/[A-Za-z0-9/_-]*$/.test(text) && text.length > 1) {
+          code: ({ className, children, ...props }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            const text = String(children).replace(/\n$/, '');
+            const isBlock = match || text.includes('\n');
+            if (isBlock) {
+              return <CodeBlock language={match ? match[1] : ''}>{text}</CodeBlock>;
+            }
+            const inlineText = String(children);
+            if (onNavigate && /^\/[A-Za-z0-9/_-]*$/.test(inlineText) && inlineText.length > 1) {
               return (
-                <button type="button" onClick={() => onNavigate(text)}
+                <button type="button" onClick={() => onNavigate(inlineText)}
                   className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[0.8em] text-primary underline-offset-2 hover:underline">
-                  {text}
+                  {inlineText}
                 </button>
               );
             }
-            return <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.8em]">{children}</code>;
+            return <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.8em]" {...props}>{children}</code>;
           },
           hr: () => <hr className="my-3 border-border/60" />,
-          // PDF-like table.
           table: ({ children }) => (
             <div className="my-3 overflow-x-auto rounded-xl border border-border/70 shadow-sm">
               <table className="w-full border-collapse text-left text-[13px]">{children}</table>

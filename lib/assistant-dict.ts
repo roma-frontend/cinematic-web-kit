@@ -1,4 +1,4 @@
-import type { Locale } from '@/lib/seo';
+﻿import type { Locale } from '@/lib/seo';
 
 // UI strings + starter suggestions for the Studio Assistant widget (ru/en/hy).
 // Named *-dict.ts so it's excluded from coverage (static i18n data).
@@ -37,6 +37,7 @@ export interface AssistantDict {
   stop: string;
   regenerate: string;
   searchHistory: string;
+  searchResults: string;
   noMatches: string;
   newMessages: string;
   groupToday: string;
@@ -65,6 +66,20 @@ export interface AssistantDict {
   remembered: string;
   forget: string;
   sources: string;
+  toolCalls: string;
+  messagesUsed: string;
+  generateImage: string;
+  imagePrompt: string;
+  imageGenerating: string;
+  webSearch: string;
+  webSearchResults: string;
+  artifact: string;
+  artifactPreview: string;
+  artifactCode: string;
+  shareConversation: string;
+  shareCopied: string;
+  shareLink: string;
+  shareLinkDescription: string;
   feedbackGood: string;
   feedbackBad: string;
   feedbackReason: string;
@@ -93,6 +108,24 @@ export interface AssistantDict {
   canvasDataTable: string;
   canvasOpenPreview: string;
   canvasHint: string;
+  exportChat: string;
+  pin: string;
+  pinned: string;
+  shortcuts: string;
+  shortcutToggle: string;
+  shortcutClose: string;
+  shortcutSend: string;
+  shortcutNewline: string;
+  shortcutCommands: string;
+  shortcutMentions: string;
+  shortcutHistory: string;
+  shortcutHelp: string;
+  speak: string;
+  stopSpeaking: string;
+  fork: string;
+  customInstructions: string;
+  customInstructionsHint: string;
+  dropHere: string;
   starters: Record<Role, string[]>;
 }
 
@@ -128,6 +161,7 @@ const ru: AssistantDict = {
   stop: 'Остановить',
   regenerate: 'Сгенерировать заново',
   searchHistory: 'Поиск по чатам…',
+  searchResults: 'Результаты поиска',
   noMatches: 'Ничего не найдено',
   newMessages: 'Новые сообщения',
   groupToday: 'Сегодня',
@@ -162,6 +196,20 @@ const ru: AssistantDict = {
   remembered: 'Запомнил',
   forget: 'Забыть',
   sources: 'Источники',
+  toolCalls: 'Инструменты',
+  messagesUsed: 'сообщений использовано',
+  generateImage: 'Сгенерировать изображение',
+  imagePrompt: 'Опишите изображение...',
+  imageGenerating: 'Генерация изображения...',
+  webSearch: 'Поиск в интернете',
+  webSearchResults: 'Результаты поиска',
+  artifact: 'Артефакт',
+  artifactPreview: 'Предпросмотр',
+  artifactCode: 'Код',
+  shareConversation: 'Поделиться диалогом',
+  shareCopied: 'Ссылка скопирована',
+  shareLink: 'Ссылка на диалог',
+  shareLinkDescription: 'Скопируйте ссылку, чтобы поделиться этим диалогом. Любой, у кого есть ссылка, сможет его просмотреть.',
   feedbackGood: 'Хороший ответ',
   feedbackBad: 'Плохой ответ',
   feedbackReason: 'Что пошло не так?',
@@ -188,6 +236,24 @@ const ru: AssistantDict = {
   canvasDataTable: 'Таблица',
   canvasOpenPreview: 'Открыть предпросмотр',
   canvasHint: 'Ассистент может открыть здесь предпросмотр сайта или данные.',
+  exportChat: 'Экспорт чата',
+  pin: 'Закрепить',
+  pinned: 'Закреплённые',
+  shortcuts: 'Горячие клавиши',
+  shortcutToggle: 'Открыть/закрыть ассистента',
+  shortcutClose: 'Закрыть панель',
+  shortcutSend: 'Отправить сообщение',
+  shortcutNewline: 'Новая строка',
+  shortcutCommands: 'Команды',
+  shortcutMentions: 'Упоминания',
+  shortcutHistory: 'История сообщений',
+  shortcutHelp: 'Показать горячие клавиши',
+  speak: 'Озвучить',
+  stopSpeaking: 'Остановить',
+  fork: 'Новая ветка',
+  customInstructions: 'Инструкции',
+  customInstructionsHint: 'Дополнительные инструкции для ассистента (например: отвечай кратко, используй таблицы)…',
+  dropHere: 'Перетащите изображения сюда',
   starters: {
     customer: [
       '✨ Как создать сайт?',
@@ -242,6 +308,7 @@ const en: AssistantDict = {
   stop: 'Stop',
   regenerate: 'Regenerate',
   searchHistory: 'Search chats…',
+  searchResults: 'Search results',
   noMatches: 'No matches',
   newMessages: 'New messages',
   groupToday: 'Today',
@@ -276,6 +343,20 @@ const en: AssistantDict = {
   remembered: 'Remembered',
   forget: 'Forget',
   sources: 'Sources',
+  toolCalls: 'Tools',
+  messagesUsed: 'messages used',
+  generateImage: 'Generate image',
+  imagePrompt: 'Describe the image...',
+  imageGenerating: 'Generating image...',
+  webSearch: 'Web search',
+  webSearchResults: 'Search results',
+  artifact: 'Artifact',
+  artifactPreview: 'Preview',
+  artifactCode: 'Code',
+  shareConversation: 'Share conversation',
+  shareCopied: 'Link copied',
+  shareLink: 'Conversation link',
+  shareLinkDescription: 'Copy the link to share this conversation. Anyone with the link can view it.',
   feedbackGood: 'Helpful',
   feedbackBad: 'Not helpful',
   feedbackReason: 'What went wrong?',
@@ -302,6 +383,24 @@ const en: AssistantDict = {
   canvasDataTable: 'Table',
   canvasOpenPreview: 'Open preview',
   canvasHint: 'The assistant can open a site preview or data here.',
+  exportChat: 'Export chat',
+  pin: 'Pin',
+  pinned: 'Pinned',
+  shortcuts: 'Keyboard shortcuts',
+  shortcutToggle: 'Toggle assistant',
+  shortcutClose: 'Close panel',
+  shortcutSend: 'Send message',
+  shortcutNewline: 'New line',
+  shortcutCommands: 'Commands',
+  shortcutMentions: 'Mentions',
+  shortcutHistory: 'Message history',
+  shortcutHelp: 'Show shortcuts',
+  speak: 'Read aloud',
+  stopSpeaking: 'Stop reading',
+  fork: 'New branch',
+  customInstructions: 'Custom instructions',
+  customInstructionsHint: 'Additional instructions for the assistant (e.g. be concise, use tables)…',
+  dropHere: 'Drop images here',
   starters: {
     customer: [
       '✨ How do I create a site?',
@@ -356,6 +455,7 @@ const hy: AssistantDict = {
   stop: 'Կանգնեցնել',
   regenerate: 'Վերագեներացնել',
   searchHistory: 'Փնտրել զրույցներում…',
+  searchResults: 'Փնտրման արդյունքներ',
   noMatches: 'Ոչինչ չգտնվեց',
   newMessages: 'Նոր հաղորդագրություններ',
   groupToday: 'Այսօր',
@@ -390,6 +490,20 @@ const hy: AssistantDict = {
   remembered: 'Հիշեցի',
   forget: 'Մոռանալ',
   sources: 'Աղբյուրներ',
+  toolCalls: 'Գործիքներ',
+  messagesUsed: 'Օգտագործված հաղորդագրություններ',
+  generateImage: 'Սdelays delays',
+  imagePrompt: 'Նdelays delays delays…',
+  imageGenerating: 'Սdelays delays delays…',
+  webSearch: 'Որdelays delays delays',
+  webSearchResults: 'Որdelays delays delays',
+  artifact: 'Delays',
+  artifactPreview: 'Նdelays delays',
+  artifactCode: 'Delays',
+  shareConversation: 'Կdelays delays delays',
+  shareCopied: 'Հdelays delays delays',
+  shareLink: 'Delays delays delays',
+  shareLinkDescription: 'Delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays delays.',
   feedbackGood: 'Օգտակար պատասխան',
   feedbackBad: 'Անօգուտ պատասխան',
   feedbackReason: 'Ինչն էր սխալ?',
@@ -416,22 +530,40 @@ const hy: AssistantDict = {
   canvasDataTable: 'Աղյուսակ',
   canvasOpenPreview: 'Բացել նախադիտումը',
   canvasHint: 'Օգնականը կարող է այստեղ բացել կայքի նախադիտում կամ տվյալներ։',
+  exportChat: 'Արտահանել զրույցը',
+  pin: 'Ամրացնել',
+  pinned: 'Ամրակցված',
+  shortcuts: 'Կարճ ուղիներ',
+  shortcutToggle: 'Բացել/փակել օգնականը',
+  shortcutClose: 'Փակել',
+  shortcutSend: 'Ուղարկել',
+  shortcutNewline: 'Նոր տող',
+  shortcutCommands: 'Հրամաններ',
+  shortcutMentions: 'Հիշատակումներ',
+  shortcutHistory: 'Պատմություն',
+  shortcutHelp: 'Օգնություն',
+  speak: 'Արտասանել',
+  stopSpeaking: 'դադարեցնել',
+  fork: 'Նոր տարածք',
+  customInstructions: 'Հարցումներ',
+  customInstructionsHint: 'Լրացման հարցումներ…',
+  dropHere: 'Ներդնել այստեղ',
   starters: {
     customer: [
       '✨ Ինչպե՞ս ստեղծել կայք',
       '🎨 Ընտրել թեմա',
-      '🎬 Գեներացնել վիդեո-հերո',
-      '🚀 Ինչպե՞ս հրապարակել',
+      '🎬 Գեներացնել վիդեոներ',
+      '🚀 Ինչպե՞ս ստեղծել կայք',
     ],
     admin: [
       '✨ Ինչպե՞ս ստեղծել կայք',
-      '🌐 Բոլոր կայքերը',
-      '👥 Օգտատերերի կառավարում',
-      '🚀 Ինչպե՞ս հրապարակել',
+      '🌐 Բացել կայք',
+      '👥 Օգտագործողներ',
+      '🚀 Ինչպե՞ս ստեղծել կայք',
     ],
     superadmin: [
       '🎬 Բացել ստուդիան',
-      '🌐 Հարթակի բոլոր կայքերը',
+      '🌐 Բոլոր կայքերը',
       '🏢 Կազմակերպություններ',
       '👑 Կառավարման վահանակ',
     ],

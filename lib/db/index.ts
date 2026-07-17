@@ -577,6 +577,16 @@ CREATE TABLE IF NOT EXISTS org_payouts (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS org_payouts_site_idx ON org_payouts (site_id);
+
+-- Shared conversations: public links to assistant conversations.
+CREATE TABLE IF NOT EXISTS assistant_shares (
+  share_token TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS assistant_shares_conversation_idx ON assistant_shares (conversation_id);
+CREATE INDEX IF NOT EXISTS assistant_shares_user_idx ON assistant_shares (user_id);
 `;
 
 type DB = BetterSQLite3Database<typeof schema>;

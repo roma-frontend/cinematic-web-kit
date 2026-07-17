@@ -7,6 +7,7 @@ import { ASSISTANT_ROUTES, ASSISTANT_DATA_KEYS, type AssistantRole } from '@/lib
 import type { MentionEntity } from '@/lib/assistant-commands';
 import type { AssistantTask, AssistantTaskStepStatus } from '@/lib/assistant-task-core';
 import { sitePreviewUrl, type MarkdownTable } from '@/lib/assistant-canvas';
+import { speakText, stopSpeaking, isSpeaking as checkSpeaking, ttsSupported as checkTts } from '@/lib/assistant-tts';
 
 import type { Locale } from '@/lib/seo';
 import {
@@ -45,6 +46,14 @@ export interface AssistantMessage {
   actionResult?: ActionResult;
   /** Inline data table the assistant emitted in this reply. */
   dataMarkdown?: string;
+  /** Tool/function calls made during this response. */
+  toolCalls?: Array<{ name: string; status: 'running' | 'done' | 'error'; result?: string }>;
+  /** Generated image URL (Pollinations.ai). */
+  imageUrl?: string;
+  /** Web search results. */
+  webSearchResults?: Array<{ title: string; snippet: string; url: string; source: string }>;
+  /** Artifact (code/HTML/React component). */
+  artifact?: { type: string; content: string };
 }
 
 export type CanvasType = 'none' | 'preview' | 'data' | 'diff-theme';
@@ -103,7 +112,7 @@ function detectLanguage(text: string): Locale {
 function parseTags(
   raw: string,
   role: AssistantRole,
-): { clean: string; route: string | null; suggestions: string[]; data: string | null; remembered: string[]; sources: string[]; action: AgentAction | null } {
+): { clean: string; route: string | null; suggestions: string[]; data: string | null; remembered: string[]; sources: string[]; action: AgentAction | null; imagePrompt: string | null; webSearchQuery: string | null; artifact: { type: string; content: string } | null } {
   let route: string | null = null;
   const nav = raw.match(/<NAVIGATE>\s*([^<]+?)\s*<\/NAVIGATE>/);
   if (nav) {
@@ -133,6 +142,18 @@ function parseTags(
     const key = fact.toLowerCase();
     if (fact && !remSeen.has(key)) { remSeen.add(key); remembered.push(fact); }
   }
+  // Image generation prompt
+  let imagePrompt: string | null = null;
+  const img = raw.match(/<IMAGE>\s*([\s\S]*?)\s*<\/IMAGE>/);
+  if (img) imagePrompt = img[1].trim().slice(0, 500);
+  // Web search query
+  let webSearchQuery: string | null = null;
+  const ws = raw.match(/<WEB_SEARCH>\s*([\s\S]*?)\s*<\/WEB_SEARCH>/);
+  if (ws) webSearchQuery = ws[1].trim().slice(0, 200);
+  // Artifact (code/HTML/React)
+  let artifact: { type: string; content: string } | null = null;
+  const art = raw.match(/<ARTIFACT\s+type="([^"]+)">([\s\S]*?)<\/ARTIFACT>/);
+  if (art) artifact = { type: art[1], content: art[2].trim() };
   // Agentic action: only the first well-formed block; role/locale checked by caller.
   const action = parseActionTag(raw);
   const clean = stripActionTags(raw)
@@ -141,18 +162,24 @@ function parseTags(
     .replace(/<DATA>[\s\S]*?<\/DATA>/g, '')
     .replace(/<REMEMBER>[\s\S]*?<\/REMEMBER>/gi, '')
     .replace(/<SOURCES>[\s\S]*?<\/SOURCES>/gi, '')
+    .replace(/<IMAGE>[\s\S]*?<\/IMAGE>/g, '')
+    .replace(/<WEB_SEARCH>[\s\S]*?<\/WEB_SEARCH>/g, '')
+    .replace(/<ARTIFACT[\s\S]*?<\/ARTIFACT>/g, '')
     .replace(/<NAVIGATE>[\s\S]*$/g, '')
     .replace(/<SUGGEST>[\s\S]*$/g, '')
     .replace(/<DATA>[\s\S]*$/g, '')
     .replace(/<REMEMBER>[\s\S]*$/gi, '')
     .replace(/<SOURCES>[\s\S]*$/gi, '')
-    .replace(/<\/?(NAV|SUG|DAT|REMEMBER|SOURCES|ACTION)[A-Z]*$/i, '')
+    .replace(/<IMAGE>[\s\S]*$/g, '')
+    .replace(/<WEB_SEARCH>[\s\S]*$/g, '')
+    .replace(/<ARTIFACT[\s\S]*$/g, '')
+    .replace(/<\/?(NAV|SUG|DAT|REMEMBER|SOURCES|ACTION|IMAGE|WEB_SEARCH|ARTIFACT)[A-Z]*$/i, '')
     .replace(/<\/?(?:R|RE|REM|REME|REMEM|REMEMB|REMEMBE)$/i, '')
     .replace(/<\/?(?:S|SO|SOU|SOUR|SOURC|SOURCE)$/i, '')
     .trimEnd();
   // Only the user's allowed role can see a proposed action; silently strip it otherwise.
   const allowedAction = action && canProposeAction(role, action.kind) ? action : null;
-  return { clean, route, suggestions, data, remembered, sources, action: allowedAction };
+  return { clean, route, suggestions, data, remembered, sources, action: allowedAction, imagePrompt, webSearchQuery, artifact };
 }
 
 export function useStudioAssistant(role: AssistantRole = 'customer') {
@@ -175,7 +202,14 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const [tasks, setTasks] = useState<AssistantTask[]>([]);
   const [canvas, setCanvas] = useState<CanvasState>({ type: 'none' });
   const [canvasBusy, setCanvasBusy] = useState(false);
+  const tenantSiteIdRef = useRef<string | null>(null);
   const recRef = useRef<SR | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+  const [tokenCount, setTokenCount] = useState(0);
+  const [tokenLimit, setTokenLimit] = useState<number | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState('');
+  const [responseVariants, setResponseVariants] = useState<Record<string, string[]>>({});
   const silenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Live streaming controller so the user can cancel a reply mid-flight; the
@@ -184,6 +218,10 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const stoppedRef = useRef(false);
   const streamStatusRef = useRef(streamStatus);
   streamStatusRef.current = streamStatus;
+  // Throttle streaming updates to prevent infinite re-renders
+  const streamingContentRef = useRef<string>('');
+  const lastUpdateRef = useRef<number>(0);
+  const UPDATE_INTERVAL = 100; // Update UI every 100ms
 
   const setStreamStatusIfChanged = useCallback((next: typeof streamStatus) => {
     if (streamStatusRef.current !== next) setStreamStatus(next);
@@ -214,6 +252,19 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     setMemories([]);
     try { await fetch('/api/assistant/memory', { method: 'DELETE' }); }
     catch { /* optimistic; ignore */ }
+  }, []);
+
+  const loadTokenUsage = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assistant/usage');
+      if (res.ok) {
+        const data = await res.json();
+        setTokenCount(data.used || 0);
+        setTokenLimit(data.limit || null);
+      }
+    } catch {
+      // Silently fail - token counter is optional
+    }
   }, []);
 
   const newChat = useCallback(() => {
@@ -327,6 +378,8 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
       const decoder = new TextDecoder();
       let full = '';
       let hasToken = false;
+      streamingContentRef.current = '';
+      lastUpdateRef.current = 0;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -337,9 +390,16 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
         }
         full += chunk;
         const { clean } = parseTags(full, role);
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean } : m)));
+        streamingContentRef.current = clean;
+        // Throttle UI updates to prevent infinite re-renders
+        const now = Date.now();
+        if (now - lastUpdateRef.current >= UPDATE_INTERVAL) {
+          lastUpdateRef.current = now;
+          setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: clean } : m)));
+        }
       }
-      const { clean, route, suggestions, data, remembered, sources, action: agentAction } = parseTags(full, role);
+      // Final update with all parsed data
+      const { clean, route, suggestions, data, remembered, sources, action: agentAction, imagePrompt, webSearchQuery, artifact } = parseTags(full, role);
       const pendingAction = agentAction ? { action: agentAction, summary: summarizeAction(agentAction, locale) } : undefined;
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? {
         ...m,
@@ -349,6 +409,7 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
         remembered: remembered.length ? remembered : undefined,
         sources: sources.length ? sources : undefined,
         action: pendingAction,
+        artifact: artifact ?? undefined,
       } : m)));
       // Pull the freshly saved facts into the managed memory list.
       if (remembered.length) void loadMemories();
@@ -373,6 +434,40 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
             }
           }
         } catch { /* keep the text answer even if data fetch fails */ }
+      }
+      // If the model asked to generate an image, fetch it from Pollinations.ai.
+      if (imagePrompt) {
+        setStreamStatusIfChanged('fetching');
+        try {
+          const imgRes = await fetch('/api/assistant/image', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: imagePrompt }),
+            signal: controller.signal,
+          });
+          if (imgRes.ok) {
+            const { imageUrl } = await imgRes.json() as { imageUrl: string };
+            if (imageUrl) {
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, imageUrl } : m)));
+            }
+          }
+        } catch { /* keep the text answer even if image generation fails */ }
+      }
+      // If the model asked to search the web, fetch results from DuckDuckGo.
+      if (webSearchQuery) {
+        setStreamStatusIfChanged('fetching');
+        try {
+          const wsRes = await fetch('/api/assistant/web-search', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: webSearchQuery }),
+            signal: controller.signal,
+          });
+          if (wsRes.ok) {
+            const { results } = await wsRes.json() as { results: Array<{ title: string; snippet: string; url: string; source: string }> };
+            if (results && results.length > 0) {
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, webSearchResults: results } : m)));
+            }
+          }
+        } catch { /* keep the text answer even if web search fails */ }
       }
       if (convId) setConversations((prev) => {
         const found = prev.find((c) => c.id === convId);
@@ -402,8 +497,31 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     abortRef.current?.abort();
   }, []);
 
-  /** Navigate to an in-app route (used by clickable links in replies). */
-  const navigate = useCallback((route: string) => { router.push(route); }, [router]);
+  const navigate = useCallback(async (route: string) => {
+    if (route === '/studio/builder') {
+      if (!tenantSiteIdRef.current) {
+        try {
+          const res = await fetch('/api/studio/context');
+          if (res.ok) {
+            const data = await res.json() as { tenant?: { id?: string } | null; superadmin?: boolean };
+            tenantSiteIdRef.current = data.tenant?.id ?? null;
+            if (!tenantSiteIdRef.current && data.superadmin) {
+              const landRes = await fetch('/api/landing-site', { method: 'POST' });
+              if (landRes.ok) {
+                const landData = await landRes.json() as { id?: string };
+                tenantSiteIdRef.current = landData.id ?? null;
+              }
+            }
+          }
+        } catch { /* fall through */ }
+      }
+      if (tenantSiteIdRef.current) {
+        router.push(`/studio/builder?site=${encodeURIComponent(tenantSiteIdRef.current)}`);
+        return;
+      }
+    }
+    router.push(route);
+  }, [router]);
 
   // ── Fullscreen canvas: live preview / data table / theme diff workspace ─────
   const openCanvasSite = useCallback((siteId: string, siteSlug: string, siteName: string) => {
@@ -608,8 +726,57 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     } catch { /* offline: entity picker stays empty */ }
   }, []);
 
+  const togglePin = useCallback((id: string) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const speak = useCallback((text: string) => {
+    if (isSpeaking) { stopSpeaking(); setIsSpeaking(false); return; }
+    speakText(text, locale, () => setIsSpeaking(false));
+    setIsSpeaking(true);
+  }, [isSpeaking, locale]);
+
+  const ttsSupported = checkTts();
+
+  const addResponseVariant = useCallback((messageId: string, content: string) => {
+    setResponseVariants((prev) => {
+      const existing = prev[messageId] ?? [];
+      if (existing.includes(content)) return prev;
+      return { ...prev, [messageId]: [...existing, content] };
+    });
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/studio/context')
+      .then(async (r) => r.ok ? r.json() : null)
+      .then((data) => { tenantSiteIdRef.current = data?.tenant?.id ?? null; })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('cwk:assistant:custom-instructions');
+      if (saved) setCustomInstructions(saved);
+      const pinned = localStorage.getItem('cwk:assistant:pinned');
+      if (pinned) setPinnedIds(new Set(JSON.parse(pinned)));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem('cwk:assistant:custom-instructions', customInstructions); } catch {}
+  }, [customInstructions]);
+
+  useEffect(() => {
+    try { localStorage.setItem('cwk:assistant:pinned', JSON.stringify([...pinnedIds])); } catch {}
+  }, [pinnedIds]);
+
   // Load conversation history once on mount.
-  useEffect(() => { void loadConversations(); void loadMemories(); void loadEntities(); void loadTasks(); }, [loadConversations, loadMemories, loadEntities, loadTasks]);
+  useEffect(() => { void loadConversations(); void loadMemories(); void loadEntities(); void loadTasks(); void loadTokenUsage(); }, [loadConversations, loadMemories, loadEntities, loadTasks, loadTokenUsage]);
 
   return {
     messages, conversations, currentId, input, setInput, attachments, isUploading, uploadAttachment, removeAttachment, isLoading, loadingConversation, isListening, unavailable, error,
@@ -626,12 +793,22 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     updateTaskStep,
     confirmAction,
     dismissAction,
-    // Fullscreen canvas workspace
     canvas,
     canvasBusy,
     openCanvasSite,
     closeCanvas,
     previewTheme,
     commitTheme,
+    pinnedIds,
+    togglePin,
+    tokenCount,
+    tokenLimit,
+    isSpeaking,
+    speak,
+    ttsSupported,
+    customInstructions,
+    setCustomInstructions,
+    responseVariants,
+    addResponseVariant,
   };
 }
