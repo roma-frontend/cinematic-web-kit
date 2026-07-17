@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Copy, Check, Download, ExternalLink, QrCode, UserPlus, ScanLine, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocale } from '@/hooks/use-locale';
+import { copyToClipboard } from '@/lib/clipboard';
 
 type Dict = {
   title: string; subtitle: string;
@@ -67,11 +68,12 @@ export function OrgInviteQr({
   const t = (DICT[locale] ?? DICT.en)(orgName);
   const [copied, setCopied] = useState(false);
 
-  const copy = () => {
-    navigator.clipboard?.writeText(joinUrl).then(() => {
+  const copy = async () => {
+    const success = await copyToClipboard(joinUrl);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    });
+    }
   };
 
   const steps = [

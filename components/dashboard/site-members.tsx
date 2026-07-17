@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { SITE_MEMBERS_SEEN_EVENT } from '@/components/dashboard/site-members-badge';
 import { useLocale } from '@/hooks/use-locale';
 import { dashDict } from '@/lib/dashboard-dict';
+import { copyToClipboard } from '@/lib/clipboard';
 
 type Member = { id: string; email: string; name: string; status: string; rejectionReason: string; createdAt: string | number; approvedAt: string | number | null };
 type Material = { id: string; title: string; body: string; url: string; published: boolean; createdAt: string | number };
@@ -192,7 +193,13 @@ const MM = {
 
 function Creds({ title, items, onClose, m }: { title: string; items: { email: string; password: string }[]; onClose: () => void; m: (typeof MM)[keyof typeof MM] }) {
   const [copied, setCopied] = useState('');
-  const copy = (text: string, key: string) => { navigator.clipboard?.writeText(text); setCopied(key); setTimeout(() => setCopied(''), 1500); };
+  const copy = async (text: string, key: string) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      setCopied(key);
+      setTimeout(() => setCopied(''), 1500);
+    }
+  };
   return (
     <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
       <div className="mb-2 flex items-start gap-2">

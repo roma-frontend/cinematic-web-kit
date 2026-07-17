@@ -14,6 +14,7 @@ import { PageHeader, StatCard } from '@/components/dashboard/ui';
 import { useLocale } from '@/hooks/use-locale';
 import { staffDict, type StaffDict } from '@/lib/staff-dict';
 import { BCP47, type Locale } from '@/lib/seo';
+import { copyToClipboard } from '@/lib/clipboard';
 
 type Role = 'customer' | 'admin' | 'superadmin';
 
@@ -184,7 +185,10 @@ export function UserDossierView({ meId, dossier }: { meId: string; dossier: Doss
 
   const copyTempPw = async () => {
     if (!tempPw) return;
-    try { await navigator.clipboard.writeText(tempPw); setCopied(true); } catch { /* clipboard blocked */ }
+    const success = await copyToClipboard(tempPw);
+    if (success) {
+      setCopied(true);
+    }
   };
 
   return (

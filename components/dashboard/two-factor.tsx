@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { ShieldCheck, ShieldOff, Loader2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocale } from '@/hooks/use-locale';
+import { copyToClipboard } from '@/lib/clipboard';
 
 const DICT = {
   ru: {
@@ -77,7 +78,13 @@ export function TwoFactor() {
     setBusy(false);
   };
 
-  const copy = () => { navigator.clipboard?.writeText(secret).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }); };
+  const copy = async () => {
+    const success = await copyToClipboard(secret);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
 
   const enrolling = Boolean(secret);
 

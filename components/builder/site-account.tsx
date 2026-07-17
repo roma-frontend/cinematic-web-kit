@@ -28,6 +28,7 @@ import { MemberPlans } from '@/components/builder/member-plans';
 import { useLocale } from '@/hooks/use-locale';
 import { BCP47, type Locale } from '@/lib/seo';
 import { siteAccountDict, type SiteAccountDict } from '@/lib/site-account-dict';
+import { copyToClipboard } from '@/lib/clipboard';
 import { LanguageSwitcher } from '../language-switcher';
 
 type Me = {
@@ -1455,7 +1456,11 @@ function SecurityTab({ siteId }: { siteId: string }) {
     setNext(pw); setConfirm(pw); setShow(true); setCopied(false);
   };
   const copyPw = async () => {
-    try { await navigator.clipboard.writeText(next); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* clipboard denied */ }
+    const success = await copyToClipboard(next);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);

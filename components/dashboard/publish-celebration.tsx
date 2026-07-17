@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useLocale } from '@/hooks/use-locale';
 import { usePrefersReducedMotion } from '@/hooks/use-media-query';
 import type { ReadinessIssueCode, ReadinessReport } from '@/lib/site-readiness';
+import { copyToClipboard } from '@/lib/clipboard';
 
 type Copy = {
   title: string; subtitle: string; landingTitle: string; landingSubtitle: string;
@@ -123,11 +124,12 @@ export function PublishCelebration({
   }, [open, onClose]);
 
   const prettyUrl = liveUrl.replace(/^https?:\/\//, '');
-  const copyLink = () => {
-    navigator.clipboard?.writeText(liveUrl).then(() => {
+  const copyLink = async () => {
+    const success = await copyToClipboard(liveUrl);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    }).catch(() => {});
+    }
   };
   const share = () => { navigator.share?.({ title: c.shareText, text: c.shareText, url: liveUrl }).catch(() => {}); };
   const enc = encodeURIComponent(liveUrl);
