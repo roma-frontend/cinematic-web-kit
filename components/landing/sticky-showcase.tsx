@@ -89,11 +89,12 @@ export function StickyShowcase({
                       </div>
                       {shot ? (
                         <div className="relative flex-1 overflow-hidden">
-                          {/* Real product screenshot (R2), scheme-aware swap. */}
+                          {/* R2 screenshots (already webp) — skip sharp optimizer. */}
                           <Image
                             src={shot.dark}
                             alt={s.title}
                             fill
+                            unoptimized
                             sizes="(min-width: 1280px) 574px, (min-width: 1024px) 45vw, 100vw"
                             className="hidden object-cover object-top dark:block"
                           />
@@ -101,6 +102,7 @@ export function StickyShowcase({
                             src={shot.light}
                             alt={s.title}
                             fill
+                            unoptimized
                             sizes="(min-width: 1280px) 574px, (min-width: 1024px) 45vw, 100vw"
                             className="block object-cover object-top dark:hidden"
                           />
@@ -175,8 +177,8 @@ export function StickyShowcase({
             >
               {shot && (
                 <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-border">
-                  <Image src={shot.dark} alt={s.title} fill sizes="100vw" className="hidden object-cover object-top dark:block" />
-                  <Image src={shot.light} alt={s.title} fill sizes="100vw" className="block object-cover object-top dark:hidden" />
+                  <Image src={shot.dark} alt={s.title} fill unoptimized sizes="100vw" className="hidden object-cover object-top dark:block" />
+                  <Image src={shot.light} alt={s.title} fill unoptimized sizes="100vw" className="block object-cover object-top dark:hidden" />
                 </div>
               )}
               <div className="p-6">

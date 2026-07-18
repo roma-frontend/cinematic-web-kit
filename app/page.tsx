@@ -18,7 +18,7 @@ import { getLandingSite } from '@/lib/landing-site';
 import { parseDoc } from '@/lib/sites';
 import type { BuilderDoc, BuilderNode } from '@/lib/builder/types';
 import { translateAuto } from '@/lib/auto-translate';
-import { mediaUrl } from '@/lib/media-url';
+import { mediaFromRemote, mediaUrl } from '@/lib/media-url';
 import type { Locale } from '@/lib/seo';
 import { Button } from '@/components/ui/button';
 import { PricingCards } from '@/components/billing/pricing-cards';
@@ -220,10 +220,16 @@ export default async function Home() {
         title={L.steps.title}
         subtitle={L.steps.subtitle}
         steps={L.steps.items}
-        shots={[1, 2, 3].map((n) => ({
-          light: mediaUrl(`/generated/steps/step-${n}-light.webp`),
-          dark: mediaUrl(`/generated/steps/step-${n}-dark.webp`),
-        }))}
+        // R2-only screenshots: without NEXT_PUBLIC_MEDIA_BASE_URL, missing local
+        // /generated/steps/* can crash next/image's native optimizer in CI.
+        shots={
+          mediaFromRemote()
+            ? [1, 2, 3].map((n) => ({
+                light: mediaUrl(`/generated/steps/step-${n}-light.webp`),
+                dark: mediaUrl(`/generated/steps/step-${n}-dark.webp`),
+              }))
+            : []
+        }
       />
 
       {/* Features — bento grid */}
