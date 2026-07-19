@@ -103,8 +103,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
-        {mediaOrigin && <link rel="preconnect" href={mediaOrigin} crossOrigin="anonymous" />}
-        {mediaOrigin && <link rel="dns-prefetch" href={mediaOrigin} />}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }}

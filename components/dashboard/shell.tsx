@@ -173,7 +173,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
       const on = active(item.href);
       const sup = !!item.super;
       const cls = on
-        ? sup ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'
+        ? sup ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-primary/10 text-primary dark:text-white'
         : sup ? 'text-foreground/90 hover:bg-amber-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground';
       return (
         <Link key={item.href} href={item.href} data-tour={item.key === 'sites' ? 'nav-sites' : undefined} onClick={() => setOpen(false)}
@@ -249,7 +249,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
                     const on = active(item.href);
                     const sup = !!item.super;
                     const cls = on
-                      ? sup ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'
+                      ? sup ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-primary/10 text-primary dark:text-white'
                       : sup ? 'text-foreground/90 hover:bg-amber-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground';
                     return (
                       <Link key={item.href} href={item.href} onClick={() => setOpen(false)} title={t.nav[item.key]} aria-label={t.nav[item.key]}
@@ -291,7 +291,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
                 const pOn = active(hub) || visible.some((i) => groupOf(i) === p.g && active(i.href));
                 const sup = p.g === 'super';
                 const cls = pOn
-                  ? sup ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'
+                  ? sup ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-primary/10 text-primary dark:text-white'
                   : sup ? 'text-foreground/90 hover:bg-amber-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground';
                 return (
                   <div key={p.g} className={`group relative flex items-center rounded-lg text-sm font-medium transition-colors ${cls}`}>
@@ -330,7 +330,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
                 const on = active(hub);
                 const sup = subNav === 'super';
                 const cls = on
-                  ? sup ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'
+                  ? sup ? 'bg-amber-500/15 text-amber-800 dark:text-amber-400' : 'bg-primary/10 text-primary dark:text-white'
                   : sup ? 'text-foreground/90 hover:bg-amber-500/10' : 'text-muted-foreground hover:bg-muted hover:text-foreground';
                 return (
                   <div style={{ opacity: subNav ? 1 : 0, transform: subNav ? 'translateX(0)' : 'translateX(16px)', transition: `opacity 280ms ease 80ms, transform 320ms cubic-bezier(0.34,1.56,0.64,1) 80ms` }}>
