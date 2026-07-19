@@ -67,9 +67,9 @@ const GROUP_ORDER: NavGroup[] = ['workspace', 'staff', 'super'];
 const HUB: Record<'staff' | 'super', string> = { staff: '/dashboard/staff', super: '/dashboard/super' };
 
 const ROLE_CLS: Record<Role, string> = {
-  superadmin: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  admin: 'bg-primary/15 text-primary',
-  customer: 'bg-muted text-muted-foreground',
+  superadmin: 'bg-amber-500/15 text-amber-800 dark:text-amber-400',
+  admin: 'bg-primary/15 text-violet-800 dark:text-violet-300',
+  customer: 'bg-muted text-zinc-700 dark:text-zinc-300',
 };
 const ROLE_ICON: Record<Role, React.ComponentType<{ className?: string }>> = {
   superadmin: Crown,
@@ -320,6 +320,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
               style={{ transform: subNav ? 'translateX(0)' : 'translateX(100%)', opacity: subNav ? 1 : 0, pointerEvents: subNav ? 'auto' : 'none' }}
             >
               <button type="button" onClick={() => setSubNav(null)}
+                aria-label={t.sidebar.back}
                 className="group/back mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
                 <ChevronLeft className="h-4 w-4 transition-transform group-hover/back:-translate-x-0.5" />
                 <span>{subNav ? groupLabel[subNav] : ''}</span>

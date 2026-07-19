@@ -40,6 +40,7 @@ export type DashDict = {
     expand: string;
     search: string;
     noResults: string;
+    back: string;
   };
   hub: {
     open: string;
@@ -305,6 +306,7 @@ const ru: DashDict = {
     expand: 'Развернуть меню',
     search: 'Поиск разделов…',
     noResults: 'Ничего не найдено',
+    back: 'Назад',
   },
   hub: {
     open: 'Открыть',
@@ -602,6 +604,7 @@ const en: DashDict = {
     expand: 'Expand menu',
     search: 'Search sections…',
     noResults: 'Nothing found',
+    back: 'Back',
   },
   hub: {
     open: 'Open',
@@ -899,6 +902,7 @@ const hy: DashDict = {
     expand: 'Բացել ընտրացանկը',
     search: 'Բաժինների որոնում…',
     noResults: 'Ոչինչ չի գտնվել',
+    back: 'Հետ',
   },
   hub: {
     open: 'Բացել',

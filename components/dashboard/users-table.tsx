@@ -24,9 +24,9 @@ interface Row {
 }
 
 const ROLE_CLS: Record<Role, string> = {
-  superadmin: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  admin: 'bg-primary/15 text-primary',
-  customer: 'bg-muted text-muted-foreground',
+  superadmin: 'bg-amber-500/15 text-amber-800 dark:text-amber-400',
+  admin: 'bg-primary/15 text-violet-800 dark:text-violet-300',
+  customer: 'bg-muted text-zinc-700 dark:text-zinc-300',
 };
 const ROLE_ICON: Record<Role, React.ComponentType<{ className?: string }>> = {
   superadmin: Crown, admin: ShieldCheck, customer: UserCircle,
