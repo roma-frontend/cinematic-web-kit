@@ -246,6 +246,10 @@ export function clearLoginFailures(user: { id: string; failedAttempts: number; l
 }
 
 // ---- tiny in-memory rate limiter for the auth endpoints ----
+// NOTE: in-memory (Map) → only effective on a SINGLE instance. On multi-replica
+// or serverless deployments each instance keeps its own counters, so the
+// effective limit is multiplied by the number of instances and resets on cold
+// starts. For horizontally-scaled production, back this with Redis/Upstash.
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
 export function rateLimit(key: string, max = 10, windowMs = 10 * 60 * 1000): boolean {

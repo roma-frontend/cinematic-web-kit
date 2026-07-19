@@ -5,8 +5,9 @@ import 'server-only';
 // bundled ffmpeg (ffmpeg-static) — the same engine the media pipeline uses:
 //   images → .webp (quality 80, max 1600px)
 //   videos → .webm (VP9 CRF 34, max 1280px) + a JPG poster
-// Active formats such as SVG are rejected by the API: serving an attacker-
-// controlled SVG from our own origin can become stored XSS when opened directly.
+// SVG is REJECTED: serving an attacker-controlled SVG from our own origin can
+// become stored XSS when opened directly (inline <script>/<foreignObject>).
+// If SVG support ever becomes a hard requirement, sanitize via DOMPurify first.
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -80,11 +81,12 @@ export async function optimizeUpload(file: File): Promise<OptimizeResult> {
   const originalBytes = buf.length;
   const base = `up-${Date.now().toString(36)}-${rand()}`;
 
-  // SVG: store as-is.
-  if (file.type === 'image/svg+xml') {
-    const out = path.join(dir, `${base}.svg`);
-    await writeFile(out, buf);
-    return { url: await finalize(out, `${base}.svg`), kind: 'raw', originalBytes, optimizedBytes: originalBytes };
+  // SVG is rejected: an attacker-controlled SVG served from our own origin can
+  // execute inline <script>/<foreignObject> when opened directly (stored XSS).
+  // The upload API already excludes SVG from ACCEPTED_TYPES; this guard makes
+  // optimizeUpload safe even if called from another route.
+  if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+    throw new Error('SVG uploads are not allowed');
   }
 
   const isVideo = VIDEO_TYPES.includes(file.type);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Film, Loader2, Play, Download } from 'lucide-react';
+import { Film, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';

@@ -512,12 +512,6 @@ function customCssBlock(id: string, p: Record<string, string>): string {
 function advancedCss(id: string, p: Record<string, string>): string {
   return animationCss(id, p) + hoverCss(id, p) + customCssBlock(id, p);
 }
-const HV_KEYS = ['hvBg', 'hvText', 'hvBorderColor', 'hvShadow', 'hvOpacity', 'hvRadius', 'hvFilter', 'hvScale', 'hvRotate', 'hvTranslateY', 'hvTransform', 'hvCss'];
-function hasAdvanced(p: Record<string, string>): boolean {
-  if (p.animName && p.animName !== '—' && p.animName !== 'none') return true;
-  if ((p.customCss && p.customCss.trim()) || (p.customCssFull && p.customCssFull.trim())) return true;
-  return HV_KEYS.some((k) => p[k] && p[k] !== '—');
-}
 
 function Field({ node }: { node: BuilderNode }) {
   const p = node.props;

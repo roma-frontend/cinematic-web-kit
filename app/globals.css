@@ -514,3 +514,10 @@
 .lut-kodachrome {
   filter: sepia(0.18) contrast(1.05) saturate(1.2);
 }
+/* Neon glow helper for CTA buttons; avoids inline style to prevent JS parser confusion */
+.btn-neon-glow {
+  background: radial-gradient(120px 60px at 50% 110%, color-mix(in oklch, var(--primary) 55%, transparent), transparent 70%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-neon-glow { background: none; }
+}

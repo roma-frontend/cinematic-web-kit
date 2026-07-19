@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser, unauthorized } from '@/lib/api-guard';
-import { analyzeBrandVoice, type BrandVoiceAnalysis } from '@/lib/brand-voice';
+import { analyzeBrandVoice } from '@/lib/brand-voice';
 import { getRawDb } from '@/lib/db';
 
 export const runtime = 'nodejs';

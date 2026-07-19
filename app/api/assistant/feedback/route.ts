@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser, unauthorized } from '@/lib/api-guard';
-import { addFeedback, type FeedbackRating } from '@/lib/assistant-feedback';
+import { addFeedback } from '@/lib/assistant-feedback';
 import { getUserEntitlements } from '@/lib/billing/entitlements';
 
 export const runtime = 'nodejs';

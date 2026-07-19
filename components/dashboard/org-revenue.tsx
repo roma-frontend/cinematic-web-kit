@@ -88,8 +88,8 @@ export function OrgRevenue({ canEdit = true }: { canEdit?: boolean }) {
       {orgs.length === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">{t.empty}</p>
       ) : (
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="mt-5 -mx-3 overflow-x-auto sm:mx-0">
+          <table className="w-full min-w-[42rem] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="py-2 pr-3 font-medium">{t.org}</th>

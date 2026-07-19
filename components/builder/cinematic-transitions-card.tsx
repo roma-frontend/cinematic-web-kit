@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Film, ChevronDown } from 'lucide-react';
+import { Film } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {

@@ -140,7 +140,7 @@ export function SiteAccount({ siteId, base, brand }: { siteId: string; base: str
 
   // Persist the desktop collapse preference; a collapsed rail can't drill in.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration from localStorage (unavailable during SSR)
+     
     try { setCollapsed(localStorage.getItem('cwk:site-sidebar-collapsed') === '1'); } catch { /* ignore */ }
   }, []);
   const toggleCollapsed = () => {

@@ -11,10 +11,6 @@ import 'server-only';
 
 const A4 = { w: 595.28, h: 841.89 };
 
-interface Op {
-  toStream(): string;
-}
-
 /** Escape a string for a PDF literal ( ) string. */
 function esc(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');

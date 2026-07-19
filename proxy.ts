@@ -67,6 +67,10 @@ function appSecurity(res: NextResponse): NextResponse {
 }
 
 // ── Per-IP API rate limit (in-memory; flood backstop, not a UX limit) ───────
+// NOTE: in-memory (Map) → only effective on a SINGLE instance. On multi-replica
+// or serverless deployments each instance keeps its own counters, so the
+// effective limit is multiplied by the number of instances and resets on cold
+// starts. For horizontally-scaled production, back this with Redis/Upstash.
 const API_MAX = 600; // requests per window per IP
 const API_WINDOW_MS = 10 * 60 * 1000;
 const apiHits = new Map<string, { count: number; resetAt: number }>();

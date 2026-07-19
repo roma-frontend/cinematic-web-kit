@@ -32,8 +32,9 @@ export default async function AllSitesPage() {
       {sites.length === 0 ? (
         <EmptyState icon={LayoutList} title={t.allEmpty} />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border/60">
-          <table className="w-full text-sm">
+        <TableScrollWrap>
+          <div className="overflow-hidden rounded-2xl border border-border/60">
+          <table className="w-full min-w-[42rem] text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-semibold">{t.colSite}</th>
@@ -70,8 +71,10 @@ export default async function AllSitesPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </TableScrollWrap>
       )}
     </>
   );
 }
+import { TableScrollWrap } from '@/components/dashboard/table-scroll-wrap';

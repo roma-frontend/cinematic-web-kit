@@ -362,7 +362,10 @@ export default async function Home() {
               <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
                 <Magnetic>
                   <Link href={finalPrimary.href}>
-                    <Button size="lg" className="b-shimmer gap-2 shadow-xl shadow-primary/25"><Sparkles className="h-5 w-5" /> {finalPrimary.label}</Button>
+                    <Button size="lg" className="group relative gap-2 overflow-hidden shadow-xl shadow-primary/25">
+                      <span aria-hidden className="btn-neon-glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <Sparkles className="h-5 w-5" /> {finalPrimary.label}
+                    </Button>
                   </Link>
                 </Magnetic>
                 <Link href={L.finalCta.ctaSecondaryHref}>

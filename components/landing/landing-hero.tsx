@@ -70,7 +70,7 @@ export function LandingHero({
       {/* Layered animated background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <WebglGradient className="absolute inset-0 h-full w-full opacity-40 dark:opacity-55" />
-        <div className="b-aurora opacity-25" />
+        <div className="b-aurora opacity-35" />
         <div className="b-pattern-grid opacity-60" />
         {/* Vertical wash: transparent at top, solid background at the bottom. */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
@@ -81,7 +81,7 @@ export function LandingHero({
           style={{ background: 'linear-gradient(90deg, transparent, color-mix(in oklch, var(--primary) 60%, transparent), transparent)' }}
         />
       </div>
-      <Spotlight size={560} strength={26} />
+      <Spotlight size={640} strength={28} />
 
       <div className="mx-auto grid max-w-[var(--container-max)] items-center gap-12 px-6 py-16 sm:px-10 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
         {/* Copy column — CSS entrance (painted + animated on first frame, no
@@ -109,8 +109,9 @@ export function LandingHero({
           <div className="hero-rise mt-8 grid gap-3 sm:flex sm:flex-wrap sm:items-center" style={{ animationDelay: '240ms' }}>
             <div className="w-full sm:w-auto">
               <Magnetic>
-                <Button asChild size="lg" className="b-shimmer w-full gap-2 shadow-xl shadow-primary/25 sm:w-auto">
+                <Button asChild size="lg" className="group relative w-full gap-2 overflow-hidden shadow-xl shadow-primary/25 sm:w-auto">
                   <Link href={primary.href}>
+                    <span aria-hidden className="btn-neon-glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                     <Sparkles className="h-5 w-5" /> {primary.label}
                   </Link>
                 </Button>

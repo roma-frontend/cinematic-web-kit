@@ -1,5 +1,5 @@
-import { getDna, type CinematicDna } from '@/lib/cinematic-dna';
-import { composePrompt, type Section, type DnaInput } from '@/lib/prompt-composer';
+import { getDna } from '@/lib/cinematic-dna';
+import { composePrompt, type DnaInput } from '@/lib/prompt-composer';
 
 export interface FilmScene {
   id: string;

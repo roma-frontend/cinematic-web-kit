@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display, Montserrat } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
+import { SmoothScrollProvider } from '@/components/smooth-scroll-provider';
 import { PrefsSync } from '@/components/prefs-sync';
 import { VitalsReporter } from '@/components/vitals-reporter';
 
@@ -93,12 +94,6 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
-  let mediaOrigin: string | null = null;
-  try {
-    mediaOrigin = process.env.NEXT_PUBLIC_MEDIA_BASE_URL ? new URL(process.env.NEXT_PUBLIC_MEDIA_BASE_URL).origin : null;
-  } catch {
-    /* malformed media URL: render normally without a resource hint */
-  }
   const initialTheme = await initialThemeChoice();
   return (
     <html lang={locale} suppressHydrationWarning data-scroll-behavior="smooth">
@@ -112,6 +107,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider disableTransitionOnChange={true} attribute="class" defaultTheme={initialTheme} enableSystem>
           <PrefsSync />
           <VitalsReporter />
+          {/* Smooth scroll initialized client-side to avoid inline script parsing issues */}
+          <SmoothScrollProvider />
           {children}
         </ThemeProvider>
       </body>

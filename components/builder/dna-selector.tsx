@@ -40,7 +40,7 @@ const translations = {
 
 export function DnaSelector({ value, onChange, currentThemeId, disabled, locale = 'ru' }: DnaSelectorProps) {
   const t = translations[locale];
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [, setHoveredId] = useState<string | null>(null);
 
   const checkConsistency = (dna: CinematicDna) => {
     const match = dna.themeAffinity.includes(currentThemeId);

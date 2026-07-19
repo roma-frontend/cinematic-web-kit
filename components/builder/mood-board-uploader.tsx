@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Upload, X, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -211,7 +212,7 @@ export function MoodBoardUploader({ locale, onDnaRecommended }: MoodBoardUploade
       <div className="mb-4 grid grid-cols-5 gap-2">
         {previews.map((preview, i) => (
           <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
-            <img src={preview} alt={`Preview ${i + 1}`} className="h-full w-full object-cover" />
+            <Image src={preview} alt={`Preview ${i + 1}`} fill className="object-cover" unoptimized />
             <button
               onClick={() => removeImage(i)}
               className="absolute right-1 top-1 rounded-full bg-black/60 p-1 opacity-0 transition-opacity group-hover:opacity-100"

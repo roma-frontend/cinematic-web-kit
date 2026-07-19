@@ -65,12 +65,18 @@ export interface SqlResult { columns: string[]; rows: Record<string, unknown>[];
 
 const READ_SQL = /^(SELECT|WITH|EXPLAIN|PRAGMA)\b/i;
 const BLOCKED_SQL = /\b(ATTACH|DETACH|VACUUM|REINDEX|LOAD_EXTENSION)\b/i;
+// Only these PRAGMAs are safe to run from the admin console — the rest can
+// mutate database-wide state (journal_mode, synchronous, foreign_keys, …).
+const SAFE_PRAGMAS = /^(PRAGMA\s+)(table_info|foreign_key_list|index_list|index_info|database_list|compile_options|quick_check|integrity_check|foreign_key_check)\b/i;
 
 /** Execute one SQL statement from the superadmin console. */
 export function executeSql(sql: string, allowWrite = false): SqlResult {
   const statement = sql.trim().replace(/;+\s*$/, '');
   if (!statement || statement.includes(';')) throw new Error('BAD_SQL');
   if (BLOCKED_SQL.test(statement)) throw new Error('BLOCKED_SQL');
+  // PRAGMAs that mutate DB-wide state are blocked even in read mode; only the
+  // introspection/integrity-check pragmas above are allowed.
+  if (/^PRAGMA\b/i.test(statement) && !SAFE_PRAGMAS.test(statement)) throw new Error('BLOCKED_SQL');
   const readOnly = READ_SQL.test(statement);
   if (!readOnly && !allowWrite) throw new Error('WRITE_CONFIRM_REQUIRED');
 

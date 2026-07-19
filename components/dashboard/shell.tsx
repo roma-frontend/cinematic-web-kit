@@ -26,6 +26,9 @@ import { useLocale } from '@/hooks/use-locale';
 import { dashDict } from '@/lib/dashboard-dict';
 import { LanguageSwitcher } from '../language-switcher';
 
+interface SwipeState { x: number; y: number; dx: number; dy: number; active: boolean }
+type Swipeable = HTMLElement & { _swipe?: SwipeState | null };
+
 export type Role = 'customer' | 'admin' | 'superadmin';
 export interface ShellUser { name: string; email: string; role: Role; handle?: string }
 
@@ -91,7 +94,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
   // Persist the desktop collapse preference across sessions.
   useEffect(() => {
     try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration from localStorage (unavailable during SSR)
+       
       setCollapsed(localStorage.getItem('cwk:sidebar-collapsed') === '1');
     } catch { /* ignore */ }
   }, []);
@@ -124,6 +127,11 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
 
   useEffect(() => {
     if (!open) return;
+    // Lock background scroll on mobile when menu is open (iOS friendly)
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
     const trigger = mobileMenuButtonRef.current;
     const focusable = () => Array.from(mobileMenuRef.current?.querySelectorAll<HTMLElement>(
       'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
@@ -144,6 +152,8 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
       cancelAnimationFrame(focusFirst);
       window.removeEventListener('keydown', onKeyDown);
       trigger?.focus();
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
     };
   }, [open]);
 
@@ -436,6 +446,33 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 360, damping: 34, mass: 0.8 }}
+              onTouchStart={(e) => {
+                const t0 = e.touches[0];
+                (e.currentTarget as Swipeable)._swipe = { x: t0.clientX, y: t0.clientY, dx: 0, dy: 0, active: true };
+              }}
+              onTouchMove={(e) => {
+                const st = (e.currentTarget as Swipeable)._swipe;
+                if (!st || !st.active) return;
+                const t = e.touches[0];
+                st.dx = t.clientX - st.x;
+                st.dy = t.clientY - st.y;
+                // Only act on mostly-horizontal gestures
+                if (Math.abs(st.dx) > Math.abs(st.dy) && st.dx > 0) {
+                  // Apply a small translateX for visual feedback (max 40px)
+                  const tx = Math.min(40, Math.max(0, st.dx));
+                  (e.currentTarget as HTMLElement).style.transform = `translateX(${tx}px)`;
+                }
+              }}
+              onTouchEnd={(e) => {
+                const aside = e.currentTarget as HTMLElement;
+                const st = (aside as Swipeable)._swipe;
+                if (!st) return;
+                (aside as HTMLElement).style.transform = '';
+                if (Math.abs(st.dx) > Math.abs(st.dy) && st.dx > 60) {
+                  setOpen(false);
+                }
+                (aside as Swipeable)._swipe = null;
+              }}
             >
               <button onClick={() => setOpen(false)} aria-label={t.close} className="absolute right-3 top-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted">
                 <X className="h-5 w-5" />
@@ -476,7 +513,7 @@ export function DashboardShell({ user, banner, gated, orgRequests = 0, siteMembe
             {!gated && (
               <>
                 <Button asChild size="sm" className="gap-1.5">
-                  <Link href="/dashboard/sites?new=1"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">{t.newSite}</span></Link>
+                  <Link href="/dashboard/sites?new=1"><Plus className="h-4 w-4" /> <span className="hidden [@media(max-width:380px)]:hidden sm:inline">{t.newSite}</span></Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="hidden gap-1.5 sm:inline-flex">
                   <Link href="/" target="_blank">{t.site} <ExternalLink className="h-4 w-4" /></Link>

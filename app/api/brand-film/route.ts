@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, unauthorized } from '@/lib/api-guard';
-import { generateBrandFilmScript, type FilmScene } from '@/lib/brand-film';
+import { generateBrandFilmScript } from '@/lib/brand-film';
 
 export const runtime = 'nodejs';
 

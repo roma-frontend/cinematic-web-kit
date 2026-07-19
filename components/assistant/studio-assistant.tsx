@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Wand2, X, Send, Mic, Eraser, ArrowUpRight, Maximize2, Minimize2,
@@ -25,6 +25,7 @@ import { useStudioAssistant, type AssistantMessage } from './use-studio-assistan
 import { copyToClipboard } from '@/lib/clipboard';
 import { AssistantMarkdown } from './assistant-markdown';
 import { ArtifactsCanvas, type Artifact } from './artifacts-canvas';
+import Image from 'next/image';
 
 const DRAFT_KEY = 'cwk:assistant:draft';
 const HISTORY_KEY = 'cwk:assistant:input-history';
@@ -84,13 +85,13 @@ function playAssistantSound(type: 'open' | 'click' | 'success' | 'send') {
 
 function PipelineTicker() {
   const [logs, setLogs] = useState<string[]>([]);
-  const steps = [
+  const steps = useMemo(() => [
     '⚡ Initializing Cinematic Pipeline...',
     '🎨 Fetching Visual Mood presets...',
     '📝 Generating responsive block templates...',
     '⚙️ Optimizing layout CSS & layout hierarchy...',
     '✨ Rerouting and applying assets...',
-  ];
+  ], []);
 
   useEffect(() => {
     setLogs([steps[0]]);
@@ -103,7 +104,7 @@ function PipelineTicker() {
       });
     }, 1200);
     return () => clearInterval(interval);
-  }, []);
+  }, [ steps ]);
 
   return (
     <div className="mt-2 rounded-xl border border-primary/20 bg-black/80 p-3 font-mono text-[10px] leading-relaxed text-green-300 shadow-inner">
@@ -164,6 +165,7 @@ export function StudioAssistant({ role = 'customer' }: { role?: Role }) {
   const { locale } = useLocale();
   const t = assistantDict(locale);
   const a = useStudioAssistant(role);
+  const { input, inputRef, setInput, attachments, uploadAttachment } = a;
   const [open, setOpen] = useState(false);
   const [confirmingActionId, setConfirmingActionId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -363,7 +365,7 @@ useEffect(() => {
   setAtBottom(true);
   const id = setTimeout(() => { a.inputRef.current?.focus(); scrollToBottom('auto'); }, 60);
   return () => clearTimeout(id);
-}, [open]);
+}, [open, hasOpened, a.inputRef ]);
 
   // Delete countdown (4s) with an undo window.
   useEffect(() => {
@@ -462,41 +464,41 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
   };
 
   const insertMarkdown = useCallback((prefix: string, suffix = '') => {
-    const el = a.inputRef.current;
+    const el = inputRef.current;
     if (!el) return;
     const start = el.selectionStart;
     const end = el.selectionEnd;
-    const selected = a.input.slice(start, end);
-    const before = a.input.slice(0, start);
-    const after = a.input.slice(end);
-    a.setInput(`${before}${prefix}${selected}${suffix}${after}`);
+    const selected = input.slice(start, end);
+    const before = input.slice(0, start);
+    const after = input.slice(end);
+    setInput(`${before}${prefix}${selected}${suffix}${after}`);
     setTimeout(() => {
       el.focus();
       const pos = start + prefix.length + selected.length + suffix.length;
       el.setSelectionRange(pos, pos);
     }, 0);
-  }, [a.input, a.inputRef, a.setInput]);
+  }, [input, inputRef, setInput]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
-    for (const file of files.slice(0, 3 - a.attachments.length)) {
-      void a.uploadAttachment(file);
+    for (const file of files.slice(0, 3 - attachments.length)) {
+      void uploadAttachment(file);
     }
-  }, [a.attachments.length, a.uploadAttachment]);
+  }, [attachments.length, uploadAttachment]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     const items = Array.from(e.clipboardData.items);
     const imageItem = items.find((item) => item.type.startsWith('image/'));
-    if (imageItem && a.attachments.length < 3) {
+    if (imageItem && attachments.length < 3) {
       const file = imageItem.getAsFile();
       if (file) {
         e.preventDefault();
-        void a.uploadAttachment(file);
+        void uploadAttachment(file);
       }
     }
-  }, [a.attachments.length, a.uploadAttachment]);
+  }, [attachments.length, uploadAttachment]);
 
   const iconBtn = 'rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground';
 
@@ -643,7 +645,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
           {m.attachments && m.attachments.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
               {m.attachments.map((attachment) => (
-                <img key={attachment.url} src={attachment.url} alt={attachment.name} className="h-20 w-20 rounded-lg border border-white/20 object-cover" />
+                <Image key={attachment.url} src={attachment.url} alt={attachment.name} className="h-20 w-20 rounded-lg border border-white/20 object-cover" />
               ))}
             </div>
           )}
@@ -1394,7 +1396,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                             <ImagePlus className="h-3 w-3" /> {t.generateImage}
                           </p>
                           <div className="w-fit max-w-full overflow-hidden rounded-xl border border-border/60">
-                            <img src={m.imageUrl} alt="Generated" className="max-w-full md:max-w-md h-auto object-cover" loading="lazy" />
+                            <Image src={m.imageUrl} alt="Generated" width={768} height={768} unoptimized className="h-auto max-w-full object-cover md:max-w-md" />
                           </div>
                         </div>
                       )}
@@ -1553,7 +1555,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                       <div className="mb-2 flex flex-wrap gap-2">
                         {a.attachments.map((attachment) => (
                           <div key={attachment.url} className="relative">
-                            <img src={attachment.url} alt={attachment.name} className="h-16 w-16 rounded-lg border border-border/70 object-cover" />
+                            <Image src={attachment.url} alt={attachment.name} className="h-16 w-16 rounded-lg border border-border/70 object-cover" />
                             <button type="button" onClick={() => a.removeAttachment(attachment.url)} className="absolute -right-1.5 -top-1.5 rounded-full bg-background p-0.5 shadow" aria-label={t.cancel}>
                               <X className="h-3 w-3" />
                             </button>

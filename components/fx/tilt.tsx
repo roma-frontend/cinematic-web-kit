@@ -12,9 +12,11 @@ export function Tilt({ children, className, max = 8 }: { children: ReactNode; cl
   const raf = useRef(0);
   const px = useRef(0);
   const py = useRef(0);
+  const canHover = typeof window !== 'undefined' ? matchMedia('(hover: hover) and (pointer: fine)').matches : true;
 
   // Read layout once when the pointer enters — never on every move.
   const onEnter = () => {
+    if (!canHover) return;
     rect.current = ref.current?.getBoundingClientRect() ?? null;
   };
   const apply = () => {
@@ -24,6 +26,7 @@ export function Tilt({ children, className, max = 8 }: { children: ReactNode; cl
     el.style.transform = `perspective(800px) rotateX(${(-py.current * max).toFixed(2)}deg) rotateY(${(px.current * max).toFixed(2)}deg) scale(1.02)`;
   };
   const onMove = (e: React.MouseEvent) => {
+    if (!canHover) return;
     const r = rect.current ?? ref.current?.getBoundingClientRect();
     if (!r) return;
     px.current = (e.clientX - r.left) / r.width - 0.5;

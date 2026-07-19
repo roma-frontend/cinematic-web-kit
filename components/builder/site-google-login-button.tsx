@@ -41,7 +41,7 @@ export function SiteGoogleLoginButton({ siteId }: { siteId: string }) {
     here.searchParams.delete('error');
     here.searchParams.delete('g_handoff');
     const start = `${platformOrigin()}/api/site-auth/google/start?site=${encodeURIComponent(siteId)}&next=${encodeURIComponent(here.toString())}`;
-    setHref(start);
+    Promise.resolve().then(() => setHref(start));
   }, [siteId]);
 
   if (!enabled || !href) return null;

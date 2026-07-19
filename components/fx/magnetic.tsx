@@ -12,8 +12,10 @@ export function Magnetic({ children, pull = 0.25 }: { children: ReactNode; pull?
   const raf = useRef(0);
   const x = useRef(0);
   const y = useRef(0);
+  const canHover = typeof window !== 'undefined' ? matchMedia('(hover: hover) and (pointer: fine)').matches : true;
 
   const onEnter = () => {
+    if (!canHover) return;
     rect.current = ref.current?.getBoundingClientRect() ?? null;
   };
   const apply = () => {
@@ -21,6 +23,7 @@ export function Magnetic({ children, pull = 0.25 }: { children: ReactNode; pull?
     if (ref.current) ref.current.style.transform = `translate(${x.current.toFixed(1)}px, ${y.current.toFixed(1)}px)`;
   };
   const onMove = (e: React.MouseEvent) => {
+    if (!canHover) return;
     const r = rect.current ?? ref.current?.getBoundingClientRect();
     if (!r) return;
     x.current = (e.clientX - (r.left + r.width / 2)) * pull;

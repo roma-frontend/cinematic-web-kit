@@ -137,7 +137,7 @@ export function BrandVoiceCard({ siteId, locale, onVoiceAnalyzed }: BrandVoiceCa
       onVoiceAnalyzed?.();
 
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
+    } catch {
       setError(t.error);
     } finally {
       setAnalyzing(false);

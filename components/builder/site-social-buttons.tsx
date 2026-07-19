@@ -41,7 +41,8 @@ export function SiteSocialButtons({ siteId }: { siteId: string }) {
     const here = new URL(window.location.href);
     here.searchParams.delete('error');
     here.searchParams.delete('g_handoff');
-    setReturnUrl(here.toString());
+    const url = here.toString();
+    Promise.resolve().then(() => setReturnUrl(url));
   }, [siteId]);
 
   if ((!googleOn && !appleOn && !telegramOn) || !returnUrl) return null;

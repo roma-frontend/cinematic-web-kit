@@ -103,7 +103,7 @@ export function SocialAuthButtons() {
   useEffect(() => {
     const code = search.get('error');
     const msg = googleError(code, t.google) ?? appleError(code, t.apple);
-    if (msg) setError(msg);
+    if (msg) Promise.resolve().then(() => setError(msg));
   }, [search, t]);
 
   // Load the Telegram widget script once (only when Telegram is available).

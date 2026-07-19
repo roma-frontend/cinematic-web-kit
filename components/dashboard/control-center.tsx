@@ -602,7 +602,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
                   </button>
                 </div>
 
-                <div className="flex-1 min-h-[220px] max-h-[280px] overflow-y-auto font-mono text-[11px] rounded-xl bg-black/40 p-4 border border-white/5 space-y-3 scrollbar-none">
+                <div className="flex-1 min-h-[220px] max-h-[280px] overflow-y-auto font-mono text-[11px] rounded-xl bg-card p-4 border border-white/5 space-y-3 scrollbar-none">
                   {trafficLogs.map((log) => {
                     const statusColor = log.status >= 400 ? 'text-red-400' : log.status >= 300 ? 'text-amber-400' : 'text-green-400';
                     const methodColor = log.method === 'POST' ? 'text-sky-400' : log.method === 'DELETE' ? 'text-rose-400' : log.method === 'PATCH' ? 'text-purple-400' : 'text-emerald-400';
@@ -610,7 +610,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
                       <div key={log.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-white/5 pb-2 last:border-b-0">
                         <div className="truncate pr-2 mb-1 sm:mb-0">
                           <span className={`font-black ${methodColor} mr-2`}>{log.method}</span>
-                          <span className="text-white/80">{log.route}</span>
+                          <span className="text-primary">{log.route}</span>
                         </div>
                         <div className="flex items-center gap-2 text-[10px] shrink-0 text-white/40">
                           <span className={`font-semibold ${statusColor}`}>{log.status}</span>

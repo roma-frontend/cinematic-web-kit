@@ -1,6 +1,6 @@
 import 'server-only';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import { getDb, newId, siteTickets, siteTicketMessages, siteUsers, type SiteTicket, type SiteTicketMessage } from '@/lib/db';
+import { getDb, newId, siteTickets, siteTicketMessages, siteUsers, type SiteTicket } from '@/lib/db';
 import { notifyMember } from '@/lib/site-membership';
 
 // Support tickets: a member opens a thread and exchanges messages with the site

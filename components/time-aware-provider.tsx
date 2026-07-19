@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getTimeOfDay, type TimeOfDay } from '@/lib/time-aware';
 
 export function TimeAwareProvider() {
-  const [time, setTime] = useState<TimeOfDay>('day');
+  const [_time, setTime] = useState<TimeOfDay>('day');
 
   useEffect(() => {
     const updateTime = () => {

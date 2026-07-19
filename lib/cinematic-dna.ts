@@ -200,7 +200,7 @@ export function getDnaFromMood(mood: {
   temperature: 'cool' | 'neutral' | 'warm';
   style: 'minimal' | 'modern' | 'vibrant' | 'luxury';
 }): CinematicDna {
-  const { energy, mood: moodType, temperature, style } = mood;
+  const { mood: moodType, temperature, style } = mood;
 
   if (style === 'luxury') {
     return temperature === 'cool' ? DNA_PRESETS.find((d) => d.id === 'fincher')! : DNA_PRESETS.find((d) => d.id === 'villeneuve')!;

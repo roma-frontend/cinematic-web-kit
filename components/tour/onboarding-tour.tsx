@@ -83,7 +83,7 @@ export function OnboardingTour({ steps, chrome, soundOn, onToggleSound, reduced,
   // to actually appear (tab content re-renders), scroll it into view so the
   // page visibly moves to the spot, then align the spotlight.
   useLayoutEffect(() => {
-    setReady(false);
+    Promise.resolve().then(() => setReady(false));
     step?.onEnter?.();
     let raf = 0;
     const reveal = (attempt: number) => {
@@ -118,7 +118,7 @@ export function OnboardingTour({ steps, chrome, soundOn, onToggleSound, reduced,
   // measured layout and updates position state — a legitimate useLayoutEffect
   // measure-then-position pattern, so set-state-in-effect is disabled here.
   useLayoutEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     if (ready) align();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, i]);

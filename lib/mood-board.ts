@@ -18,7 +18,6 @@ export interface MoodAnalysis {
 
 export async function analyzeImageColors(buffer: Buffer): Promise<ColorPalette> {
   try {
-    const metadata = await sharp(buffer).metadata();
     const { data, info } = await sharp(buffer)
       .resize(100, 100, { fit: 'cover' })
       .raw()

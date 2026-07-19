@@ -66,17 +66,28 @@ export async function POST(request: Request) {
   if (typeof payload._hp === 'string' && payload._hp.trim() !== '') {
     return NextResponse.json({ ok: true });
   }
+  // Time-trap: a hidden timestamp set when the form opened. Humans take ≥1.5s
+  // to fill a form; bots submit instantly. Silently accept & drop fast submits.
+  if (typeof payload._t === 'number' && Number.isFinite(payload._t)) {
+    const elapsed = Date.now() - payload._t;
+    if (elapsed >= 0 && elapsed < 1500) return NextResponse.json({ ok: true });
+  }
 
-  // Cloudflare Turnstile (bot protection). Verify-if-present: a token is
-  // validated when supplied, but its absence does NOT block submission — so
-  // forms keep working on pages that don't (yet) render the widget. The
-  // honeypot above remains the baseline guard. Token field follows Cloudflare's
-  // naming convention (cf-turnstile-response).
+  // Cloudflare Turnstile (bot protection). Two modes:
+  //  • Required: the form set `_turnstileRequired: true` (builder marks
+  //    sensitive forms) → a valid token MUST be supplied.
+  //  • Verify-if-present: otherwise a token is validated when supplied, but its
+  //    absence does NOT block submission — so forms keep working on pages that
+  //    don't (yet) render the widget. The honeypot/time-trap remain the baseline.
+  const turnstileRequired = payload._turnstileRequired === true;
   const turnstileToken =
     (typeof payload['cf-turnstile-response'] === 'string' && payload['cf-turnstile-response']) ||
     (typeof payload._turnstile === 'string' && payload._turnstile) ||
     '';
   const clientIp = (request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  if (turnstileRequired && !turnstileToken) {
+    return NextResponse.json({ error: t.captchaFailed }, { status: 400 });
+  }
   if (turnstileToken && !(await verifyTurnstile(turnstileToken, clientIp || undefined))) {
     return NextResponse.json({ error: t.captchaFailed }, { status: 400 });
   }
@@ -87,6 +98,8 @@ export async function POST(request: Request) {
   const webhook = typeof payload._webhook === 'string' ? payload._webhook : '';
   const notifyEmail = typeof payload._notifyEmail === 'string' ? payload._notifyEmail : '';
   delete payload._hp;
+  delete payload._t;
+  delete payload._turnstileRequired;
   delete payload._webhook;
   delete payload._notifyEmail;
 
@@ -156,15 +169,24 @@ async function emailSiteOwner(siteId: string, formId: string, fields: Record<str
   }
 }
 
-/** Only allow public https endpoints — blocks SSRF to localhost/private ranges. */
+/** Only allow public https endpoints — blocks SSRF to localhost/private ranges.
+ *  NOTE: hostname-based only. Does not defend against DNS rebinding (the host
+ *  is checked, not the resolved IP). If that becomes a concern, resolve the
+ *  hostname and validate the IP immediately before the fetch. */
 function isSafeWebhook(url: string): boolean {
   try {
     const u = new URL(url);
     if (u.protocol !== 'https:') return false;
     const h = u.hostname.toLowerCase();
+    // Hostnames that should never be a webhook target.
     if (h === 'localhost' || h.endsWith('.local') || h === '0.0.0.0' || h === '::1') return false;
+    // IPv4 private / loopback / link-local ranges.
     if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h) || /^169\.254\./.test(h)) return false;
     if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return false;
+    // IPv6 link-local (fe80::/10) and unique-local (fc00::/7, covers fd00::/8).
+    if (/^fe[89ab][0-9a-f]?:/.test(h) || /^f[cd][0-9a-f]{2}:/.test(h)) return false;
+    // IPv4-mapped IPv6 loopback (::ffff:127.0.0.1).
+    if (/^::ffff:127\./.test(h)) return false;
     return true;
   } catch {
     return false;

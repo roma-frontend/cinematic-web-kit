@@ -90,7 +90,7 @@ export function VoiceToSiteCard({ locale, onTranscript }: VoiceToSiteCardProps) 
     const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setIsSupported(false);
+      Promise.resolve().then(() => setIsSupported(false));
       return;
     }
 

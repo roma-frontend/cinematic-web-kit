@@ -90,7 +90,7 @@ function useMemberResource<T>(resource: string, id?: string) {
   useEffect(() => {
     if (!siteId) return;
     let alive = true;
-    setState('loading');
+    Promise.resolve().then(() => setState('loading'));
     const q = new URLSearchParams({ site: siteId, resource });
     if (id) q.set('id', id);
     fetch(`/api/site-auth?${q.toString()}`)

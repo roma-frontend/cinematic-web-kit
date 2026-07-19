@@ -6,8 +6,7 @@ import { useLocale } from '@/hooks/use-locale';
 import { ASSISTANT_ROUTES, ASSISTANT_DATA_KEYS, type AssistantRole } from '@/lib/assistant-routes';
 import type { MentionEntity } from '@/lib/assistant-commands';
 import type { AssistantTask, AssistantTaskStepStatus } from '@/lib/assistant-task-core';
-import { sitePreviewUrl, type MarkdownTable } from '@/lib/assistant-canvas';
-import { speakText, stopSpeaking, isSpeaking as checkSpeaking, ttsSupported as checkTts } from '@/lib/assistant-tts';
+import { speakText, stopSpeaking, ttsSupported as checkTts } from '@/lib/assistant-tts';
 
 import type { Locale } from '@/lib/seo';
 import {
@@ -208,7 +207,10 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const [tokenCount, setTokenCount] = useState(0);
   const [tokenLimit, setTokenLimit] = useState<number | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [customInstructions, setCustomInstructions] = useState('');
+  const [customInstructions, setCustomInstructions] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('cwk:assistant:custom-instructions') || '';
+  });
   const [responseVariants, setResponseVariants] = useState<Record<string, string[]>>({});
   const silenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -217,7 +219,7 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   const abortRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
   const streamStatusRef = useRef(streamStatus);
-  streamStatusRef.current = streamStatus;
+  useEffect(() => { streamStatusRef.current = streamStatus; }, [streamStatus]);
   // Throttle streaming updates to prevent infinite re-renders
   const streamingContentRef = useRef<string>('');
   const lastUpdateRef = useRef<number>(0);
@@ -336,6 +338,10 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     rec.onerror = () => { setIsListening(false); recRef.current = null; };
     rec.start();
   }, [locale]);
+
+  const showCanvasData = useCallback((dataMarkdown: string) => {
+    setCanvas({ type: 'data', dataMarkdown });
+  }, []);
 
   // Shared: stream an assistant reply for a full history ending in a user
   // message. Handles lazy conversation creation, persistence and tag parsing.
@@ -489,13 +495,8 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
       setStreamStatusIfChanged('idle');
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [currentId, loadMemories, setStreamStatusIfChanged]);
+  }, [currentId, loadMemories, setStreamStatusIfChanged, locale, role, showCanvasData]);
 
-  /** Cancel an in-flight reply; the partial text already streamed is kept. */
-  const stop = useCallback(() => {
-    stoppedRef.current = true;
-    abortRef.current?.abort();
-  }, []);
 
   const navigate = useCallback(async (route: string) => {
     if (route === '/studio/builder') {
@@ -526,10 +527,6 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   // ── Fullscreen canvas: live preview / data table / theme diff workspace ─────
   const openCanvasSite = useCallback((siteId: string, siteSlug: string, siteName: string) => {
     setCanvas({ type: 'preview', siteId, siteSlug, siteName });
-  }, []);
-
-  const showCanvasData = useCallback((dataMarkdown: string) => {
-    setCanvas({ type: 'data', dataMarkdown });
   }, []);
 
   const closeCanvas = useCallback(() => { setCanvas({ type: 'none' }); }, []);
@@ -630,6 +627,13 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
     setMessages(history);
     await runStream(history, trimmed);
   }, [isLoading, messages, runStream]);
+
+  const stop = useCallback(() => {
+    if (abortRef.current) {
+      stoppedRef.current = true;
+      abortRef.current.abort();   
+    }
+  }, []);
 
   // Regenerate an assistant reply: rewind to the user message that produced it
   // and re-run the stream, so a fresh answer replaces the old one.
@@ -759,15 +763,6 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   }, []);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('cwk:assistant:custom-instructions');
-      if (saved) setCustomInstructions(saved);
-      const pinned = localStorage.getItem('cwk:assistant:pinned');
-      if (pinned) setPinnedIds(new Set(JSON.parse(pinned)));
-    } catch {}
-  }, []);
-
-  useEffect(() => {
     try { localStorage.setItem('cwk:assistant:custom-instructions', customInstructions); } catch {}
   }, [customInstructions]);
 
@@ -776,7 +771,18 @@ export function useStudioAssistant(role: AssistantRole = 'customer') {
   }, [pinnedIds]);
 
   // Load conversation history once on mount.
-  useEffect(() => { void loadConversations(); void loadMemories(); void loadEntities(); void loadTasks(); void loadTokenUsage(); }, [loadConversations, loadMemories, loadEntities, loadTasks, loadTokenUsage]);
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([
+        loadConversations(),
+        loadMemories(),
+        loadEntities(),
+        loadTasks(),
+        loadTokenUsage(),
+      ]);
+    };
+    void init();
+  }, [loadConversations, loadMemories, loadEntities, loadTasks, loadTokenUsage]);
 
   return {
     messages, conversations, currentId, input, setInput, attachments, isUploading, uploadAttachment, removeAttachment, isLoading, loadingConversation, isListening, unavailable, error,

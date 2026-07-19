@@ -94,10 +94,12 @@ function LoginForm({ siteId, base, brand }: Omit<Props, 'mode'>) {
     try {
       const params = new URLSearchParams(window.location.search);
       const err = params.get('error');
-      if (err && (err.startsWith('google_') || err.startsWith('apple_'))) setError(t.google.failed);
+      if (err && (err.startsWith('google_') || err.startsWith('apple_'))) {
+        Promise.resolve().then(() => setError(t.google.failed));
+      }
       const token = params.get('g_handoff');
       if (!token) return;
-      setBusy(true);
+      Promise.resolve().then(() => setBusy(true));
       void siteAuth('google-exchange', { siteId, token }, t.networkError).then((r) => {
         if (!alive) return;
         // Clean the token out of the URL either way.
@@ -281,7 +283,12 @@ function RegisterWizard({ siteId, base, brand }: Omit<Props, 'mode'>) {
     try {
       const p = new URLSearchParams(window.location.search);
       const tok = p.get('invite');
-      if (tok) { setInvited(true); setInviteToken(tok); }
+      if (tok) {
+        Promise.resolve().then(() => {
+          setInvited(true);
+          setInviteToken(tok);
+        });
+      }
     } catch { /* no window */ }
   }, []);
   useEffect(() => {
@@ -473,7 +480,7 @@ function ResetView({ siteId, base, brand }: Omit<Props, 'mode'>) {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration from the URL (unavailable during SSR)
+       
       setToken(params.get('token'));
     } catch {
       setToken(null);

@@ -5,7 +5,6 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { listSitesForUser, statsForUser } from '@/lib/sites';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -24,7 +23,6 @@ import { useLocale } from '@/hooks/use-locale';
 import { studioDict } from '@/lib/studio-dict';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { dashDict } from '@/lib/dashboard-dict';
-import { getCurrentUser } from '@/lib/auth';
 import { copyToClipboard } from '@/lib/clipboard';
 
 const ALL_BLOCKS = ['hero', 'split', 'cards', 'mosaic', 'sticky', 'background', 'beams', 'marquee'];
@@ -144,7 +142,9 @@ export default function StudioPage() {
   const previewSrc = !ctx ? null : isTenant && ctx.tenant ? `/s/${ctx.tenant.slug}` : '/';
   // If the active tab isn't available in the current mode, snap to the first.
   useEffect(() => {
-    if (ctx && !visibleTabs.includes(tab)) setTab(visibleTabs[0]);
+    if (ctx && !visibleTabs.includes(tab)) {
+      Promise.resolve().then(() => setTab(visibleTabs[0]));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx]);
   const [device, setDevice] = useState<Device>('full');

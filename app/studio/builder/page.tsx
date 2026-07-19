@@ -742,7 +742,7 @@ function BuilderEditor() {
     if (!c || typeof c !== 'object') return;
     // One-shot hydration of several interactive states from the async prefs
     // snapshot — the guard above makes it run exactly once, no cascade risk.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     if (c.tab === 'pages' || c.tab === 'blocks' || c.tab === 'design') setTab(c.tab);
     if (typeof c.device === 'string' && c.device in DEVICE) setDevice(c.device as keyof typeof DEVICE);
     if (typeof c.previewWidth === 'number') setPreviewWidth(clampPreviewWidth(c.previewWidth));
@@ -841,7 +841,7 @@ function BuilderEditor() {
     const p = past.current.pop();
     if (!p) return;
     future.current.push(doc);
-    // eslint-disable-next-line react-hooks/immutability -- history refs owned by undo/redo
+     
     skipHistory.current = true;
     lastHistPush.current = 0;
     setDoc(p);
@@ -852,7 +852,7 @@ function BuilderEditor() {
     const n = future.current.pop();
     if (!n) return;
     past.current.push(doc);
-    // eslint-disable-next-line react-hooks/immutability -- history refs owned by undo/redo
+     
     skipHistory.current = true;
     lastHistPush.current = 0;
     setDoc(n);
@@ -861,7 +861,7 @@ function BuilderEditor() {
   };
   useEffect(() => {
     if (skipHistory.current) {
-      // eslint-disable-next-line react-hooks/immutability -- bookkeeping refs owned by this effect
+       
       skipHistory.current = false;
       prevDoc.current = doc;
       return;

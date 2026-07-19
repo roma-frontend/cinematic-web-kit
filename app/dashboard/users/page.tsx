@@ -4,6 +4,7 @@ import { isCapabilityEnabled } from '@/lib/access';
 import { listUsers } from '@/lib/admin';
 import { PageHeader } from '@/components/dashboard/ui';
 import { UsersTable } from '@/components/dashboard/users-table';
+import { TableScrollWrap } from '@/components/dashboard/table-scroll-wrap';
 import { TourReset } from '@/components/dashboard/tour-reset';
 import { getLocale } from '@/lib/i18n';
 import { staffDict } from '@/lib/staff-dict';
@@ -31,7 +32,9 @@ export default async function UsersPage() {
         description={canEdit ? t.usersDescEdit : t.usersDescView}
       />
       {canEdit && <TourReset users={users.map((u) => ({ id: u.id, name: u.name, email: u.email }))} meId={me.id} />}
-      <UsersTable users={users} canEdit={canEdit} meId={me.id} />
+      <TableScrollWrap>
+        <UsersTable users={users} canEdit={canEdit} meId={me.id} />
+      </TableScrollWrap>
     </>
   );
 }
