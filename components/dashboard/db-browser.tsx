@@ -289,13 +289,13 @@ export function DbBrowser({ tables }: { tables: { name: string; count: number }[
   if (full) {
     return (
       <div className="fixed inset-0 z-40 flex flex-col bg-background">
-        <header className="flex items-center gap-3 border-b border-border/60 px-5 py-3">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center gap-3 border-b border-border/60 px-5 py-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Database className="h-5 w-5" /></span>
           <div className="min-w-0">
             <h2 className="truncate text-base font-bold leading-tight">{t.studioTitle}</h2>
             <p className="truncate text-xs text-muted-foreground">{t.tablesLabel.replace('{n}', String(counts.length))}{active && ` · ${active}`}</p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-0 sm:ml-auto">
             <Button variant="outline" size="sm" onClick={() => setFull(false)} className="h-9 gap-1.5"><Minimize2 className="h-4 w-4" />{t.exitFullscreen}</Button>
           </div>
         </header>

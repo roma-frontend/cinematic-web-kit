@@ -189,12 +189,12 @@ export function SiteSettings({
     <main className="min-h-dvh bg-background">
       {confirmDialog}
       <header className="border-b border-border/60 bg-background/85 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between gap-3 px-4">
+        <div className="flex h-auto sm:h-14 flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 mb-4 sm:mb-0">
           <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> {t.backToSites}
           </Link>
           <span className="font-semibold tracking-tight">/ {site.name}</span>
-          <Link href={`/s/${savedSlug}?draft=1`} target="_blank" className="ml-auto">
+          <Link href={`/s/${savedSlug}?draft=1`} target="_blank" className="ml-0 sm:ml-auto">
             <Button size="sm" variant="outline" className="gap-1.5"><ExternalLink className="h-3.5 w-3.5" /> {t.openSite}</Button>
           </Link>
         </div>

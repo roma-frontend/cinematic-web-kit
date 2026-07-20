@@ -147,12 +147,17 @@ export function getSiteByHostname(hostname: string): Site | null {
   return row?.site ?? null;
 }
 
-export function saveDraft(site: Site, doc: BuilderDoc): void {
+export function saveDraft(site: Site, doc: BuilderDoc): boolean {
+  const serialized = JSON.stringify(doc);
+  // Opening the builder and pressing Save without editing must be a true no-op:
+  // do not touch timestamps, versions, or the live snapshot.
+  if (site.draftDoc === serialized) return false;
   getDb()
     .update(sites)
-    .set({ draftDoc: JSON.stringify(doc), updatedAt: new Date() })
+    .set({ draftDoc: serialized, updatedAt: new Date() })
     .where(eq(sites.id, site.id))
     .run();
+  return true;
 }
 
 const MAX_SITE_VERSIONS = 50;
@@ -173,14 +178,20 @@ export function getSiteVersion(siteId: string, versionId: string): SiteVersion |
   return getDb().select().from(siteVersions).where(and(eq(siteVersions.siteId, siteId), eq(siteVersions.id, versionId))).get() ?? null;
 }
 
-/** Copy the draft over the published snapshot. */
-export function publishSite(site: Site): void {
-  const doc = syncBuilderPricingPlans(site.id, parseDoc(site.draftDoc) ?? JSON.parse(site.draftDoc) as BuilderDoc);
+/** Copy the draft over the published snapshot. Returns false for an identical publish. */
+export function publishSite(site: Site): boolean {
+  // Pricing sync annotates nodes with planId, so isolate it from the draft object
+  // and compare the final publishable snapshot, not the pre-sync draft JSON.
+  const source = parseDoc(site.draftDoc) ?? JSON.parse(site.draftDoc) as BuilderDoc;
+  const doc = syncBuilderPricingPlans(site.id, structuredClone(source));
+  const serialized = JSON.stringify(doc);
+  if (site.publishedDoc === serialized) return false;
   getDb()
     .update(sites)
-    .set({ publishedDoc: JSON.stringify(doc), publishedAt: new Date(), updatedAt: new Date() })
+    .set({ publishedDoc: serialized, publishedAt: new Date(), updatedAt: new Date() })
     .where(eq(sites.id, site.id))
     .run();
+  return true;
 }
 
 export function unpublishSite(site: Site): void {
@@ -351,7 +362,7 @@ function rebaseHref(href: string, base: string): string {
 function rebaseNodes(nodes: BuilderNode[], base: string): BuilderNode[] {
   return nodes.map((n) => ({
     ...n,
-    props: n.props?.href ? { ...n.props, href: rebaseHref(n.props.href, base) } : n.props,
+    props: { ...n.props, ...(n.props?.href ? { href: rebaseHref(n.props.href, base) } : {}) },
     children: n.children ? rebaseNodes(n.children, base) : n.children,
   }));
 }

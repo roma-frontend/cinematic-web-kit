@@ -631,8 +631,9 @@ function renderInner(node: BuilderNode, t: SiteRtDict) {
         if (bgMode === 'glass') d += ';background:color-mix(in oklch, white 12%, transparent);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(255,255,255,.18);border-radius:1.25rem;padding-top:2rem;padding-bottom:2rem;box-shadow:0 8px 40px rgba(0,0,0,.25)';
         return `@media ${BP_RANGE[b]}{[data-nid="${node.id}"] [data-layout]{${d}}}`;
       }).join('') : '';
+      const needsClip = !!(p.parallax === 'true' || p.bgVideo || p.fx === 'webgl' || p.fx === 'aurora');
       return (
-        <section className={cn('relative overflow-hidden', tall && 'flex flex-col justify-center', pick(PAD, p.padding, 'lg'), pick(MINH, p.minH, 'none'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
+        <section className={cn('relative', needsClip && 'overflow-hidden', tall && 'flex flex-col justify-center', pick(PAD, p.padding, 'lg'), pick(MINH, p.minH, 'none'), gradient ? '' : pick(BG, p.bg, 'none'))} style={gradStyle}>
           {p.bgVideo ? (
             <BgVideo className={mediaClass} style={mediaFilter ? { filter: mediaFilter } : undefined} src={p.bgVideo} />
           ) : bgImageSrc ? (

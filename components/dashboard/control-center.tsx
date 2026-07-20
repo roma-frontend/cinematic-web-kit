@@ -358,7 +358,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
         return (
           <section className={`mb-6 overflow-hidden rounded-2xl border p-5 ${stateCls}`}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-start gap-3">
+              <div className="flex flex-col sm:flex-row items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-background/60 shadow-sm"><StateIcon className="h-5 w-5" /></span>
                 <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Decision inbox</p><h2 className="mt-1 text-xl font-black tracking-tight">{stateLabel}</h2><p className="mt-1 text-sm text-muted-foreground">{attention ? `${attention} сигналов требуют внимания. Сначала разберите самое рискованное.` : 'Платформа выглядит стабильно. Контролируйте ритм, а не тушите пожары.'}</p></div>
               </div>
@@ -412,7 +412,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
 
           {/* Live pulse */}
           <div>
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><HeartPulse className="h-4 w-4" /> {cc.pulseTitle} <span className="text-[11px] font-medium normal-case tracking-normal">{cc.pulseSub}</span></h3>
+            <h3 className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><HeartPulse className="h-4 w-4" /> {cc.pulseTitle} <span className="text-[11px] font-medium normal-case tracking-normal">{cc.pulseSub}</span></h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <PulseCard label={cc.pRegistrations} metric={pulse.registrations} icon={UserPlus} cc={cc} />
               <PulseCard label={cc.pLogins} metric={pulse.logins} icon={LogIn} cc={cc} />
@@ -425,8 +425,8 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Data quality */}
             <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
-              <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><Gauge className="h-4 w-4" /> {cc.qualityTitle}</h3>
-              <div className="flex items-center gap-4">
+              <h3 className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><Gauge className="h-4 w-4" /> {cc.qualityTitle}</h3>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <p className={`text-4xl font-black tracking-tight ${scoreCls}`}>{quality.score}<span className="text-base font-semibold text-muted-foreground">/100</span></p>
                 <p className="text-sm text-muted-foreground">{quality.totalIssues === 0 ? cc.qualityClean : cc.qualityIssues.replace('{n}', String(quality.totalIssues)).replace('{sites}', String(quality.siteCount))}</p>
               </div>
@@ -450,7 +450,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
             {/* Hot sites + backup */}
             <div className="space-y-4">
               <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><Flame className="h-4 w-4" /> {cc.hotTitle}</h3>
+                <h3 className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><Flame className="h-4 w-4" /> {cc.hotTitle}</h3>
                 {pulse.hotSites.length === 0 && <p className="text-sm text-muted-foreground">{cc.hotNone}</p>}
                 <ul className="space-y-2 text-sm">
                   {pulse.hotSites.map((s) => (
@@ -462,7 +462,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
                 </ul>
               </div>
               <div className="rounded-2xl border border-border/60 bg-card/50 p-5">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><ArchiveRestore className="h-4 w-4" /> {cc.backupTitle}</h3>
+                <h3 className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground"><ArchiveRestore className="h-4 w-4" /> {cc.backupTitle}</h3>
                 {backup.lastAt ? (
                   <p className="text-sm">
                     {cc.backupLast} <span className="font-medium">{when(backup.lastAt, locale)}</span>
@@ -484,7 +484,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
             {/* Live Server Diagnostics */}
             <div className="rounded-2xl border border-border/60 bg-card/50 p-5 flex flex-col justify-between">
               <div>
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                <h3 className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
                   <Monitor className="h-4 w-4 text-amber-500 animate-pulse" /> {locale === 'en' ? 'Live System Diagnostics' : 'Живая диагностика сервера'}
                 </h3>
                 
@@ -587,7 +587,7 @@ export function ControlCenter({ meId, stats, system, activity: _activity, sessio
             <div className="rounded-2xl border border-border/60 bg-card/50 p-5 flex flex-col justify-between min-h-[360px]">
               <div>
                 <div className="flex items-center justify-between mb-4 gap-2">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                  <h3 className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
                     <Activity className="h-4 w-4 text-emerald-500 animate-pulse" /> {locale === 'en' ? 'Live Traffic Monitor' : 'Монитор трафика в эфире'}
                   </h3>
                   <button

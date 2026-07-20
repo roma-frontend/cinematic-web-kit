@@ -195,6 +195,8 @@ export function getPlan(siteId: string, planId: string): SitePlan | null {
 
 /** Sync published builder pricing cards into the payable member-plan catalog. */
 export function syncBuilderPricingPlans(siteId: string, doc: BuilderDoc): BuilderDoc {
+  // Clone to avoid mutating the original doc object during sync (important for no-op checks)
+  const cloned = structuredClone(doc);
   const db = getDb();
   const now = new Date();
   const prefix = builderPlanPrefix(siteId);
@@ -202,7 +204,7 @@ export function syncBuilderPricingPlans(siteId: string, doc: BuilderDoc): Builde
   let sortOrder = 0;
   const suppressed = suppressedPlanIds(siteId);
 
-  for (const node of pricingNodes(doc)) {
+  for (const node of pricingNodes(cloned)) {
     const row = builderPlanRow(siteId, node, sortOrder++, now);
     if (!row) continue;
     // Admin deleted this plan — do not recreate/reactivate it from the builder.
@@ -236,7 +238,7 @@ export function syncBuilderPricingPlans(siteId: string, doc: BuilderDoc): Builde
     }
   }
 
-  return doc;
+  return cloned;
 }
 
 export async function createPlan(siteId: string, input: PlanInput): Promise<PlanDTO> {

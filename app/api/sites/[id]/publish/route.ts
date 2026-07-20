@@ -53,11 +53,11 @@ export async function POST(_req: Request, { params }: Params) {
   // pre-publish state: empty means the site has never gone live before. This
   // stops the Telegram bot from firing on every re-publish click.
   const firstPublish = !site.publishedDoc;
-  publishSite(site);
-  if (site.slug === LANDING_SLUG) await syncLandingTheme(doc.themeId);
-  else if (firstPublish) notifySitePublished({ name: site.name, slug: site.slug, ownerEmail: user.email });
+  const changed = publishSite(site);
+  if (changed && site.slug === LANDING_SLUG) await syncLandingTheme(doc.themeId);
+  else if (changed && firstPublish) notifySitePublished({ name: site.name, slug: site.slug, ownerEmail: user.email });
   const readiness = auditSiteReadiness(doc);
-  return NextResponse.json({ ok: true, publishedAt: new Date().toISOString(), readiness });
+  return NextResponse.json({ ok: true, changed, publishedAt: changed ? new Date().toISOString() : site.publishedAt?.toISOString(), readiness });
 }
 
 export async function DELETE(_req: Request, { params }: Params) {

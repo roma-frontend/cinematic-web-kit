@@ -128,14 +128,14 @@ export default async function Home() {
   // fields when present; the localized coded landing remains the fallback.
   const publishedHero = landingHeroProps(landingDoc);
   const [heroBadge, heroTitle, heroSubtitle, heroPrimaryLabel, heroSecondaryLabel, heroMicrocopy, heroPreviewUrl, heroPreviewPublish] = await Promise.all([
-    translateAuto(publishedHero.badge || L.hero.badge, locale),
-    translateAuto(publishedHero.title || L.hero.title, locale),
-    translateAuto(publishedHero.subtitle || L.hero.subtitle, locale),
-    translateAuto(publishedHero.ctaPrimaryLabel || L.hero.ctaPrimaryLabel, locale),
-    translateAuto(publishedHero.ctaSecondaryLabel || L.hero.ctaSecondaryLabel, locale),
-    publishedHero.microcopy ? translateAuto(publishedHero.microcopy, locale) : Promise.resolve(''),
-    publishedHero.previewUrl ? translateAuto(publishedHero.previewUrl, locale) : Promise.resolve(''),
-    publishedHero.previewPublish ? translateAuto(publishedHero.previewPublish, locale) : Promise.resolve(''),
+    translateAuto(publishedHero.badge?.trim() ? publishedHero.badge : L.hero.badge, locale),
+    translateAuto(publishedHero.title?.trim() ? publishedHero.title : L.hero.title, locale),
+    translateAuto(publishedHero.subtitle?.trim() ? publishedHero.subtitle : L.hero.subtitle, locale),
+    translateAuto(publishedHero.ctaPrimaryLabel?.trim() ? publishedHero.ctaPrimaryLabel : L.hero.ctaPrimaryLabel, locale),
+    translateAuto(publishedHero.ctaSecondaryLabel?.trim() ? publishedHero.ctaSecondaryLabel : L.hero.ctaSecondaryLabel, locale),
+    publishedHero.microcopy?.trim() ? translateAuto(publishedHero.microcopy, locale) : Promise.resolve(''),
+    publishedHero.previewUrl?.trim() ? translateAuto(publishedHero.previewUrl, locale) : Promise.resolve(''),
+    publishedHero.previewPublish?.trim() ? translateAuto(publishedHero.previewPublish, locale) : Promise.resolve(''),
   ]);
   const heroCopy = {
     badge: heroBadge,

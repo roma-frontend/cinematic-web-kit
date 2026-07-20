@@ -140,7 +140,7 @@ function OrgDetail({ overview, users, onReload }: { overview: Overview; users: P
           <h2 className="truncate text-xl font-bold tracking-tight">{overview.name}</h2>
           <p className="text-sm text-muted-foreground">/s/{overview.slug} · {t.createdOn} {new Date(overview.createdAt).toLocaleDateString(BCP47[locale])}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${overview.published ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
             {overview.published ? <Rocket className="h-3 w-3" /> : <CircleDashed className="h-3 w-3" />} {overview.published ? t.published : t.draft}
           </span>

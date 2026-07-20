@@ -1017,7 +1017,8 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
   return (
     <>
       <motion.button type="button" onClick={() => setOpen((v) => { const next = !v; playAssistantSound(next ? 'open' : 'click'); return next; })} aria-label={open ? t.close : t.open}
-        className="fixed bottom-5 right-5 z-[60] flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-xl shadow-primary/30 ring-1 ring-white/10"
+        className="fixed z-[60] flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-xl shadow-primary/30 ring-1 ring-white/10"
+        style={{ bottom: 'max(1.25rem, env(safe-area-inset-bottom))', right: 'max(1.25rem, env(safe-area-inset-right))' }}
         whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}>
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
@@ -1168,7 +1169,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   </button>
                 )}
                 {a.messages.length > 0 && (
-                  <div className="relative">
+                  <div className="relative hidden sm:block">
                     <button type="button" onClick={() => setShowExport((v) => !v)} aria-label={t.exportChat} title={t.exportChat} className={iconBtn}>
                       <Download className="h-4 w-4" />
                     </button>
@@ -1188,7 +1189,7 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   </div>
                 )}
                 {a.messages.length > 0 && a.currentId && (
-                  <button type="button" onClick={handleShare} disabled={isSharing} aria-label={t.shareConversation} title={t.shareConversation} className={iconBtn}>
+                  <button type="button" onClick={handleShare} disabled={isSharing} aria-label={t.shareConversation} title={t.shareConversation} className={cn(iconBtn, 'hidden sm:block')}>
                     {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
                   </button>
                 )}
@@ -1205,18 +1206,18 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                   )}
                 </button>
                 {a.tokenLimit && (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-1" title={`${a.tokenCount} / ${a.tokenLimit} ${t.messagesUsed}`}>
+                  <div className="hidden items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-1 sm:flex" title={`${a.tokenCount} / ${a.tokenLimit} ${t.messagesUsed}`}>
                     <span className="text-[10px] font-medium text-muted-foreground">{a.tokenCount}</span>
                     <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
-                      <div 
-                        className="h-full bg-primary transition-all" 
+                      <div
+                        className="h-full bg-primary transition-all"
                         style={{ width: `${Math.min(100, (a.tokenCount / a.tokenLimit) * 100)}%` }}
                       />
                     </div>
                     <span className="text-[10px] text-muted-foreground">/ {a.tokenLimit}</span>
                   </div>
                 )}
-                <button type="button" onClick={() => setShowShortcuts(true)} aria-label={t.shortcuts} title={t.shortcuts} className={iconBtn}>
+                <button type="button" onClick={() => setShowShortcuts(true)} aria-label={t.shortcuts} title={t.shortcuts} className={cn(iconBtn, 'hidden sm:block')}>
                   <Keyboard className="h-4 w-4" />
                 </button>
                 <button type="button" onClick={() => setExpanded((v) => !v)} aria-label={expanded ? t.collapse : t.expand} title={expanded ? t.collapse : t.expand} className={cn(iconBtn)}>
@@ -1569,17 +1570,17 @@ if (hist.length && (a.input === '' || histIdx !== null || singleLine)) {
                       onDrop={handleDrop}
                       className={cn('flex flex-col rounded-2xl border bg-card/60 px-2.5 py-2 transition-colors focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20',
                         isDragging ? 'border-primary/60 bg-primary/5' : 'border-border/70')}>
-                      <div className="mb-1 flex items-center gap-0.5 border-b border-border/40 pb-1">
-                        <button type="button" onClick={() => insertMarkdown('**', '**')} title="Bold" aria-label="Bold" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Bold className="h-3 w-3" /></button>
-                        <button type="button" onClick={() => insertMarkdown('*', '*')} title="Italic" aria-label="Italic" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Italic className="h-3 w-3" /></button>
-                        <button type="button" onClick={() => insertMarkdown('`', '`')} title="Code" aria-label="Code" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Code className="h-3 w-3" /></button>
-                        <button type="button" onClick={() => insertMarkdown('- ')} title="List" aria-label="List" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><List className="h-3 w-3" /></button>
-                        <button type="button" onClick={() => insertMarkdown('1. ')} title="Numbered list" aria-label="Numbered list" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><ListOrdered className="h-3 w-3" /></button>
-                        <button type="button" onClick={() => insertMarkdown('> ')} title="Quote" aria-label="Quote" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Quote className="h-3 w-3" /></button>
+                      <div className="mb-1 flex items-center gap-0.5 overflow-x-auto border-b border-border/40 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <button type="button" onClick={() => insertMarkdown('**', '**')} title="Bold" aria-label="Bold" className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Bold className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('*', '*')} title="Italic" aria-label="Italic" className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Italic className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('`', '`')} title="Code" aria-label="Code" className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Code className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('- ')} title="List" aria-label="List" className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><List className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('1. ')} title="Numbered list" aria-label="Numbered list" className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><ListOrdered className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => insertMarkdown('> ')} title="Quote" aria-label="Quote" className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Quote className="h-3 w-3" /></button>
                         <div className="flex-1" />
                         <input ref={attachmentInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void a.uploadAttachment(file); e.currentTarget.value = ''; }} />
                         <button type="button" onClick={() => attachmentInputRef.current?.click()} disabled={a.isUploading || a.attachments.length >= 3} aria-label="Attach image" title="Attach image (max 3, 10 MB each)"
-                          className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40">
+                          className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40">
                           {a.isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
                         </button>
                       </div>

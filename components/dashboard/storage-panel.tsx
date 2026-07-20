@@ -31,11 +31,11 @@ export function StoragePanel() {
   const isR2 = info?.mode === 'r2';
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl border border-border/60 bg-card p-4">
+    <div className="mb-6 flex flex-col sm:flex-row items-start flex-wrap sm:items-center gap-4 rounded-2xl border border-border/60 bg-card p-4">
       <span className={`flex h-10 w-10 flex-none items-center justify-center rounded-xl ${isR2 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
         {isR2 ? <Cloud className="h-5 w-5" /> : <HardDrive className="h-5 w-5" />}
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 max-w-full sm:max-w-auto">
         <p className="text-sm font-semibold">
           {t.storageLabel} {info === null ? '…' : isR2 ? t.r2 : t.local}
         </p>

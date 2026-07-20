@@ -625,6 +625,9 @@ function BuilderEditor() {
   const [contextReady, setContextReady] = useState(false);
   const siteId = resolveBuilderRouteSiteId(searchSiteId, contextSiteId);
   const [siteMeta, setSiteMeta] = useState<SiteMeta | null>(null);
+  // `seed` is preview-only placeholder content. Never allow it to be persisted
+  // before the requested site's real draft has finished loading.
+  const [docLoaded, setDocLoaded] = useState(false);
   const [doc, setDoc] = useState<BuilderDoc>(seed as unknown as BuilderDoc);
   const [cinematicScore, setCinematicScore] = useState<CinematicScoreResult | null>(null);
   const [pageId, setPageId] = useState<string>((seed as unknown as BuilderDoc).pages[0]?.id ?? '');
@@ -781,6 +784,7 @@ function BuilderEditor() {
   // dashboard to pick a site.
   useEffect(() => {
     if (!contextReady) return;
+    setDocLoaded(false);
     if (!siteId) {
       router.replace('/dashboard');
       return;
@@ -806,8 +810,12 @@ function BuilderEditor() {
           setPageId((d.doc.pages.find((p) => p.path === '') ?? d.doc.pages[0]).id);
         }
         setSiteMeta(d.site);
+        setDocLoaded(true);
       })
-      .catch(() => setMsg(tr('Не удалось загрузить сайт.')));
+      .catch(() => {
+        setDocLoaded(false);
+        setMsg(tr('Не удалось загрузить сайт.'));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tr is locale-derived; re-running on locale change isn't needed here
   }, [contextReady, siteId, router]);
 
@@ -1712,7 +1720,10 @@ function BuilderEditor() {
   const savingRef = useRef<Promise<boolean> | null>(null);
   const [saveTick, setSaveTick] = useState(0);
   const saveDraft = (auto = false): Promise<boolean> => {
-    if (!siteId) return Promise.resolve(false);
+    if (!siteId || !docLoaded) {
+      if (!auto) setMsg(tr('Дождитесь загрузки сайта.'));
+      return Promise.resolve(false);
+    }
     if (savingRef.current) {
       if (auto) return Promise.resolve(false);
       return savingRef.current.then(() => saveDraft(auto), () => saveDraft(auto));
@@ -1729,7 +1740,8 @@ function BuilderEditor() {
         if (res.ok) {
           if (stateRef.current.doc === sentDoc) setDirty(false);
           const liveMsg = data.published ? tr(' · обновлено в live') : '';
-          setMsg(auto ? tr('Автосохранено{live}').replace('{live}', liveMsg) : tr('Сохранено · страниц: {n}{live}').replace('{n}', String(data.pages)).replace('{live}', liveMsg));
+          const unchangedMsg = data.changed === false ? tr('Изменений нет — сайт оставлен без изменений.') : '';
+          setMsg(unchangedMsg || (auto ? tr('Автосохранено{live}').replace('{live}', liveMsg) : tr('Сохранено · страниц: {n}{live}').replace('{n}', String(data.pages)).replace('{live}', liveMsg)));
           if (!auto) setPreviewKey((k) => k + 1);
           return true;
         }
@@ -1785,7 +1797,7 @@ function BuilderEditor() {
   // Debounced autosave: edits land in the DB after 2s of inactivity, so
   // closing the tab can't lose more than the last couple of seconds of work.
   useEffect(() => {
-    if (!dirty || !siteMeta) return;
+    if (!dirty || !siteMeta || !docLoaded) return;
     const t = setTimeout(() => {
       saveDraft(true).catch(() => setMsg(tr('Автосохранение не удалось — проверьте сеть.')));
     }, 2000);
@@ -1798,7 +1810,7 @@ function BuilderEditor() {
     if (!dirty) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       // Best-effort synchronous flush that survives the page unload.
-      if (siteId) {
+      if (siteId && docLoaded) {
         try {
           fetch(`/api/builder?site=${encodeURIComponent(siteId)}`, {
             method: 'POST',
@@ -1813,13 +1825,13 @@ function BuilderEditor() {
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [dirty, siteId]);
+  }, [dirty, siteId, docLoaded]);
 
   // Flush unsaved edits when leaving the builder via in-app navigation
   // (SPA route change unmounts this component without firing beforeunload).
   useEffect(() => {
     return () => {
-      if (dirtyRef.current && siteId) {
+      if (dirtyRef.current && siteId && docLoaded) {
         try {
           fetch(`/api/builder?site=${encodeURIComponent(siteId)}`, {
             method: 'POST',
@@ -1830,8 +1842,8 @@ function BuilderEditor() {
         } catch { /* ignore */ }
       }
     };
-  }, [siteId]);
-
+  }, [siteId, docLoaded]);
+ 
   const [pubBusy, setPubBusy] = useState(false);
   const [celebrate, setCelebrate] = useState<{ url: string; isLanding: boolean; readiness?: ReadinessReport } | null>(null);
   const publish = async () => {
@@ -2132,11 +2144,11 @@ function BuilderEditor() {
           <button onClick={openVersions} disabled={versionsBusy} className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label={tr('История версий')} title={tr('История версий')}><History className="h-4 w-4" /></button>
           <button onClick={undo} disabled={!canUndo} className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label={tr('Отменить')} title={tr('Отменить (Ctrl+Z)')}><Undo2 className="h-4 w-4" /></button>
           <button onClick={redo} disabled={!canRedo} className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30" aria-label={tr('Повторить')} title={tr('Повторить (Ctrl+Shift+Z)')}><Redo2 className="h-4 w-4" /></button>
-          <Button size="sm" onClick={save} disabled={busy || pubBusy} className="relative shrink-0 gap-1.5 px-2 md:px-3" title={dirty ? tr('Есть несохранённые изменения (автосохранение через пару секунд)') : tr('Всё сохранено')} aria-label={tr('Сохранить')}>
+          <Button size="sm" onClick={save} disabled={!docLoaded || busy || pubBusy} className="relative shrink-0 gap-1.5 px-2 md:px-3" title={!docLoaded ? tr('Сайт загружается…') : dirty ? tr('Есть несохранённые изменения (автосохранение через пару секунд)') : tr('Всё сохранено')} aria-label={tr('Сохранить')}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} <span className="hidden md:inline">{tr('Сохранить')}</span>
             {dirty && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-background bg-amber-500" aria-label={tr('Несохранённые изменения')} />}
           </Button>
-          <Button size="sm" variant={siteMeta?.published ? 'outline' : 'default'} onClick={publish} disabled={busy || pubBusy} className="shrink-0 gap-1.5 px-2 md:px-3" title={tr('Сохранить черновик и опубликовать')} aria-label={siteMeta?.published ? tr('Обновить') : tr('Опубликовать')}>
+          <Button size="sm" variant={siteMeta?.published ? 'outline' : 'default'} onClick={publish} disabled={!docLoaded || busy || pubBusy} className="shrink-0 gap-1.5 px-2 md:px-3" title={!docLoaded ? tr('Сайт загружается…') : tr('Сохранить черновик и опубликовать')} aria-label={siteMeta?.published ? tr('Обновить') : tr('Опубликовать')}>
             {pubBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
             <span className="hidden md:inline">{siteMeta?.published ? tr('Обновить') : tr('Опубликовать')}</span>
           </Button>
@@ -2145,7 +2157,7 @@ function BuilderEditor() {
       </header>
 
       {/* DNA Selector — второй слой под toolbar */}
-      <div className="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3 py-1.5 sm:px-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 border-b border-border/60 bg-muted/20 px-3 py-1.5 sm:px-4">
         <span className="text-xs font-medium text-muted-foreground">🎬 Кинематографичный стиль:</span>
         <DnaSelector
           value={doc.dnaId}
@@ -2244,7 +2256,7 @@ function BuilderEditor() {
       )}
 
       <details className="border-b border-border/60 bg-card/30 px-3 py-2 sm:px-4" open={qualityOpen} onToggle={(e) => setQualityOpen((e.currentTarget as HTMLDetailsElement).open)}>
-        <summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-semibold">
+        <summary className="flex flex-wrap cursor-pointer list-none items-center gap-3 text-sm font-semibold">
           <span>{tr('Инспектор качества')}</span>
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-black text-primary">{Math.round((qualityChecks.filter((check) => check.ok).length / qualityChecks.length) * 100)}%</span>
           <span className="text-xs font-normal text-muted-foreground">{qualityChecks.filter((check) => check.ok).length}/{qualityChecks.length}</span>
@@ -2380,7 +2392,7 @@ function BuilderEditor() {
               enough (container query), not the viewport: with a wide preview
               pane the panel may be narrow even on a large monitor. */}
           <div className={tab === 'blocks' ? 'grid items-start gap-4 @3xl:grid-cols-2' : 'hidden'}>
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
           {/* Palette */}
           <Card className="p-3" data-tour="palette">
             <p className="mb-1 text-sm font-semibold">{tr('Добавить элемент')}</p>

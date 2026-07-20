@@ -60,7 +60,15 @@ export async function POST(request: Request) {
     paths.add(p.path);
   }
   try {
-    // Snapshot the previous persisted draft so every save is reversible.
+    const serialized = JSON.stringify(doc);
+    const changed = serialized !== site.draftDoc;
+    // An unchanged save is deliberately a no-op. This prevents opening the
+    // builder and pressing Save from rewriting snapshots or version history.
+    if (!changed) {
+      return NextResponse.json({ ok: true, changed: false, pages: doc.pages.length, published: false });
+    }
+
+    // Snapshot the previous persisted draft so every real edit is reversible.
     const previous = parseDoc(site.draftDoc);
     if (previous) createSiteVersion(site.id, site.userId, previous, 'Autosave');
     saveDraft(site, doc);
@@ -74,8 +82,8 @@ export async function POST(request: Request) {
     // effect-less node version. The landing only goes live via an explicit
     // "Опубликовать", and "Сбросить лендинг" restores the coded page.
     const live = syncsLiveOnSave(site);
-    if (live) publishSite({ ...site, draftDoc: JSON.stringify(doc) });
-    return NextResponse.json({ ok: true, pages: doc.pages.length, published: live });
+    if (live) publishSite({ ...site, draftDoc: serialized });
+    return NextResponse.json({ ok: true, changed: true, pages: doc.pages.length, published: live });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'write failed' }, { status: 500 });
   }
