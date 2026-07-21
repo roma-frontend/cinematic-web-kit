@@ -50,7 +50,7 @@ for (const abs of files) {
   const ext = abs.split('.').pop().toLowerCase();
   const body = fs.readFileSync(abs);
   const res = await client.fetch(`${endpoint}/${encodeURI(key)}`, {
-    method: 'PUT', body: new Uint8Array(body), headers: { 'content-type': CT[ext] || 'application/octet-stream' },
+    method: 'PUT', body: new Uint8Array(body), headers: { 'content-type': CT[ext] || 'application/octet-stream', 'cache-control': 'public, max-age=31536000, immutable' },
   });
   if (res.ok) { ok++; console.log(`  ✓ ${key} (${(body.length / 1024).toFixed(0)} KB)`); }
   else console.log(`  ✗ ${key}: HTTP ${res.status}`);

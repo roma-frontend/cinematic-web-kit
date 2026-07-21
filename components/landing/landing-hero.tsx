@@ -88,7 +88,7 @@ export function LandingHero({
             hydration wait, so there's no flash of the empty themed background). */}
         <div>
           <div className="hero-rise" style={{ animationDelay: '0ms' }}>
-            <span className="b-shimmer inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground backdrop-blur">
+            <span className="b-shimmer inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-foreground/80 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-primary" /> {badge}
             </span>
           </div>
@@ -102,7 +102,7 @@ export function LandingHero({
             ))}
           </h1>
 
-          <p className="hero-rise mt-6 max-w-xl text-pretty text-lg text-muted-foreground" style={{ animationDelay: '160ms' }}>
+          <p className="hero-rise-lcp mt-6 max-w-xl text-pretty text-lg text-muted-foreground" style={{ animationDelay: '160ms' }}>
             {subtitle}
           </p>
 
@@ -165,7 +165,7 @@ export function LandingHero({
               <span className="h-3 w-3 rounded-full bg-red-400/80" />
               <span className="h-3 w-3 rounded-full bg-amber-400/80" />
               <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
-              <span className="ml-3 flex items-center gap-1.5 truncate rounded-md bg-black/10 px-2 py-1 text-[11px] text-muted-foreground dark:bg-white/10">
+              <span className="ml-3 flex items-center gap-1.5 truncate rounded-md bg-black/10 px-2 py-1 text-[11px] text-foreground/75 dark:bg-white/10">
                 <Globe className="h-3 w-3" /> {previewLabels.url}
               </span>
             </div>

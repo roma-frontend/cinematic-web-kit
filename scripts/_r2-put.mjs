@@ -15,6 +15,6 @@ for (const arg of process.argv.slice(2)) {
   const file = arg.slice(0, i), key = arg.slice(i + 1);
   const ext = key.split('.').pop().toLowerCase();
   const body = fs.readFileSync(file);
-  const res = await client.fetch(`${endpoint}/${encodeURI(key)}`, { method: 'PUT', body: new Uint8Array(body), headers: { 'content-type': CT[ext] || 'application/octet-stream' } });
+  const res = await client.fetch(`${endpoint}/${encodeURI(key)}`, { method: 'PUT', body: new Uint8Array(body), headers: { 'content-type': CT[ext] || 'application/octet-stream', 'cache-control': 'public, max-age=31536000, immutable' } });
   console.log(`  ${res.ok ? '✓' : '✗'} ${key} (${(body.length / 1024).toFixed(0)} KB) ${res.status}`);
 }

@@ -121,14 +121,21 @@
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: none; }
 }
+/* LCP-safe variant: the headline/subtitle must never sit at opacity:0 waiting
+   for the animation start (Lighthouse "element render delay"). Motion only. */
+@keyframes heroRiseLcp {
+  from { transform: translateY(24px); }
+  to   { transform: none; }
+}
 @keyframes heroPop {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: none; }
 }
 .hero-rise { animation: heroRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-rise-lcp { animation: heroRiseLcp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .hero-pop  { animation: heroPop 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.15s; }
 @media (prefers-reduced-motion: reduce) {
-  .hero-rise, .hero-pop { animation: none !important; }
+  .hero-rise, .hero-rise-lcp, .hero-pop { animation: none !important; }
 }
 
 }
