@@ -11,6 +11,7 @@ export function SmoothScrollProvider() {
     // Lenis targets window and would consume trackpad wheel events before they
     // reach that container, so keep native scrolling on dashboard routes.
     if (pathname.startsWith('/dashboard')) return;
+    if (pathname.startsWith('/studio')) return;
 
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const coarse = window.matchMedia('(pointer: coarse)');
